@@ -1,0 +1,231 @@
+section:
+  key: E
+  name: Multi-tenancy / Identity / Policy
+  color: "#ec4899"
+cards:
+  - topic: Multi-tenancy models
+    desc: Silo vs. pool vs. bridge — how strongly you isolate one customer's data and compute from another's.
+    extras:
+      - label: e.g.
+        text: silo = separate DB per customer (strong isolation, pricey); pool = one shared DB with a tenant_id column (cheap, noisy-neighbor risk); bridge = shared infra, separate schemas.
+      - label: Say
+        text: “I'd default to pool for cost at scale, and silo when a customer needs hard data isolation or compliance.”
+      - label: Trap
+        text: pooled multi-tenancy's big risk is a query missing its tenant_id filter — an instant cross-tenant data leak.
+    match:
+      - - Silo
+        - separate DB per customer — strong isolation, pricey
+      - - Pool
+        - one shared DB with a tenant_id column — cheap, noisy-neighbor risk
+      - - Bridge
+        - shared infra, a separate schema per tenant — a middle ground
+    hint: Three isolation models — separate DB, shared DB, or something in between.
+  - topic: Authentication vs. authorization
+    desc: Proving WHO you are (authn) vs. deciding WHAT you're allowed to do (authz).
+    cloze:
+      text: Proving who you are is authentication; deciding what you may do is {}.
+      answer: authorization
+      alts:
+        - authz
+    hint: Proving who you are versus deciding what you're allowed to do.
+  - topic: Cookies — and how the backend knows who you are
+    desc: HTTP is stateless. A cookie is the server asking the browser to hold a string and hand it back — Set-Cookie on the response, a Cookie header on every matching request after.
+    extras:
+      - label: e.g.
+        text: "POST /login → Set-Cookie: sid=abc123. GET /me → Cookie: sid=abc123 → sessions.get(“abc123”) → {userId: 42}. The cookie carries a KEY, never the user."
+      - label: Trap
+        text: "browsers attach cookies automatically to any matching request — that is CSRF. Bearer headers are never auto-sent. Either way it's a bearer credential: stealing it is as good as the password. And never trust a JWT's own alg header."
+    items:
+      - "Set-Cookie: sid=abc123; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=1209600"
+      - HttpOnly = JS can't read it (XSS) · Secure = HTTPS only · SameSite = not sent cross-site (CSRF) · no Max-Age = dies with the tab
+      - "MIDDLEWARE: extract → check integrity (signature) → RESOLVE IDENTITY ←the fork→ check expiry/revocation → attach req.user, else 401"
+      - OPAQUE id → sessionStore.get(id) → user row. Instant revoke (DELETE); a lookup every request; replicas need a shared store.
+      - SIGNED token (JWT) → verify sig + exp/iss/aud, read claims. No lookup, scales; cannot un-issue → short TTLs or a denylist.
+    cloze:
+      text: The {} cookie flag stops JavaScript from reading it, mitigating XSS token theft.
+      answer: HttpOnly
+      alts:
+        - http only
+    hint: How a stateless protocol remembers who you are between requests.
+  - topic: OAuth2 / OIDC / JWT
+    desc: "Three pieces of modern auth:"
+    items:
+      - "OAuth2 (Open Authorization 2.0) — delegation: lets an app act on your behalf via access tokens, no password sharing."
+      - "OIDC (OpenID Connect) — an identity layer on OAuth2: proves who you are, returns an ID token."
+      - JWT (JSON Web Token) — a signed, self-contained token of claims any service verifies without a DB lookup.
+    match:
+      - - OAuth2
+        - delegation — an app acts on your behalf via access tokens, no password sharing
+      - - OIDC
+        - an identity layer on OAuth2 — proves who you are, returns an ID token
+      - - JWT
+        - a signed, self-contained token of claims any service verifies without a DB lookup
+    cloze:
+      text: "{} is an identity layer built on OAuth2 that returns an ID token proving who you are."
+      answer: OIDC
+      alts:
+        - openid connect
+    hint: "Three pieces: delegation, an identity layer on top, and a self-contained signed token."
+  - topic: RBAC vs. ABAC
+    desc: Two ways to decide 'can this subject do this action?'. RBAC checks WHO YOU ARE (your role); ABAC checks the ATTRIBUTES of the request (who + what + when + where). ABAC is a superset — it can express any RBAC rule plus context — which is why fine-grained policy engines lean toward it.
+    extras:
+      - label: e.g.
+        text: "AWS IAM is the hybrid you'll actually meet: RBAC-style managed policies ('S3ReadOnly') PLUS ABAC conditions like 'only if resource tag team == the user's team.'"
+      - label: Say
+        text: “Start with RBAC for simplicity; add ABAC conditions when roles start exploding or access must depend on context like ownership, time, or location.”
+    table:
+      - - ""
+        - RBAC
+        - ABAC
+      - - Decides on
+        - the user's role(s)
+        - attributes of user + resource + action + context
+      - - Rule shape
+        - role → allowed actions
+        - boolean over attributes
+      - - Example
+        - "'admins can delete'"
+        - "'owner can delete, in business hours, from a corp IP'"
+      - - Strength
+        - simple, auditable, easy to reason about
+        - fine-grained, context-aware, scales to many rules
+      - - Weakness
+        - role explosion as cases multiply
+        - harder to audit 'who can do X?'
+    match:
+      - - RBAC
+        - grants by the user's ROLE — 'admins can delete'
+      - - ABAC
+        - grants by ATTRIBUTES + context — 'owner can delete from a corp IP in business hours'
+      - - Role explosion
+        - the RBAC failure mode — a new role per edge case
+      - - PBAC / policy-as-code
+        - externalize either into an engine (OPA, Cedar) evaluated at request time
+    mc:
+      - MAC vs DAC (mandatory vs discretionary)
+      - ACLs vs capabilities
+      - PBAC (policy-based access control)
+    cloze:
+      text: "'The owner can delete during business hours from a corp IP' is an example of {} access control."
+      answer: ABAC
+      alts:
+        - attribute-based
+        - attribute based
+    hint: Access by role versus access by attributes and conditions.
+  - topic: Policy-as-code (OPA/Rego, Cedar)
+    desc: Externalizing authorization rules into an engine you evaluate at runtime — the essence of runtime 'policy enforcement'.
+    extras:
+      - label: e.g.
+        text: OPA (Open Policy Agent) evaluates a Rego rule like 'allow if user.team == resource.owner' at request time; Cedar (AWS) is a similar policy language.
+      - label: Say
+        text: “Externalize authz into a policy engine so rules are versioned, tested, and enforced consistently — not scattered across each service.”
+      - label: Trap
+        text: policy-as-code splits the decision (PDP) from enforcement (PEP) — don't hardcode allow/deny in every service.
+    cloze:
+      text: Open Policy Agent evaluates authorization rules written in the {} language.
+      answer: Rego
+    hint: Externalize authorization rules into an engine you evaluate at runtime.
+  - topic: PEP vs. PDP
+    desc: "The two halves of an authorization system: the PDP (Policy Decision Point) evaluates the rules and answers 'allow or deny?'; the PEP (Policy Enforcement Point) sits in the request path and actually enforces that answer."
+    extras:
+      - label: e.g.
+        text: a request hits the API gateway (PEP); it asks an OPA server (PDP) 'can user X delete repo Y?'; OPA says deny, so the gateway returns 403.
+    diagram: pep_pdp
+    cloze:
+      text: The component that evaluates policy and answers allow-or-deny is the {}.
+      answer: PDP
+      alts:
+        - policy decision point
+    hint: Two halves — one decides allow/deny, one enforces it in the request path.
+  - topic: Secrets management
+    desc: Vaulting credentials and keys (HashiCorp Vault, cloud KMS) instead of hardcoding them.
+    hint: Where credentials belong instead of hardcoded — a vault or a KMS.
+  - topic: Real-time detection & enforcement
+    desc: Inspecting agent actions in-flight and blocking or scoring risky ones — the runtime control-plane pitch.
+    extras:
+      - label: How
+        text: "implemented as an interceptor in the tool-call path (proxy / sidecar / SDK hook): every action routes through it, is checked against policy + a risk model, then allowed / blocked / modified in-line and logged for audit."
+      - label: e.g.
+        text: an agent's delete_database call is intercepted, scored high-risk, and blocked before it runs.
+    hint: Inspect agent actions in-flight and block or score the risky ones.
+  - topic: "SSO: OIDC vs SAML"
+    desc: Both are federation protocols for Single Sign-On — log in once at an Identity Provider (IdP), reach many apps. SAML = older, XML, browser-POST, entrenched in enterprise. OIDC (OpenID Connect) = modern, JSON/JWT, built on OAuth2 — better for APIs, SPAs, mobile.
+    extras:
+      - label: e.g.
+        text: "IdP = Identity Provider (does the login: Okta, Entra ID, Auth0); SP = Service Provider (the app trusting it)."
+      - label: Say
+        text: “SAML for legacy enterprise SSO, OIDC for anything modern — same idea, the app delegates login to an IdP.”
+    cloze:
+      text: Older enterprise SSO uses SAML, which encodes its assertions in {}.
+      answer: XML
+    hint: Two federation protocols for single sign-on — one old/XML, one modern/JWT.
+  - topic: ID vs access vs refresh tokens
+    desc: "OAuth2 / OIDC issue three token types, each with a different job and audience:"
+    extras:
+      - label: Trap
+        text: don't send the ID token to an API or use the access token to prove identity — different audiences (the `aud` claim). Mixing them is a common bug.
+    table:
+      - - Token
+        - Purpose
+        - Audience
+      - - ID token
+        - proves WHO the user is (OIDC)
+        - the client app
+      - - Access token
+        - authorizes API calls (short-lived)
+        - the resource / API
+      - - Refresh token
+        - get new access tokens, no re-login
+        - the auth server
+    match:
+      - - ID token
+        - "proves WHO the user is (OIDC) — audience: the client app"
+      - - Access token
+        - "authorizes API calls, short-lived — audience: the resource / API"
+      - - Refresh token
+        - "gets new access tokens without re-login — audience: the auth server"
+    cloze:
+      text: Don't use an access token to prove identity — that is the job of the {} token.
+      answer: ID
+      alts:
+        - identity
+    hint: Three tokens — the key is who each one is FOR (its audience).
+  - topic: mTLS & workload identity
+    desc: How SERVICES (not users) prove identity to each other. mTLS (mutual TLS) = both client and server present certs, so each authenticates the other. Workload identity gives each service a verifiable identity + auto-rotated certs.
+    extras:
+      - label: e.g.
+        text: SPIFFE/SPIRE issues per-workload SVIDs; a service mesh (Istio/Linkerd) auto-issues + rotates mTLS certs so every pod-to-pod call is authenticated + encrypted.
+      - label: Say
+        text: “Cloud workload identity (AWS IRSA / GCP Workload Identity) is the same idea for cloud APIs — a pod authenticates with NO static keys.”
+    cloze:
+      text: "{} TLS has both the client and the server present certificates to authenticate each other."
+      answer: Mutual
+      alts:
+        - mtls
+    hint: How services, not users, prove identity to each other.
+  - topic: Threat modeling (STRIDE)
+    desc: "Systematically enumerating how a system could be attacked BEFORE building defenses. STRIDE is the classic checklist: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege."
+    extras:
+      - label: How
+        text: diagram the data-flow, mark trust boundaries, then walk each element through STRIDE, rate impact × likelihood, and mitigate the high-risk ones.
+      - label: e.g.
+        text: "for an agent tool call: Spoofing (who invoked it?), Tampering (prompt injection), Elevation (can it reach admin APIs?) — maps straight onto your guardrail design."
+      - label: Say
+        text: “Threat-model at design time — removing an attack surface is far cheaper than patching it in prod.”
+    match:
+      - - Spoofing
+        - pretending to be a user or system you are not
+      - - Tampering
+        - modifying data or code in transit or at rest
+      - - Repudiation
+        - denying you performed an action, with no audit trail to prove it
+      - - Information disclosure
+        - leaking data to parties not authorized to see it
+      - - Denial of service
+        - exhausting resources so legitimate users can't get through
+      - - Elevation of privilege
+        - gaining rights beyond what you were granted
+    cloze:
+      text: The classic attack-enumeration checklist — Spoofing, Tampering, Repudiation, Info-disclosure, DoS, Elevation — is {}.
+      answer: STRIDE
+    hint: Enumerate the attacks before defending — a six-letter checklist.

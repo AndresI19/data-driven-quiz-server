@@ -1,0 +1,30 @@
+{
+  "name": "flashcards-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Engineer's Flashcards — a data-driven flashcard quiz game with an isometric garden, served as a public web app.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production tsx src/server/index.ts",
+    "serve": "npm run build && npm start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/shared/*.test.ts"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "express": "^4.21.2",
+    "gifenc": "^1.0.3",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.11"
+  }
+}

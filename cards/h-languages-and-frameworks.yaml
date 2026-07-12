@@ -1,0 +1,156 @@
+section:
+  key: H
+  name: Languages & Frameworks
+  color: "#ef4444"
+cards:
+  - topic: Java REST frameworks
+    desc: "Common Java web/REST frameworks:"
+    items:
+      - Spring Boot — dominant, batteries-included (embedded server, DI, huge ecosystem)
+      - Quarkus — Kubernetes-native, fast startup (GraalVM)
+      - Micronaut — compile-time DI, low memory
+      - Javalin — lightweight REST on Jetty
+      - Open Liberty — IBM's lightweight Jakarta EE / MicroProfile runtime
+      - Dropwizard — opinionated Jetty + Jersey bundle
+      - Jersey (JAX-RS) — the reference REST API standard
+    hint: Start with the dominant batteries-included one, then the K8s-native fast starters.
+  - topic: Python REST frameworks
+    desc: "Common Python web/REST frameworks:"
+    items:
+      - FastAPI — async, type-hint based, auto OpenAPI docs (modern default)
+      - Flask — minimal synchronous microframework
+      - Django + DRF (Django REST Framework) — batteries-included, ORM + admin
+      - Starlette — the async toolkit under FastAPI
+      - Falcon / Tornado — high-performance / async options
+    hint: The modern async type-hint one first, then the minimal and the batteries-included.
+  - topic: Node.js REST frameworks
+    desc: "Common Node.js web/REST frameworks:"
+    items:
+      - Express — minimal, ubiquitous standard
+      - NestJS — opinionated, TypeScript-first (Angular-like structure)
+      - Fastify — high-performance, schema-based
+      - Koa — modern, lightweight (from the Express team)
+      - Hapi — configuration-centric
+    hint: The ubiquitous minimal one, then the opinionated TypeScript-first one.
+  - topic: Python for backend / ML
+    desc: The lingua franca for LLM/agent tooling and the AI evaluation pipelines.
+    extras:
+      - label: e.g.
+        text: a FastAPI service wraps a PyTorch model — same language for the API and the ML, with NumPy/pandas/transformers close at hand.
+    hint: Why one language spans both the API and the ML model.
+  - topic: Rust & Go for systems
+    desc: Why a control plane picks these — performance, memory safety (Rust), and simple concurrency (Go).
+    extras:
+      - label: e.g.
+        text: Go powers Kubernetes and Docker (simple goroutine concurrency); Rust powers performance-critical, memory-safe components with no garbage collector.
+    cloze:
+      text: "{} gives memory safety with no garbage collector by enforcing ownership at compile time."
+      answer: Rust
+    hint: Two systems languages — one for safety without a GC, one for simple concurrency.
+  - topic: "Memory management: GC vs manual vs ownership"
+    desc: "How a language reclaims memory it no longer uses — a core runtime concept:"
+    extras:
+      - label: Ownership
+        text: "Rust's rule: every value has ONE owner (a variable); when the owner goes out of scope, the value is freed — automatically, at compile time. 'Ownership' names the idea that the compiler tracks WHO is responsible for freeing each value, so there's no GC and no manual free(). Borrowing (references) lets others read/use a value without taking ownership, and the borrow checker proves at compile time that no reference outlives its owner — that's how Rust gets memory safety with zero runtime cost."
+      - label: e.g.
+        text: a 'stop-the-world' GC pause briefly halts the app to reclaim memory — why latency-sensitive systems tune the GC, or pick Go (low-pause concurrent GC) or Rust (none).
+      - label: Trap
+        text: reference counting (Python, Swift's ARC) is GC-like but leaks reference CYCLES unless a separate cycle collector handles them.
+    table:
+      - - Model
+        - How it frees memory
+        - Languages
+      - - Garbage collection
+        - runtime auto-frees unreachable objects
+        - Java, Go, Python, C#
+      - - Manual
+        - you free() explicitly (fast, error-prone)
+        - C, C++
+      - - Ownership
+        - compiler frees at compile time, no runtime GC
+        - Rust
+    cloze:
+      text: Rust frees memory via compile-time {}, avoiding a runtime garbage collector.
+      answer: ownership
+    hint: Three ways memory is reclaimed — automatic, manual, and compile-time.
+  - topic: REST vs. gRPC vs. GraphQL
+    desc: The three API styles and when each fits a given service boundary. REST = simple public HTTP/JSON; gRPC (Google Remote Procedure Call) = fast binary service-to-service (Protobuf); GraphQL = the client picks exactly the fields it needs.
+    match:
+      - - REST
+        - simple public HTTP / JSON
+      - - gRPC
+        - fast binary Protobuf, service-to-service
+      - - GraphQL
+        - client picks exactly the fields it needs
+    cloze:
+      text: "{} uses Protobuf over HTTP/2 for fast, strongly-typed service-to-service calls."
+      answer: gRPC
+    hint: Three API styles — public JSON, fast binary, and client-picks-the-fields.
+  - topic: Protocol Buffers (protobuf)
+    desc: Google's language-neutral BINARY serialization format — the default payload for gRPC. You define a schema in a .proto file (typed, NUMBERED fields), compile it with protoc to generate typed code in many languages; it serializes to a compact binary wire format — much smaller/faster than JSON, but not human-readable and it needs the schema to decode.
+    extras:
+      - label: e.g.
+        text: message User { int32 id = 1; string name = 2; } — the '= 1' is a FIELD NUMBER (a tag), not a value; protoc generates matching classes for Go/Python/TS.
+      - label: Say
+        text: “gRPC uses protobuf for a compact, strongly-typed contract shared by client and server.”
+      - label: Trap
+        text: NEVER change or reuse a field's number in production — the wire format identifies fields by number, so renaming is safe but renumbering breaks compatibility.
+    cloze:
+      text: In a .proto file the '= 1' after a field is its field {}, which must never be reused in production.
+      answer: number
+      alts:
+        - tag
+    hint: Google's binary schema format — the default gRPC payload.
+  - topic: Serialization (& deserialization)
+    desc: Converting an in-memory object into a storable/transmittable form (bytes or text); deserialization is the reverse (bytes → object). Needed any time data crosses a boundary — network, disk, cache, or message queue.
+    extras:
+      - label: e.g.
+        text: serialize a User object → JSON text or Protobuf binary to send over the wire; the receiver deserializes it back into an object.
+      - label: Trap
+        text: deserializing untrusted data with pickle / Java Serializable can execute arbitrary code (a classic RCE = remote code execution) — use JSON/Protobuf across trust boundaries.
+    table:
+      - - Kind
+        - Formats
+        - When to use
+      - - Text
+        - JSON, XML, YAML
+        - interop, human-readable, debuggable
+      - - Binary
+        - Protobuf, Avro, MessagePack
+        - compact + fast (needs a schema)
+      - - Language-native
+        - Python pickle, Java Serializable
+        - convenient but INSECURE across trust lines
+    match:
+      - - Text (JSON, XML, YAML)
+        - interop, human-readable, debuggable
+      - - Binary (Protobuf, Avro, MessagePack)
+        - compact + fast, but needs a schema
+      - - Language-native (pickle, Java Serializable)
+        - convenient but INSECURE across trust lines
+    cloze:
+      text: Deserializing untrusted data with Python {} can execute arbitrary code.
+      answer: pickle
+    hint: Turning objects into bytes/text to cross a boundary — plus the deserialization trap.
+  - topic: "Python envs: venv & uv"
+    desc: A venv (virtual environment) is an isolated, per-project Python install — its own dependencies, so projects don't collide in the global site-packages. uv is a fast Rust-based tool (by Astral) that creates the venv AND manages packages, replacing pip / virtualenv / pyenv / much of poetry.
+    extras:
+      - label: e.g.
+        text: "classic: `python -m venv .venv && source .venv/bin/activate` then `pip install`. With uv: `uv add fastapi` + `uv run main.py` — the venv is auto-created, no activate step."
+      - label: Say
+        text: “uv gives reproducible installs via a lockfile (uv.lock) pinning every transitive dep — which raw pip never did — and it's 10–100× faster.”
+    cloze:
+      text: "{} is the fast Rust-based tool from Astral that replaces pip, virtualenv, and much of poetry."
+      answer: uv
+    hint: Per-project isolation, and the fast Rust tool that replaces pip/virtualenv.
+  - topic: Pydantic (runtime data validation)
+    desc: "A library that turns type-hinted classes into RUNTIME validators: it parses, coerces, and validates incoming data and raises clear errors on bad input. v2's core is in Rust (fast), and it's the validation engine under FastAPI and typed settings (pydantic-settings)."
+    extras:
+      - label: e.g.
+        text: "class User(BaseModel): id:int; email:EmailStr — User(id='42', …) coerces '42'→42; malformed input raises ValidationError, which FastAPI returns as a 422."
+      - label: Say
+        text: “Pydantic turns type hints into enforced runtime contracts at your API boundary.”
+    cloze:
+      text: "{} turns type-hinted classes into runtime validators and is the engine under FastAPI."
+      answer: Pydantic
+    hint: Type hints turned into enforced runtime validation.

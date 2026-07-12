@@ -1,0 +1,413 @@
+section:
+  key: B
+  name: Cloud & Kubernetes
+  color: "#0ea5e9"
+cards:
+  - topic: What Kubernetes actually is
+    desc: An open-source container orchestrator exposing one declarative API (YAML manifests) to deploy, scale, and self-heal containers.
+    hint: A container orchestrator with one declarative API and a reconcile loop.
+  - topic: kube-apiserver (the hub of Kubernetes)
+    desc: The front door and hub of Kubernetes — a REST API that EVERY component (kubectl, each node's kubelet, the scheduler, controllers) talks to, and the ONLY component that reads/writes etcd. It runs authn → authz → admission control → validation on every request. Diagram shows the control plane + nodes around it.
+    extras:
+      - label: e.g.
+        text: kubectl apply → apiserver authenticates, authorizes, validates → writes to etcd → controllers watching that change reconcile toward it.
+      - label: Say
+        text: “Nothing talks to etcd or to each other directly — everything is a client of the API server, so it's the single choke point for auth, validation, and audit.”
+    diagram: k8s_arch
+    cloze:
+      text: Every component in Kubernetes talks only to the {}, the single front door to the cluster.
+      answer: kube-apiserver
+      alts:
+        - api server
+        - apiserver
+        - kube apiserver
+    hint: The one component every other component talks to.
+  - topic: "Managed K8s: name the three (EKS / GKE / AKS)"
+    desc: "The kubectl/YAML API is IDENTICAL on every cloud, so your manifests port unchanged. What does NOT port: provisioning, IAM, networking/CNI, load balancers, and storage classes — each cloud wires those its own way. Step one is just knowing which service is which cloud."
+    extras:
+      - label: Say
+        text: "“G and A give it away — GKE is Google, AKS is Azure. The odd one is E: EKS = Elastic = AWS.”"
+      - label: Trap
+        text: the portable part is the API (Pods, Services, Deployments); the cloud-specific part is everything AROUND the cluster (IAM, VPC, LB, storage).
+    match:
+      - - EKS
+        - AWS — Elastic Kubernetes Service
+      - - GKE
+        - Google Cloud — Google Kubernetes Engine
+      - - AKS
+        - Azure — Azure Kubernetes Service
+    hint: Same kubectl/YAML API everywhere — so what actually differs between EKS/GKE/AKS?
+  - topic: "Managed K8s: each provider's native edge"
+    desc: "All three run and patch the control plane for you — you only manage workloads. They differ in native integrations, which is usually what picks the winner in an interview answer:"
+    extras:
+      - label: Say
+        text: “Managed = less ops, less control; self-hosted = full control, you own the control plane. I'd pick the managed service that matches the cloud we're already on for the native IAM/networking integration.”
+    match:
+      - - GKE
+        - most mature; Autopilot fully-manages nodes, best autoscaling
+      - - EKS
+        - deepest AWS ties — IRSA (IAM roles per pod), VPC CNI, Fargate serverless pods
+      - - AKS
+        - tight Entra ID (Azure AD) identity + Azure DevOps / Arc integration
+      - - Self-hosted (kubeadm / kOps)
+        - full control, but you own upgrades & etcd backups
+    hint: Who runs the control plane — and what that trades in ops versus control.
+  - topic: Cloud primitives (the infra under K8s)
+    desc: The building blocks a cloud gives you BELOW Kubernetes — created with the cloud's own API or Terraform, not kubectl. K8s YAML only manages what runs INSIDE the cluster; these live underneath it.
+    extras:
+      - label: e.g.
+        text: kubectl apply can't create an AWS RDS database or a VPC — those need Terraform/CloudFormation; K8s just runs your containers on top of that infra.
+    items:
+      - VPC — a private, isolated network you own inside the cloud
+      - Subnet — a slice of a VPC's IP range, pinned to one availability zone (public = has an internet route, private = doesn't)
+      - IAM — who/what may call which cloud API
+      - Managed data — RDS (SQL), S3 (object storage), ElastiCache (Redis)
+      - Load balancer — ALB/NLB that a K8s Service of type LoadBalancer provisions for you
+    hint: K8s YAML manages inside the cluster; what manages the cloud around it?
+  - topic: Core K8s objects
+    desc: "The core objects and what each is for:"
+    items:
+      - Pod — runs containers
+      - Deployment — manages replicas & rolling updates
+      - Service — stable IP / DNS for a set of pods
+      - Ingress — external HTTP(S) routing
+      - ConfigMap — non-secret config
+      - Secret — sensitive config
+      - Namespace — isolation boundary
+    cloze:
+      text: In Kubernetes, a {} gives a stable IP and DNS name for a set of pods.
+      answer: Service
+    hint: "The handful of objects: what runs pods, what gives a stable IP, what holds config/secrets."
+  - topic: Controllers & the reconciliation loop
+    desc: The heart of Kubernetes — and the blueprint for any CONTROL PLANE. A controller watches desired state (your YAML in etcd), compares it to actual cluster state, and acts to close the gap — forever, in a loop. Declarative, level-triggered (reacts to the STATE, not one-off events), self-healing.
+    extras:
+      - label: Say
+        text: "“A control plane is a reconciliation loop: declare desired state and a controller continuously drives reality toward it — level-triggered, so it self-heals after a crash or manual drift.”"
+      - label: Trap
+        text: "level- vs edge-triggered: K8s reacts to the current STATE, not the event that changed it — so a missed event doesn't break it; the next reconcile still converges."
+    items:
+      - "Loop: observe desired (spec) → diff actual (status) → act to converge → repeat"
+      - e.g. the Deployment controller sees spec=3 replicas but only 2 exist → creates 1 more
+      - "CRD (Custom Resource Definition) — teach the API server a NEW object type (kind: MyApp)"
+      - Operator — a CRD + a custom controller encoding an app's ops knowledge (e.g. a Postgres operator that runs backups / failover)
+    cloze:
+      text: "A controller runs a {} loop: observe desired state, diff actual, and act to converge."
+      answer: reconciliation
+      alts:
+        - reconcile
+        - reconciling
+    hint: "The loop at the heart of K8s: observe desired, diff actual, converge."
+  - topic: Pod health probes (liveness / readiness / startup)
+    desc: "How the kubelet decides a pod is healthy — three probes with distinct jobs:"
+    extras:
+      - label: e.g.
+        text: CrashLoopBackOff = the container keeps dying and K8s backs off restarting it — check logs --previous, the liveness probe, and OOMKilled.
+      - label: Trap
+        text: a too-aggressive LIVENESS probe restarts a healthy-but-slow pod in a loop — READINESS is what gates traffic during warmup, not liveness.
+    items:
+      - LIVENESS fails → RESTART the container (it's wedged / deadlocked)
+      - READINESS fails → pull it from Service endpoints (no traffic) but DON'T restart (warming up / a dependency is down)
+      - STARTUP probe → gives slow-booting apps time before liveness kicks in
+    match:
+      - - Liveness fails
+        - RESTART the container — it's wedged / deadlocked
+      - - Readiness fails
+        - pull it from Service endpoints (no traffic), but do NOT restart
+      - - Startup probe
+        - give a slow-booting app time before liveness starts checking
+    cloze:
+      text: A failing {} probe pulls a pod from Service endpoints without restarting the container.
+      answer: readiness
+    hint: Three probes — which restarts, which pulls from traffic, which waits for a slow boot?
+  - topic: kubectl commands (basic → advanced)
+    desc: The verbs you actually reach for, roughly basic → advanced. Almost all take -n <ns> (or -A for every namespace) and -o wide|yaml|json to change the output.
+    extras:
+      - label: Trap
+        text: apply (declarative, merges — GitOps-friendly) vs. create (imperative, fails if it already exists) vs. edit (patches the LIVE object, drifts from git). Interviews probe whether you know why apply is the one you script.
+    items:
+      - get <res> [-o wide] [-w] — list/watch (get pods, get all, get svc)
+      - describe <res> <name> — full state + the Events log; first stop for 'why won't it start'
+      - logs -f <pod> [-c <container>] [--previous] — stream logs / read the last crash's logs
+      - apply -f <file> | -k <dir> — declarative create-or-update (delete -f to remove)
+      - exec -it <pod> -- sh · port-forward svc/<svc> 8080:80 — get inside / tunnel to it locally
+      - rollout status|undo deploy/<d> · scale --replicas=N — watch, revert, or resize a Deployment
+      - get endpoints <svc> — is the Service wired to a ready pod? (empty = selector miss)
+      - get <res> -o jsonpath='{.items[*].metadata.name}' — pull one field for scripting
+      - top pod|node — live CPU/mem (needs metrics-server)
+      - auth can-i <verb> <res> [--as <user>] — test RBAC without trial and error
+      - debug <pod> -it --image=busybox · debug node/<n> — ephemeral container into a distroless/broken pod
+      - explain <res>.spec — the schema of any field, straight from the API server
+    hint: "The verbs, basic to advanced: inspect, then interact, then the power tools."
+  - topic: Namespaces & multi-tenancy in K8s
+    desc: Isolating workloads or customers within one cluster — directly relevant to a multi-tenant control plane.
+    extras:
+      - label: e.g.
+        text: "three common setups: namespace-per-team (own RBAC + ResourceQuota), namespace-per-environment (dev/staging/prod in one cluster), or namespace-per-customer for SaaS tenant isolation (locked down with NetworkPolicies)."
+    cloze:
+      text: The Kubernetes isolation boundary used to separate teams or tenants in one cluster is a {}.
+      answer: namespace
+    hint: The isolation boundary for teams or tenants inside one cluster.
+  - topic: Helm / Kustomize
+    desc: Templating and packaging K8s manifests so one deployment adapts to many environments.
+    extras:
+      - label: e.g.
+        text: Helm packages your app as a versioned chart with values-dev/prod.yaml overrides (exactly the webapp chart you built); Kustomize instead patches base YAML with overlays, no templating.
+      - label: GitOps
+        text: git is the source of truth for cluster state; a controller (Argo CD / Flux) CONTINUOUSLY reconciles the cluster to match the repo — a merge, not a `kubectl apply`, is the deploy. Same reconcile-loop idea as a K8s controller, applied to CD.
+      - label: CI vs CD
+        text: CI builds + tests the image on every push; CD promotes it through envs. GitOps is the pull-based CD half — the cluster pulls from git rather than a pipeline pushing into it.
+    cloze:
+      text: "{} packages a Kubernetes app as a versioned chart with per-environment value overrides."
+      answer: Helm
+    hint: Two ways to adapt manifests per environment — templating versus patching.
+  - topic: Helm commands (basic → advanced)
+    desc: "Helm is the K8s package manager: a chart (templated manifests + default values) installed as a named release you can upgrade and roll back. Commands roughly basic → advanced."
+    extras:
+      - label: Trap
+        text: helm upgrade alone FAILS if the release doesn't exist yet — use upgrade --install for idempotent CI. Add --atomic to auto-roll-back a failed upgrade and --wait to block until pods are Ready.
+    items:
+      - repo add <name> <url> · repo update — register / refresh a chart repo
+      - search repo <term> · show values <chart> — find charts / dump the default values.yaml to override
+      - install <release> <chart> [-n <ns>] — install a chart as a named release
+      - upgrade --install <rel> <chart> [-f values.yaml] [--set k=v] — idempotent install-or-upgrade (CI-friendly)
+      - list -A · status <rel> · history <rel> — what's installed, its state, its revisions
+      - rollback <rel> [REVISION] — revert to a previous revision
+      - uninstall <rel> — remove a release and its resources
+      - template <chart> [-f values] — render manifests locally, NO cluster needed (GitOps/CI)
+      - get values|manifest <rel> — the merged values / the exact YAML actually applied
+      - lint <chart> · diff upgrade (plugin) — validate / preview a change before applying
+      - dependency update — fetch subchart deps into charts/
+      - package <chart> · push <tgz> <repo> — build and publish a chart
+    hint: "The package-manager lifecycle: install, upgrade, roll back."
+  - topic: Infrastructure as Code (Terraform)
+    desc: The cloud-agnostic tool most teams use to provision the cloud resources that sit under K8s.
+    extras:
+      - label: e.g.
+        text: Terraform provisions the EKS (Elastic Kubernetes Service) cluster, its VPC (Virtual Private Cloud) network, and an RDS (Relational Database Service) database from code in git — re-runnable and peer-reviewed, vs. clicking in the AWS console.
+    cloze:
+      text: "{} is the cloud-agnostic tool teams use to provision cloud infrastructure as code."
+      answer: Terraform
+    hint: The cloud-agnostic tool that provisions infrastructure from code.
+  - topic: Terraform commands (basic → advanced)
+    desc: Terraform provisions cloud infra as declarative code and keeps a STATE file mapping your config to real resources. Commands roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: the state file is the source of truth AND stores secrets in plaintext — keep it in a remote backend with locking (S3 + DynamoDB), never commit it. Two un-locked applies corrupt it.
+    items:
+      - init — download providers/modules + wire the backend (run first, and after adding a provider)
+      - fmt · validate — format HCL / check it's syntactically valid
+      - plan [-out plan.tfout] — preview the create/update/destroy diff WITHOUT applying
+      - apply [plan.tfout] — make reality match config (apply -auto-approve in CI)
+      - destroy — tear down everything the state manages
+      - state list · state show <addr> — inspect what Terraform tracks
+      - import <addr> <id> — bring an existing cloud resource under management
+      - state mv <src> <dst> · state rm <addr> — refactor / untrack without recreating
+      - output [name] — read exported values (VPC id, DB endpoint)
+      - workspace list|select — separate state per env (dev/staging/prod)
+      - "apply -replace=<addr> (was: taint) — force one resource to be recreated next apply"
+      - plan -refresh-only — reconcile state with real-world drift
+    hint: The workflow — init, preview, apply — plus a state file it must protect.
+  - topic: Managed identity across clouds
+    desc: "How a pod assumes CLOUD permissions with NO long-lived keys. Same idea on all three clouds: the pod's Kubernetes ServiceAccount is exchanged (via OIDC federation) for short-lived, auto-rotated cloud credentials scoped to a role."
+    extras:
+      - label: e.g.
+        text: AWS IRSA (IAM Roles for Service Accounts) lets a pod call S3 with a scoped role and NO static keys — the pod's ServiceAccount is annotated with the role's ARN. (IAM = Identity and Access Management.)
+      - label: Why
+        text: "static access keys baked into a pod are the #1 leaked-credential source — they don't expire and end up in images, env vars, and git. Federated workload identity removes them entirely: the credential is minted per-request and expires in minutes."
+      - label: Say
+        text: “It's the workload equivalent of SSO — the pod proves its identity with a signed ServiceAccount token, and the cloud hands back short-lived role credentials.”
+    match:
+      - - AWS — IRSA
+        - annotate the ServiceAccount with an IAM role ARN; the pod assumes that role
+      - - Azure — Workload Identity
+        - federate the ServiceAccount to an Entra ID app / managed identity
+      - - GCP — Workload Identity
+        - map the K8s ServiceAccount to a Google service account
+      - - The shared trick
+        - OIDC token exchange → short-lived creds, zero static secrets in the pod
+    hint: How a pod assumes cloud permissions with no static keys.
+  - topic: Kubernetes DNS & service discovery
+    desc: CoreDNS (the kube-dns Service) resolves service names inside the cluster. A service's FQDN (Fully Qualified Domain Name) is <service>.<namespace>.svc.cluster.local; a same-namespace call can use just <service>.
+    extras:
+      - label: e.g.
+        text: "a headless service (clusterIP: None) returns pod IPs directly — StatefulSets use it for stable per-pod names."
+      - label: Trap
+        text: ndots:5 in a pod's /etc/resolv.conf makes external lookups try each search domain first — a classic 'DNS is slow' cause.
+      - label: How
+        text: "debug: kubectl exec … -- nslookup <svc>; check CoreDNS pods + logs and that kube-dns has endpoints."
+    cloze:
+      text: Inside a cluster, {} (the kube-dns Service) resolves service names to ClusterIPs.
+      answer: CoreDNS
+    hint: What resolves service names inside the cluster, and the FQDN form.
+  - topic: Kubernetes networking model
+    desc: Every pod gets its own routable IP and all pods reach each other without NAT (a flat network). A CNI (Container Network Interface) plugin — Calico, Cilium, Flannel — wires it up.
+    extras:
+      - label: NAT
+        text: Network Address Translation rewrites the source/destination IP as a packet crosses a boundary (how a home router shares one public IP among many devices). K8s deliberately AVOIDS it pod-to-pod, so every pod sees every other pod's REAL IP — simpler routing, and traffic you can actually trace.
+      - label: e.g.
+        text: a ClusterIP Service is a VIRTUAL IP; kube-proxy programs iptables/IPVS rules to load-balance it across the Service's ready endpoints (pods).
+      - label: Say
+        text: “A NetworkPolicy is a pod-level firewall — allow-all until you add one, then default-deny for the pods it selects.”
+    diagram: k8s_net
+    match:
+      - - CNI plugin
+        - wires up the flat pod network (Calico/Cilium)
+      - - kube-proxy
+        - makes a ClusterIP real via iptables/IPVS
+      - - NetworkPolicy
+        - a pod-level firewall
+      - - No NAT pod-to-pod
+        - every pod sees every other pod's real IP
+    cloze:
+      text: In the Kubernetes network model every pod gets its own IP and pods reach each other without {}.
+      answer: NAT
+    hint: Every pod gets its own IP with no NAT — what wires it, what firewalls it?
+  - topic: Debugging connectivity (503 / empty endpoints)
+    desc: "When a Service times out or 503s, the fastest tell is `kubectl get endpoints <svc>`: if it's EMPTY, the Service's label selector matches no READY pod, so it has nowhere to send traffic."
+    extras:
+      - label: How
+        text: "decision tree: DNS resolves? (nslookup) → Service has endpoints? (get endpoints) → pods Ready? (readiness probe) → NetworkPolicy blocking? → curl pod-IP vs service-IP to isolate routing."
+      - label: e.g.
+        text: empty endpoints usually = a selector/label mismatch OR all pods failing readiness.
+    cloze:
+      text: If a Service 503s, an empty result from `kubectl get {}` means its selector matches no ready pod.
+      answer: endpoints
+    hint: Which single kubectl command tells you whether the Service has anywhere to send traffic?
+  - topic: Cloudflare (what it is)
+    desc: "A global network that sits in FRONT of your site as a reverse proxy: every request hits Cloudflare's nearest edge PoP first, and it forwards to your ORIGIN (your actual server). You point your domain's nameservers at Cloudflare so it fronts every request. It bundles several jobs into that one hop:"
+    extras:
+      - label: e.g.
+        text: "'orange cloud' = a DNS record PROXIED through Cloudflare (traffic flows through its edge, origin IP hidden); 'grey cloud' = DNS-only (just resolves to your origin, no proxying)."
+      - label: Say
+        text: “Cloudflare terminates TLS at the nearest edge PoP, serves cache, filters bad traffic with the WAF, then forwards to my origin — hiding the origin IP.”
+    items:
+      - CDN — caches static assets at the edge so they're served near the user, not from your origin
+      - Authoritative DNS — Cloudflare answers your domain's DNS (anycast, fast, DDoS-resistant)
+      - WAF (Web Application Firewall) — inspects HTTP requests and blocks attacks (SQLi, XSS, bad bots) by rule
+      - DDoS protection — absorbs volumetric floods across its huge anycast capacity before they reach you
+      - TLS termination — decrypts HTTPS at the edge, hiding your origin IP so attackers can't hit it directly
+    hint: A reverse proxy in front of your site — CDN, DNS, security, TLS termination.
+  - topic: Cloudflare SSL modes & Tunnel
+    desc: "Your ORIGIN is your real server behind Cloudflare (the box CF forwards to). There are TWO TLS legs — client↔CF and CF↔origin — and the SSL mode controls only the second leg:"
+    extras:
+      - label: Origin
+        text: the 'origin server' is your actual backend — the server that holds the real content, as opposed to Cloudflare's edge cache in front of it. 'CF→origin' means the hop from Cloudflare's edge back to your box.
+      - label: Trap
+        text: "'Flexible' shows a padlock but leaves CF→origin unencrypted — a classic misconfig; use Full (strict)."
+      - label: e.g.
+        text: "Tunnel is ideal for K8s/private services: run cloudflared as a pod and the app is reachable via CF with zero open inbound ports on the cluster."
+    items:
+      - Flexible — client↔CF encrypted, but CF↔origin is PLAINTEXT. The browser shows a padlock, yet half the path is exposed — insecure, avoid
+      - Full — CF↔origin encrypted, but ANY cert is accepted (even self-signed / expired) — better, still spoofable
+      - Full (strict) — CF↔origin encrypted AND the origin must present a VALID cert — use this in production
+      - Tunnel (cloudflared) — the origin dials OUT to CF, so you need NO inbound ports or public IP at all
+    diagram: cf_ssl
+    hint: The modes control the CF↔origin leg — which one is a plaintext trap?
+  - topic: Reading an Ingress manifest
+    desc: "An Ingress is L7 host/path routing rules (needs a running ingress controller). To parse one, read these fields in order:"
+    extras:
+      - label: e.g.
+        text: "a portal ingress: host portal.example.com, tls→portal-tls Secret, / → frontend:80, /api → backend:8080, /admin → admin:3000."
+    items:
+      - ingressClassName — which controller (and external LB) serves it
+      - tls[] — hostnames + the Secret holding the cert (HTTPS termination)
+      - rules[].host — the domain this block matches
+      - http.paths[].path + pathType — URL prefix (Prefix/Exact)
+      - backend.service.name + port — the Service that path routes to
+    match:
+      - - ingressClassName
+        - which controller / external LB serves it
+      - - tls[]
+        - hostnames + the Secret holding the cert
+      - - rules[].host
+        - the domain this block matches
+      - - http.paths[].path
+        - URL prefix (Prefix / Exact)
+      - - backend.service
+        - the Service the path routes to
+    manifest:
+      lines:
+        - "apiVersion: networking.k8s.io/v1"
+        - "kind: Ingress"
+        - "spec:"
+        - "  {0}: nginx"
+        - "  rules:"
+        - "  - {1}: portal.example.com"
+        - "    http:"
+        - "      paths:"
+        - "      - {2}: /api"
+        - "        pathType: Prefix"
+        - "        backend:"
+        - "          service:"
+        - "            {3}: web-svc"
+        - "            port:"
+        - "              number: 80"
+      blanks:
+        - ingressClassName
+        - host
+        - path
+        - name
+      distractors:
+        - className
+        - domain
+        - route
+        - service
+        - target
+    hint: "The fields to read in order: class, TLS, host, path, backend."
+  - topic: Which tool owns each command?
+    desc: A cross-check of the DevOps command families — from memory, name the tool each command belongs to (and what that tool's job is).
+    extras:
+      - label: Say
+        text: “Each tool has a distinct verb vocabulary — kubectl inspects live objects, helm manages releases, terraform reconciles infra, docker builds/runs, git versions history.”
+    table:
+      - - Command
+        - Tool
+        - Its job
+      - - kubectl get pods
+        - Kubernetes
+        - inspect / drive live cluster objects
+      - - helm upgrade --install
+        - Helm
+        - manage versioned app releases (charts)
+      - - terraform apply
+        - Terraform
+        - reconcile cloud infra to declared state
+      - - docker build -t
+        - Docker
+        - build / run container images
+      - - git rebase -i
+        - Git
+        - version and rewrite source history
+    recall: true
+    hint: Match each command to the DevOps tool it belongs to.
+  - topic: "Pod resources: requests, limits & QoS"
+    desc: "The two knobs that decide placement and what happens under pressure:"
+    extras:
+      - label: Trap
+        text: "QoS class comes from requests vs limits: Guaranteed (req==limit) is evicted LAST, BestEffort (none set) FIRST — set requests or your pod dies first under node pressure."
+      - label: Say
+        text: “Set requests to guarantee scheduling headroom; set limits to protect neighbors from a runaway container.”
+    items:
+      - requests = what the scheduler RESERVES (used for placement)
+      - limits = the hard CAP the container can't exceed
+      - over a MEMORY limit → OOMKilled (exit 137); over a CPU limit → THROTTLED, not killed
+    cloze:
+      text: A container that exceeds its MEMORY limit is {} (exit 137); exceeding CPU only throttles it.
+      answer: OOMKilled
+      alts:
+        - oom killed
+        - oomkilled
+        - oomkill
+    hint: Two knobs — what the scheduler reserves vs. the hard cap — plus what exit 137 means.
+  - topic: Subnets (and how a VPC is carved up)
+    desc: A VPC is your private network in the cloud with one big IP range (a CIDR block like 10.0.0.0/16). A SUBNET is a slice of that range, and — critically — each subnet lives in exactly ONE availability zone. You split a VPC into subnets to place resources across zones for HA and to separate public from private tiers.
+    extras:
+      - label: e.g.
+        text: a load balancer sits in public subnets across 3 AZs; the pods/RDS sit in private subnets in the same 3 AZs — inbound hits the LB, the database is never internet-reachable.
+      - label: Say
+        text: “Public vs private is decided by the route table, not the name — a subnet is 'public' only because it has a route to an Internet Gateway.”
+    items:
+      - Public subnet — its route table has a route to an Internet Gateway (0.0.0.0/0 → IGW), so hosts can be reached from the internet
+      - Private subnet — no IGW route; reaches out via a NAT Gateway, but nothing dials in (databases, app servers live here)
+      - One subnet = one AZ — spread subnets across AZs so one zone failing doesn't take you down
+      - "The CIDR suffix sizes it: a /24 subnet = 256 IPs (minus ~5 the cloud reserves)"

@@ -1,0 +1,91 @@
+section:
+  key: J
+  name: Applied AI / ML
+  color: "#06b6d4"
+cards:
+  - topic: Embeddings
+    desc: An embedding is a list of numbers (a vector, e.g. 1536-dimensional) that captures the MEANING of text, so semantically similar items sit close together. You compare them with cosine similarity. Powers semantic search, RAG retrieval, clustering, and similarity scoring.
+    extras:
+      - label: e.g.
+        text: "'king' and 'queen' land near each other in vector space; embed a query and find the nearest document vectors for search/RAG."
+      - label: Vector DB
+        text: Pinecone, Weaviate, Qdrant, or pgvector STORE embeddings and run the nearest-neighbor search — the retrieval half of RAG.
+      - label: ANN
+        text: exact nearest-neighbor is O(n) per query; vector DBs use APPROXIMATE nearest neighbor (HNSW graph, IVF clusters) — trade a little recall for sub-linear speed at millions of vectors.
+    diagram: embeddings
+    cloze:
+      text: An {} is a vector that captures meaning, so similar items sit close together.
+      answer: embedding
+    hint: A vector that captures meaning, so similar items sit close together.
+  - topic: Model evaluation
+    desc: Systematically measuring LLM output quality — accuracy, LLM-as-judge, and benchmark suites.
+    extras:
+      - label: e.g.
+        text: grade an LLM's answers with an LLM-as-judge rubric + a labeled test set, and gate deploys on the score to catch regressions.
+      - label: Stack
+        text: eval tooling — OpenAI Evals, LangSmith, Ragas (for RAG), DeepEval, promptfoo — runs labeled datasets + LLM-as-judge scoring in CI to gate releases.
+    cloze:
+      text: Grading LLM output with another model against a rubric is the LLM-as-{} method.
+      answer: judge
+    hint: Measuring output quality — labeled sets, LLM-as-judge, benchmarks.
+  - topic: Fine-tuning vs. prompting vs. RAG
+    desc: The three levers for adapting model behavior, and their cost/benefit tradeoffs.
+    extras:
+      - label: e.g.
+        text: prompting = cheapest, try first; RAG = inject fresh/proprietary facts; fine-tuning = bake in style/format or a narrow task when prompting isn't enough.
+    match:
+      - - Prompting
+        - cheapest — try first
+      - - RAG
+        - inject fresh / proprietary facts at query time
+      - - Fine-tuning
+        - bake in style/format or a narrow task
+    cloze:
+      text: Of prompting, RAG, and fine-tuning, {} is the cheapest and should be tried first.
+      answer: prompting
+    hint: Three ways to adapt a model — name them cheapest-effort first.
+  - topic: Risk scoring for agent actions
+    desc: Quantifying how dangerous an agent's proposed action is — the heart of the governance product.
+    extras:
+      - label: e.g.
+        text: score send_email low, delete_records high; auto-block or require human approval above a threshold — the core of the governance product.
+    hint: Quantifying how dangerous an agent's proposed action is.
+  - topic: PyTorch
+    desc: The dominant open-source deep-learning framework (from Meta AI). GPU-accelerated tensors (NumPy-like arrays) + autograd (automatic differentiation) + nn.Module layers — the substrate under Hugging Face transformers, the models vLLM serves, and most fine-tuning.
+    extras:
+      - label: e.g.
+        text: x = torch.tensor([1.,2.], requires_grad=True); y = (x**2).sum(); y.backward() → x.grad = [2.,4.] — gradients computed automatically for backprop.
+      - label: Say
+        text: “PyTorch's define-by-run dynamic graph means a model is just normal Python you can debug — that's why it beat static-graph TensorFlow.”
+      - label: Trap
+        text: NumPy = arrays only; PyTorch = arrays + autograd + GPU. The autograd is what makes training tractable.
+    cloze:
+      text: In this deep-learning framework, the {} engine records operations on tensors and computes their gradients automatically for backpropagation.
+      answer: autograd
+    hint: The dominant deep-learning framework — tensors, autograd, GPU.
+  - topic: Hugging Face transformers
+    desc: The de-facto Python library for downloading and running pretrained transformer models (LLMs, embeddings, vision, audio) behind a uniform API. Runs on top of PyTorch (or TF/JAX), and pulls weights from the Hugging Face Hub — the 'GitHub for models'.
+    extras:
+      - label: e.g.
+        text: "from transformers import pipeline; pipe = pipeline('sentiment-analysis'); pipe('I love RS') downloads a model from the Hub and runs it in 2 lines. Lower level: AutoModel + AutoTokenizer."
+      - label: Say
+        text: “It standardizes loading any model (tokenizer + weights + config) so you can swap models without rewriting code.”
+      - label: Trap
+        text: "'transformers' the LIBRARY ≠ 'transformer' the ARCHITECTURE — the library runs many models (most of which use the transformer architecture), but they're different things."
+    cloze:
+      text: Hugging Face {} is the library for downloading and running pretrained models behind a uniform API.
+      answer: transformers
+    hint: The library for downloading and running pretrained models behind a uniform API.
+  - topic: Alignment (RLHF / preference tuning)
+    desc: Making a model behave the way humans INTEND — helpful, honest, harmless — as opposed to just predicting the next token. Distinct from evaluation (which MEASURES quality); alignment SHAPES behavior.
+    extras:
+      - label: How
+        text: "RLHF (Reinforcement Learning from Human Feedback): humans rank outputs → train a reward model → fine-tune the LLM against it. DPO is a simpler, RL-free alternative that optimizes preferences directly."
+      - label: e.g.
+        text: your team's 'alignment tests' likely assert the model refuses disallowed requests and follows instructions/format — behavioral guarantees, not accuracy metrics.
+      - label: Trap
+        text: alignment ≠ evaluation. Eval asks 'is the answer correct?'; alignment asks 'does it behave as intended (safe, instruction-following)?' — related but different test suites.
+    cloze:
+      text: Ranking outputs, training a reward model, then fine-tuning the LLM against it is {} (Reinforcement Learning from Human Feedback).
+      answer: RLHF
+    hint: Making a model behave as intended (RLHF) — distinct from measuring quality.

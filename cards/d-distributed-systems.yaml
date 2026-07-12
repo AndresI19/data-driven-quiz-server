@@ -1,0 +1,93 @@
+section:
+  key: D
+  name: Distributed Systems
+  color: "#f59e0b"
+cards:
+  - topic: Event-driven architecture
+    desc: Components communicating via asynchronous events/messages instead of direct synchronous calls.
+    extras:
+      - label: e.g.
+        text: Uber emits a TripCompleted event to Kafka; payments, receipts, driver-payout, and fraud-scoring each consume it at their own pace — and you can add an analytics consumer later without touching the producer.
+    cloze:
+      text: In {}-driven architecture, services communicate via asynchronous messages instead of direct calls.
+      answer: event
+    hint: Services talk via asynchronous messages instead of direct calls.
+  - topic: Message queues & streams
+    desc: Async messaging between services. A queue delivers a message to one worker then deletes it; a log/stream is append-only and retained, so many consumers can replay it independently.
+    extras:
+      - label: e.g.
+        text: "RabbitMQ (smart broker: routing, priorities, per-message acks) and SQS (managed, simple) are task queues; Kafka is a durable log that analytics and billing can each replay from."
+      - label: Say
+        text: “Use a queue to hand out work; use a log when multiple consumers must replay the same events.”
+      - label: Delivery
+        text: at-most-once (fire-and-forget, may LOSE) · at-least-once (retries, may DUPLICATE — the common default) · exactly-once (hard + costly). The practical combo is at-least-once + an IDEMPOTENT consumer so duplicates are harmless.
+      - label: Trap
+        text: Kafka isn't 'just a queue' — messages aren't deleted on read; each consumer tracks its own offset.
+    mc:
+      - Pub/sub vs point-to-point
+      - Batch vs stream processing
+      - Sync RPC vs async messaging
+    cloze:
+      text: A durable log like {} keeps messages after they're read, so each consumer tracks its own offset.
+      answer: Kafka
+    hint: A queue hands work to one worker; a log lets many consumers replay.
+  - topic: Consensus & coordination
+    desc: How independent servers agree on a single value, leader, or ordered log despite failures and network delays. Consensus algorithms (Raft, Paxos) require a MAJORITY (quorum) of members to commit each decision — so the cluster stays correct and avoids split-brain (two leaders acting at once) as long as more than half the members are reachable.
+    extras:
+      - label: e.g.
+        text: etcd (Kubernetes's backing store) uses Raft to replicate state across its members; a 3-member etcd cluster tolerates 1 failure, a 5-member tolerates 2 (quorum = ⌊N/2⌋+1).
+      - label: Used for
+        text: leader election, distributed locks, replicated config/state, and cluster membership — the job of coordination services like etcd, ZooKeeper, and Consul.
+      - label: How Raft
+        text: one LEADER is elected for a TERM (a numbered epoch); all writes go to the leader, which appends them to its log and replicates to followers. A write COMMITS once a majority has stored it. If the leader dies, followers time out and elect a new one for a higher term — the term number is how the cluster rejects a stale leader coming back (that's how split-brain is avoided).
+      - label: Paxos vs Raft
+        text: same guarantee (agreement despite failures); Raft was designed to be UNDERSTANDABLE — explicit leader + terms + log — whereas Paxos is famously hard to reason about. New systems almost always pick Raft.
+      - label: Trap
+        text: "run an ODD number of members: 3 and 4 members BOTH tolerate only 1 failure, so a 4th adds cost without more resilience. Use 3 or 5."
+    cloze:
+      text: Consensus algorithms like Raft require a {} of members to commit each decision.
+      answer: majority
+      alts:
+        - quorum
+    hint: How independent servers agree despite failures — and how many must agree.
+  - topic: etcd
+    desc: A distributed, strongly-consistent key-value store — Kubernetes's single source of truth. EVERY cluster object (pods, services, secrets, configmaps) is persisted in etcd, and the API server is the only component that talks to it. It uses the Raft consensus algorithm to replicate data across its members, so a quorum must agree on every write.
+    extras:
+      - label: e.g.
+        text: kubectl get reads from etcd via the API server; kubectl apply writes to etcd, which Raft-replicates to the other members before acking.
+      - label: Key traits
+        text: key-value store + a WATCH API (clients subscribe to changes — how K8s controllers react to state), versioned/MVCC history, linearizable reads, TLS-secured. Run 3 or 5 members for HA.
+      - label: Trap
+        text: etcd is the crown jewel — lose quorum and the control plane goes READ-ONLY; lose etcd with no backup and the cluster's entire state is gone. Snapshot it (etcdctl snapshot save).
+    cloze:
+      text: Kubernetes persists all cluster state in {}, a strongly-consistent key-value store.
+      answer: etcd
+    hint: Kubernetes' single source of truth — what kind of store, kept consistent how?
+  - topic: Eventual consistency & sagas
+    desc: Handling multi-step operations across services without a single distributed transaction.
+    extras:
+      - label: e.g.
+        text: "a booking saga: reserve flight → charge card → book hotel; if the hotel step fails, run compensating actions to undo the charge and reservation."
+    diagram: saga
+    match:
+      - - Saga
+        - a multi-step op split across services
+      - - Compensating action
+        - undoes a prior step when a later one fails
+      - - Eventual consistency
+        - replicas converge over time, not instantly
+    cloze:
+      text: When one step of a distributed saga fails, you run {} actions to undo the earlier steps.
+      answer: compensating
+      alts:
+        - compensation
+    hint: Multi-step ops without one big transaction — how do you undo a failed step?
+  - topic: Retries, timeouts, circuit breakers
+    desc: The resilience patterns that stop one slow dependency from cascading into a full outage.
+    extras:
+      - label: e.g.
+        text: "calls to a flaky payment API: 3 retries with exponential backoff + jitter, a 2s timeout, and a circuit breaker that trips after 50% errors so you fail fast instead of piling up."
+    cloze:
+      text: A {} breaker trips after too many failures so calls fail fast instead of piling up.
+      answer: circuit
+    hint: The patterns that stop one slow dependency from cascading into an outage.

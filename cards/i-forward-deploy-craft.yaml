@@ -1,0 +1,108 @@
+section:
+  key: I
+  name: Forward-Deploy Craft
+  color: "#f97316"
+cards:
+  - topic: Integration patterns
+    desc: "Ways to hook a control plane into a customer's system — pick the least invasive that still gives you the data:"
+    items:
+      - Sidecar — a helper container beside the app in the same pod (e.g. a proxy that intercepts traffic)
+      - Webhook — the customer's system POSTs events to your endpoint when something happens
+      - Collector / agent — a process you run inside their environment to pull and ship data out
+      - SDK — a library they import to emit data or call your API directly
+    cloze:
+      text: A {} is a helper container placed beside the app in the same pod to intercept its traffic.
+      answer: sidecar
+    hint: Four ways to hook into a customer's system, from least to most invasive.
+  - topic: Field learnings into prototypes
+    desc: "The forward-deploy → product feedback loop: field insights become product features."
+    extras:
+      - label: e.g.
+        text: on-site you notice every customer hand-writes the same policy; you prototype a reusable template and feed it back to product as a feature.
+    hint: The forward-deploy feedback loop — a field insight becomes a product feature.
+  - topic: Enterprise deployment constraints
+    desc: VPC / air-gapped / on-prem realities, compliance (SOC2), and change-management friction.
+    extras:
+      - label: e.g.
+        text: a bank runs air-gapped (no internet), requires SOC2 (Service Organization Control 2), and gates every deploy behind a change-management ticket — so your installer must work offline.
+      - label: Say
+        text: “I scope the customer's constraints first — connectivity, compliance, change process — because they dictate the entire install design.”
+      - label: Trap
+        text: assuming internet access or cloud APIs are available; air-gapped means bundling every dependency.
+    cloze:
+      text: An {} environment has no internet access, so your installer must bundle every dependency.
+      answer: air-gapped
+      alts:
+        - air gapped
+        - airgapped
+    hint: "The realities: air-gapped, compliance, change-management friction."
+  - topic: Git commands (basic → advanced)
+    desc: Git tracks history as commits (snapshots) on branches; work flows working tree → staging (index) → commit → remote. Commands roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: "reset --hard and force-push REWRITE history — never on a shared branch (main); use revert there. reflog is your undo button: it remembers where HEAD was even after a bad reset."
+    items:
+      - status · add <path> · commit -m 'msg' — see changes / stage / snapshot
+      - clone <url> · pull · push [-u origin <br>] — sync with a remote
+      - branch <name> · switch <name> (or checkout -b) — create / move between branches
+      - merge <br> · rebase <br> — combine histories (merge keeps both; rebase replays linear)
+      - log --oneline --graph · diff [--staged] — read history / inspect changes
+      - stash [pop] — shelve uncommitted work to switch context
+      - restore <path> · restore --staged <path> — discard / unstage without losing commits
+      - reset --soft|--mixed|--hard <ref> — move HEAD (keep, unstage, or DROP changes)
+      - revert <commit> — undo a commit with a NEW commit (safe on shared history)
+      - cherry-pick <commit> — replay one commit onto the current branch
+      - rebase -i <ref> — squash / reorder / edit commits before pushing
+      - reflog · bisect — recover 'lost' commits / binary-search a regression
+    cloze:
+      text: On a shared branch use git {} to undo a commit with a new commit, never reset --hard.
+      answer: revert
+    hint: The three-zone flow, then the history-combining and recovery tools.
+  - topic: Linux / bash commands (basic → advanced)
+    desc: The shell verbs you reach for on any box — inspecting, finding, filtering, and debugging. Roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: an unquoted variable with spaces or a glob splits into multiple args — quote "$var"; and `rm -rf $DIR/` with an empty $DIR targets / — always guard destructive commands.
+    items:
+      - ls / cd / pwd — list, move, and print the working directory
+      - grep -r 'pat' . — recursively search file contents for a pattern
+      - find . -name '*.log' -mtime -1 — locate files by name/age/size
+      - ps aux | grep proc · top / htop — what's running and what it's using
+      - tail -f <file> · less <file> — follow a growing log / page through a file
+      - chmod +x · chown user:grp — change permissions / ownership
+      - df -h · du -sh * — disk space free / per-directory usage
+      - ss -tlnp (or netstat) — which ports are listening and who owns them
+      - curl -sS <url> | jq . — fetch and pretty-print JSON
+      - awk '{print $1}' · sed 's/a/b/g' — field-extract / stream-edit text
+      - xargs · | (pipe) · > / >> (redirect) — compose commands and route output
+  - topic: SQL commands (basic → advanced)
+    desc: The query verbs, from reading rows to shaping and joining data. Roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: WHERE filters rows BEFORE grouping; HAVING filters groups AFTER — mixing them up is the classic aggregation bug. And a query without an index on the filtered column silently table-scans.
+    items:
+      - SELECT cols FROM t WHERE cond — read rows matching a condition
+      - ORDER BY · LIMIT / OFFSET — sort and paginate results
+      - INSERT / UPDATE / DELETE — write, modify, remove rows
+      - JOIN (INNER / LEFT) ON — combine rows across tables by a key
+      - GROUP BY + aggregates (COUNT, SUM, AVG) — roll rows up into summaries
+      - HAVING — filter AFTER a GROUP BY (WHERE filters before)
+      - CREATE INDEX ON t(col) — speed lookups on a filtered/joined column
+      - EXPLAIN ANALYZE <query> — see the planner's actual execution + timing
+      - "transactions: BEGIN / COMMIT / ROLLBACK — all-or-nothing writes"
+      - "window fn: ROW_NUMBER() OVER (PARTITION BY …) — rank within groups"
+  - topic: curl / HTTP commands (basic → advanced)
+    desc: Driving and debugging HTTP from the shell — the fastest way to probe an API. Roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: "-k disables cert checking — handy to isolate a TLS problem, but it also hides real MITM/expiry issues; never leave it in a script."
+    items:
+      - curl <url> — GET and print the body
+      - "-i / -I — include response headers / fetch headers only (HEAD)"
+      - "-X POST -d '{...}' -H 'Content-Type: application/json' — send a JSON body"
+      - "-H 'Authorization: Bearer <t>' — attach an auth header"
+      - "-sS -o /dev/null -w '%{http_code}' <url> — print just the status code, silently"
+      - "-L — follow redirects (3xx) to the final URL"
+      - "-v / --trace — verbose: see the full request/response + TLS handshake"
+      - "--resolve host:443:1.2.3.4 — force a host to a specific IP (bypass DNS)"
+      - "-k — skip TLS verification (debug only — never in production)"

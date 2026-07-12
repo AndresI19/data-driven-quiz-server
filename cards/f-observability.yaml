@@ -1,0 +1,77 @@
+section:
+  key: F
+  name: Observability
+  color: "#8b5cf6"
+cards:
+  - topic: "Three pillars: logs, metrics, traces"
+    desc: The complementary signal types that together explain what a system is doing.
+    extras:
+      - label: e.g.
+        text: metrics tell you the error rate spiked (what), logs show the stack trace (why), traces show which service in the chain caused it (where).
+    cloze:
+      text: Metrics tell you what broke and traces tell you where; {} tell you why.
+      answer: logs
+    hint: Three signal types that together explain what broke, why, and where.
+  - topic: OpenTelemetry
+    desc: The vendor-neutral standard for emitting traces, metrics, and logs.
+    extras:
+      - label: e.g.
+        text: instrument your app once with the OpenTelemetry SDK (vendor-neutral tracing/metrics libraries); it exports traces to Jaeger (a distributed-tracing UI) and metrics to Prometheus (a time-series metrics database) — swap either backend without touching app code.
+    cloze:
+      text: "{} is the vendor-neutral standard for emitting traces, metrics, and logs."
+      answer: OpenTelemetry
+      alts:
+        - otel
+        - open telemetry
+    hint: The vendor-neutral standard for emitting traces, metrics, and logs.
+  - topic: Prometheus & Grafana
+    desc: "The de-facto open-source metrics stack in K8s: Prometheus COLLECTS + STORES the numbers, Grafana VISUALIZES them. They're two halves — one is the database, the other is the dashboard."
+    extras:
+      - label: Grafana
+        text: a visualization + alerting layer that is DATA-SOURCE AGNOSTIC — it graphs Prometheus, but also Loki (logs), Tempo (traces), Postgres, CloudWatch, etc. Prometheus has a basic built-in graph view; Grafana is what teams actually put on the wall.
+      - label: e.g.
+        text: Prometheus scrapes /metrics from each pod every 15s and Grafana graphs p99 latency with alerts; commercial all-in-one APM (Application Performance Monitoring) tools like Instana (IBM) or Datadog instead bundle metrics, traces, and dashboards in one product.
+    match:
+      - - Prometheus
+        - scrapes /metrics endpoints, stores the time-series, evaluates alert rules
+      - - Grafana
+        - queries those metrics and renders dashboards / panels (and can alert too)
+      - - PromQL
+        - the query language for slicing Prometheus metrics (rate, p99, by label)
+      - - Exporter
+        - exposes a /metrics endpoint (e.g. node-exporter) for Prometheus to scrape
+    cloze:
+      text: "{} scrapes a /metrics endpoint from each pod and stores the time-series data."
+      answer: Prometheus
+    hint: The scrape-and-store metrics engine plus its dashboard front-end.
+  - topic: SLI / SLO / SLA
+    desc: How you measure, target, and contractually promise reliability.
+    extras:
+      - label: e.g.
+        text: SLI (Service Level Indicator) = % of requests under 300ms; SLO (Service Level Objective) = 99.9% of them monthly; SLA (Service Level Agreement) = the contract that refunds the customer if you miss it.
+      - label: Error budget
+        text: "the flip side of an SLO: 99.9% ⇒ 0.1% (~43 min/month) you're ALLOWED to fail. Budget left → ship features; budget spent → freeze releases and fix reliability."
+      - label: Say
+        text: “SLOs give an error budget that settles the feature-velocity vs. reliability fight with a number, not opinions.”
+    match:
+      - - SLI
+        - the measurement (% of requests under 300ms)
+      - - SLO
+        - the internal target (99.9% monthly)
+      - - SLA
+        - the customer contract (refund if missed)
+      - - Error budget
+        - the 0.1% you're allowed to fail
+    cloze:
+      text: A 99.9% SLO implies an error {} of about 43 minutes of allowed failure per month.
+      answer: budget
+    hint: "Three acronyms in rising order of commitment: measure it, target it, promise it."
+  - topic: LLM/agent-specific observability
+    desc: Tracing prompts, tokens, tool calls, and agent steps — the novel part of the product.
+    extras:
+      - label: e.g.
+        text: LangSmith (LangChain's tracing/eval platform) or Langfuse (open-source LLM observability) capture each agent step as a nested trace — exact prompt, token counts + $ cost, which tool ran with what args, latency — so you can replay a failed run, see it looped between two tools, diff against a good run, and attach eval scores to catch regressions.
+    cloze:
+      text: Tools like LangSmith and {} capture each agent step — prompt, tokens, tool calls — as a nested trace.
+      answer: Langfuse
+    hint: Tracing the novel agent parts — prompts, tokens, tool calls, steps.

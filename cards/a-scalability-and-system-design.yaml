@@ -1,0 +1,439 @@
+section:
+  key: A
+  name: Scalability & System Design
+  color: "#6366f1"
+cards:
+  - topic: Stateless vs. stateful applications
+    desc: Whether a request's correct handling depends on data the server retains between requests — this decides whether you can add identical replicas freely.
+    extras:
+      - label: e.g.
+        text: a JWT-auth API is stateless (any replica serves any request); an in-memory shopping cart is stateful.
+    cloze:
+      text: A {} app keeps no per-request data between calls, so any replica can serve any request.
+      answer: stateless
+    hint: The distinction is whether the server must remember anything between requests.
+  - topic: Horizontal vs. vertical scaling
+    desc: Adding more machines (scale out) versus making one machine bigger (scale up), and why stateless design favors the former.
+    extras:
+      - label: e.g.
+        text: add 10 more pods (horizontal) vs. give one pod a bigger CPU/RAM (vertical).
+    inverse: true
+    cloze:
+      text: Adding more machines to share load is {} scaling, versus making one machine bigger.
+      answer: horizontal
+      alts:
+        - scale out
+        - scale-out
+        - scaling out
+    hint: "Two directions to grow: out (more machines) or up (a bigger machine)."
+  - topic: Externalizing state (session, files, identity)
+    desc: Pushing session/state out of app servers into a datastore, cache, or client-held token so the app tier stays stateless.
+    extras:
+      - label: e.g.
+        text: session in Redis, files in S3, identity in a signed JWT — the app tier holds nothing.
+    hint: If the app tier holds nothing, where did the session / files / identity go?
+  - topic: Sticky sessions & session affinity
+    desc: A load-balancer trick to route a user back to the same instance — and why relying on it is a scaling smell.
+    extras:
+      - label: e.g.
+        text: configured at the load balancer / ingress (NGINX ip_hash or an AWS ALB stickiness cookie) to pin a user to the one pod holding their in-memory session.
+    cloze:
+      text: Pinning a user to the same server instance is called session {}.
+      answer: affinity
+      alts:
+        - stickiness
+        - sticky
+    hint: A load-balancer trick to pin a user to one instance — and why it's a scaling smell.
+  - topic: Load balancing (L4 vs L7)
+    desc: Spreading traffic across replicas. L4 works at the transport layer — it forwards raw TCP/UDP by IP:port without seeing the request, so it's fast but 'dumb.' L7 works at the HTTP layer — it reads the request, so it can route by URL/host, terminate TLS, and do cookie logic.
+    extras:
+      - label: e.g.
+        text: an AWS NLB (Network Load Balancer, L4) balances a Postgres/gRPC connection; an ALB (Application Load Balancer) or nginx ingress (L7) routes /api→backend, /→frontend and terminates HTTPS.
+    cloze:
+      text: A load balancer that routes by URL or host and can terminate TLS operates at layer {}.
+      answer: "7"
+      alts:
+        - l7
+        - seven
+    hint: "Two layers: one forwards raw packets by IP:port, one reads the HTTP request."
+  - topic: Data partitioning / sharding
+    desc: Splitting load across multiple data stores when one node can't hold or serve it all.
+    extras:
+      - label: e.g.
+        text: Instagram shards user data across many Postgres nodes by user-ID range; Discord shards by guild ID — or hash(user_id) % N.
+    cloze:
+      text: Splitting one dataset across multiple database nodes to spread load is called {}.
+      answer: sharding
+      alts:
+        - partitioning
+    hint: When one node can't hold or serve it all, you split the data by a key.
+  - topic: Caching layers & invalidation
+    desc: Storing computed or fetched results to cut latency and load — the hard part being knowing when they're stale.
+    extras:
+      - label: e.g.
+        text: cache a product page in Redis for 60s; bust the key on a price change.
+    hint: Store results to cut latency — the hard part is knowing when they go stale.
+  - topic: Idempotency
+    desc: Designing operations so that retrying them produces the same result, essential when requests can be replayed.
+    extras:
+      - label: e.g.
+        text: Stripe requires an Idempotency-Key header so a retried 'create charge' after a network timeout doesn't double-charge the customer.
+      - label: e.g.
+        text: "HTTP verbs by nature: GET/PUT/DELETE are idempotent (PUT /user/42 {name} sets the same state however many times; DELETE twice = still gone), but POST is NOT — two POST /orders create two orders."
+      - label: e.g.
+        text: at-least-once queues (SQS, Kafka) redeliver on failure, so consumers dedupe on a message ID; a K8s controller is idempotent because it reconciles to desired state no matter how often it runs.
+      - label: Say
+        text: “Make writes idempotent with a client-supplied key the server records — retries then collapse to one effect. It's what makes safe retries possible in a distributed system.”
+    cloze:
+      text: An operation is {} if retrying it yields the same result, so a replayed request causes no harm.
+      answer: idempotent
+      alts:
+        - idempotency
+    hint: The property that makes a retried request safe to replay.
+  - topic: Backpressure & rate limiting
+    desc: Protecting a system from being overwhelmed by shedding, queuing, or slowing incoming load.
+    extras:
+      - label: e.g.
+        text: an API returns HTTP 429 + Retry-After above 100 req/min; Kafka/SQS let consumers pull at their own pace so a spike queues instead of crashing the service.
+    cloze:
+      text: An API returning HTTP {} with a Retry-After header is shedding load via rate limiting.
+      answer: "429"
+    hint: "Three ways to survive more load than you can handle: shed, queue, slow down."
+  - topic: CAP theorem & consistency models
+    desc: During a network partition you can keep only two of Consistency, Availability, Partition-tolerance — and since partitions are inevitable, you're really choosing C or A.
+    extras:
+      - label: e.g.
+        text: a bank ledger picks CP (reject writes rather than diverge); a shopping cart picks AP (stay writable, reconcile later).
+      - label: Say
+        text: “You can't give up partition tolerance in a distributed system, so under a partition it's really C vs. A.”
+      - label: Trap
+        text: CAP only applies DURING a partition; PACELC adds that even without one you trade latency vs. consistency.
+    diagram: cap
+    cloze:
+      text: During a network partition, CAP forces a choice between availability and {}.
+      answer: consistency
+    hint: During a partition you can keep only two of three — which do you drop?
+  - topic: SQL vs. NoSQL & ACID vs. BASE
+    desc: The first data-tier fork. SQL (relational) = fixed schema, JOINs, strong ACID guarantees, scales UP; NoSQL = flexible schema, denormalized, scales OUT, usually BASE (eventually consistent). Pick by access pattern, not hype.
+    extras:
+      - label: Say
+        text: “ACID = Atomicity, Consistency, Isolation, Durability — a transaction is all-or-nothing and durable. BASE = Basically Available, Soft state, Eventual consistency — trade strict consistency for availability + scale.”
+      - label: Trap
+        text: "'NoSQL scales better' is lazy — a sharded Postgres scales far, and Mongo has multi-doc ACID now. Choose on ACCESS PATTERN: joins & transactions → SQL; huge denormalized writes → NoSQL."
+    table:
+      - - ""
+        - SQL
+        - NoSQL
+      - - Schema
+        - fixed, relational
+        - flexible / schemaless
+      - - Scales
+        - vertically (+ read replicas)
+        - horizontally (sharded)
+      - - Consistency
+        - ACID, strong
+        - BASE, eventual (tunable)
+      - - Best for
+        - transactions, joins, integrity
+        - high-volume writes, varied shapes
+      - - e.g.
+        - Postgres, MySQL
+        - Mongo (doc), Cassandra (wide-col), Redis (KV), Neo4j (graph)
+    cloze:
+      text: ACID databases favor strong consistency; the eventually-consistent counterpart model is called {}.
+      answer: BASE
+    hint: "Two axes: schema shape, and which consistency model each family favors."
+  - topic: Indexes, replication & isolation levels
+    desc: "Three database mechanics interviewers dig into once you've picked a store:"
+    extras:
+      - label: Trap
+        text: "the N+1 query: an ORM loop firing one query PER row (1 list + N details). Fix with eager-loading / a JOIN — a top real-world latency bug."
+      - label: Trap
+        text: a read replica returning STALE data after a write (async lag) surprises people — read-your-writes needs the primary or sync replication.
+    items:
+      - INDEX — usually a B-tree; turns an O(n) scan into an O(log n) lookup. Speeds reads, SLOWS writes + costs space. Index what you filter / join / sort on
+      - REPLICATION — a primary takes writes, replicas serve reads (read-scaling + HA). Async = fast but replicas LAG (stale reads); sync = consistent but slower
+      - FAILOVER — promote a replica when the primary dies; the async lag window is potential data loss
+      - ISOLATION — Read Committed → Repeatable Read → Serializable trade concurrency for correctness, guarding dirty / non-repeatable / phantom reads
+    cloze:
+      text: The query anti-pattern where an ORM fires one query per row is the {} problem.
+      answer: N+1
+      alts:
+        - n plus 1
+        - n1
+        - n + 1
+    hint: "Three DB mechanics: one speeds reads, one scales them, one guards concurrent writes."
+  - topic: TCP vs. UDP (transport layer / L4)
+    desc: Both are Layer-4 transport protocols moving bytes between host:port. TCP trades speed for reliability; UDP trades reliability for speed.
+    extras:
+      - label: e.g.
+        text: TCP's 3-way handshake (SYN → SYN-ACK → ACK) sets up a reliable stream; UDP just fires datagrams with no setup — great when a dropped packet beats a late one (live video).
+    table:
+      - - ""
+        - TCP
+        - UDP
+      - - Connection
+        - handshake first
+        - connectionless
+      - - Reliability
+        - guaranteed, retransmits
+        - best-effort, may drop
+      - - Ordering
+        - in-order stream
+        - no ordering
+      - - Overhead
+        - higher (acks + state)
+        - low, fast
+      - - Used by
+        - HTTP, TLS, SSH, DBs
+        - DNS, VoIP, video, gaming, QUIC
+    cloze:
+      text: DNS, VoIP, and gaming favor {} because a dropped packet beats a late one.
+      answer: UDP
+    hint: Both move bytes at layer 4 — one is reliable/ordered, one is fast/lossy.
+  - topic: HTTP (application layer / L7)
+    desc: The web's request/response protocol at Layer 7, built on top of TCP. Stateless — each request is independent; cookies/JWTs add state.
+    extras:
+      - label: e.g.
+        text: a browser opens a TCP connection and sends 'GET /page HTTP/1.1'; the server replies '200 OK' + headers + body.
+    items:
+      - Runs on TCP (HTTP/1.1, HTTP/2) or QUIC/UDP (HTTP/3)
+      - "Methods: GET, POST, PUT, PATCH, DELETE"
+      - "Status: 2xx ok · 3xx redirect · 4xx client · 5xx server"
+      - HTTP/2 multiplexes many requests; HTTP/3 drops TCP for QUIC to cut latency
+    cloze:
+      text: HTTP/3 drops TCP in favor of {}, which runs over UDP to cut latency.
+      answer: QUIC
+    hint: The web's request/response protocol — which layer, sitting on top of what?
+  - topic: DNS resolution (how a name resolves)
+    desc: "Turning a hostname into an IP by walking a hierarchy: your stub resolver asks a recursive resolver, which queries a root server → the TLD server (.com) → the domain's authoritative server; answers are cached along the way by TTL. Runs on port 53 (UDP)."
+    extras:
+      - label: Trap
+        text: a CNAME can't sit at a zone apex (example.com) — providers use ALIAS/ANAME there instead.
+      - label: Trap
+        text: low TTL = faster failover, more query load. A stale cache is why a DNS change “hasn't propagated yet.”
+    items:
+      - A (IPv4) · AAAA (IPv6) · CNAME (name→name) · MX · TXT · NS · SOA · SRV · PTR (reverse)
+      - UDP/53 normally; TCP/53 once an answer exceeds 512 bytes, and for zone transfers (AXFR)
+      - TTL caches a positive answer; the SOA minimum caches an NXDOMAIN (negative caching)
+      - DNSSEC SIGNS answers (authenticity). DoT :853 / DoH :443 ENCRYPT the query (privacy). Different problems.
+    diagram: dns_resolve
+    fold: true
+    cloze:
+      text: DNS normally runs over UDP on port {}.
+      answer: "53"
+    hint: A name becomes an IP by walking a hierarchy of servers, caching along the way.
+  - topic: A lookup from your laptop, end to end
+    desc: The app never speaks DNS. It calls getaddrinfo(); libc reads /etc/nsswitch.conf and works left to right — /etc/hosts, then a nameserver. Only after an IP comes back does a TCP connection open.
+    extras:
+      - label: How
+        text: getent hosts <name> walks the app's real path. dig/nslookup skip nsswitch and talk straight to a nameserver — so dig working while the app fails means NSS or /etc/hosts, not DNS.
+      - label: Trap
+        text: /etc/hosts silently overrides any name on the internet, with no nameserver involved.
+    items:
+      - "hosts: files myhostname mdns4_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] dns"
+      - 127.0.0.53 in resolv.conf is a STUB for systemd-resolved — the real upstreams are in `resolvectl status`
+      - "resolved checks its cache first: ~0.7 ms warm vs ~16 ms cold, no packet leaves the box on a hit"
+      - miss → your router → the ISP's RECURSIVE resolver → root → TLD → authoritative
+    hint: The app never speaks DNS directly — what does it call, and what reads nsswitch?
+  - topic: "DNS & networking: Docker vs. Kubernetes"
+    desc: Docker's DNS returns a container's REAL address. Kubernetes' DNS returns a ClusterIP — a virtual IP nothing listens on, made real by kube-proxy. One translation versus two.
+    extras:
+      - label: Trap
+        text: nslookup my-svc can succeed while the Service has ZERO ready endpoints — the name resolved, the destination doesn't exist. Reach for `kubectl get endpoints`, not another lookup.
+      - label: Trap
+        text: "ndots:5 makes api.stripe.com (2 dots) relative: four failed cluster queries before the real one. Fix with dnsConfig ndots:1, or a trailing dot to force it absolute."
+    table:
+      - - ""
+        - Docker
+        - Kubernetes
+      - - Resolver
+        - 127.0.0.11 embedded DNS
+        - 10.96.0.10 CoreDNS
+      - - Name form
+        - container name on the bridge
+        - svc.ns.svc.cluster.local
+      - - Answer is
+        - the container's real IP
+        - a ClusterIP (virtual)
+      - - Then
+        - route over the bridge
+        - kube-proxy DNATs → a pod IP
+      - - ndots
+        - "0"
+        - "5"
+    diagram: dns_dk
+    match:
+      - - 127.0.0.11
+        - Docker's embedded DNS resolver
+      - - CoreDNS (10.96.0.10)
+        - Kubernetes' cluster DNS server
+      - - ClusterIP
+        - a virtual IP nothing listens on, made real by kube-proxy
+      - - ndots:5
+        - why an in-cluster name tries several search domains before the real query
+    hint: One returns a real IP, the other a virtual one — one hop versus two.
+  - topic: Anatomy of an IP address (and ports)
+    desc: IPv4 is 32 bits shown as four bytes. A CIDR suffix says how many LEADING bits are the network; the rest identify the host. /24 → 256 addresses, 254 usable (network + broadcast reserved). IPv6 is 128 bits, so it needs no NAT.
+    extras:
+      - label: e.g.
+        text: 172.18.0.3 is a Docker bridge address; 10.96.42.7 a K8s ClusterIP. Both private, both unroutable on the internet.
+    items:
+      - "A port is 16 bits: 0–65535. Well-known 0–1023 (root-bound) · registered 1024–49151 · ephemeral 32768–60999 on Linux"
+      - A connection is a 5-TUPLE (proto + src IP + src port + dst IP + dst port) — which is why one server port serves millions of clients, and how NAT hides a whole house behind one public IP by rewriting src IP:port
+    table:
+      - - Range
+        - Meaning
+      - - 10/8 · 172.16/12 · 192.168/16
+        - private (RFC 1918); Docker bridges use 172.17+
+      - - 127.0.0.0/8
+        - loopback, this machine only
+      - - 169.254.0.0/16
+        - link-local — means DHCP failed
+    cloze:
+      text: A CIDR suffix of /24 leaves {} usable host addresses after the network and broadcast are reserved.
+      answer: "254"
+    hint: 32 bits split into network and host by a CIDR suffix, plus ports and the 5-tuple.
+  - topic: TLS handshake (how HTTPS is set up)
+    desc: ClientHello (cipher list + SNI) → ServerHello + certificate → key exchange → both derive a shared SYMMETRIC session key → encrypted traffic. Asymmetric crypto only authenticates + agrees the key; fast symmetric crypto encrypts the data. TLS 1.3 = one round-trip.
+    extras:
+      - label: Say
+        text: “The cert proves the server's identity via a chain to a trusted root CA; the handshake then bootstraps a fast symmetric key.”
+      - label: e.g.
+        text: port 443; inspect with `openssl s_client -connect host:443 -servername host`.
+    fold: true
+    inverse: true
+    cloze:
+      text: Asymmetric crypto in TLS only authenticates and agrees a key; the data itself is encrypted with a fast {} key.
+      answer: symmetric
+    hint: The hello sequence — and which crypto authenticates versus which encrypts.
+  - topic: TLS / cert file types (.key .crt .pem .csr)
+    desc: "The confusion: .pem/.der are ENCODINGS, while .key/.crt/.csr describe CONTENT — a .pem file can hold a cert, a key, or both. Mental model:"
+    extras:
+      - label: How
+        text: a Kubernetes TLS Secret holds tls.crt (usually the fullchain) + tls.key; add ca.crt for CA bundles / mTLS.
+    table:
+      - - File
+        - What it's for
+      - - .key  (tls.key)
+        - your PRIVATE key — keep secret
+      - - .crt / .cer
+        - "a certificate: public key + identity, CA-signed"
+      - - ca.crt
+        - the CA cert used to VERIFY other certs (trust anchor)
+      - - fullchain.pem
+        - server cert + intermediate chain (what a server sends)
+      - - .csr
+        - signing request you send TO a CA to get a cert
+      - - .pem
+        - a FORMAT (Base64 text), not a type — holds any of the above
+      - - .p12 / .pfx
+        - "bundle: cert + private key in one file (password)"
+    hint: "Encodings versus content: which extensions are formats, which describe what's inside."
+  - topic: Reading a certificate (the five things that must match)
+    desc: "A cert is ONE signed claim: this public key belongs to these names, until this date. It holds no secret — the server hands it to anyone. Verifying it means five independent matches."
+    extras:
+      - label: Trap
+        text: “openssl verify leaf.pem → error 20, unable to get local issuer certificate” means the server isn't sending the intermediate. Browsers hide it by fetching the AIA URL and caching intermediates; curl/Java/requests do not. Serve leaf + intermediates, never the root.
+      - label: How
+        text: openssl s_client -connect host:443 -servername host -showcerts, then openssl x509 -noout -subject -issuer -dates -ext subjectAltName,basicConstraints,extendedKeyUsage
+    items:
+      - "cert ↔ KEY — bound only by sharing a public key. Hash both: openssl x509 -pubkey / openssl pkey -pubout, then -outform DER | sha256. Mismatch = nginx “key values mismatch”"
+      - cert ↔ HOSTNAME — subjectAltName only. Modern clients ignore Subject CN entirely; a CN-only cert is rejected
+      - cert ↔ CHAIN — child's AuthorityKeyIdentifier == parent's SubjectKeyIdentifier. Names are the fallback; the KEY is the link
+      - cert ↔ CLOCK — openssl x509 -noout -checkend 2592000 (non-zero if it dies within 30 days)
+      - cert ↔ PURPOSE — basicConstraints CA:FALSE on a leaf; extendedKeyUsage serverAuth vs clientAuth (the usual mTLS bug)
+    fold: true
+    cloze:
+      text: Modern TLS clients match a cert to a hostname using its subjectAltName, ignoring the Subject {} entirely.
+      answer: CN
+      alts:
+        - common name
+    hint: Five independent things must all match for a certificate to verify.
+  - topic: SNI & where TLS terminates
+    desc: SNI (Server Name Indication) — the client puts the target hostname in the ClientHello so one IP / load balancer can serve the correct cert for many domains. TLS usually TERMINATES at the ingress / load balancer (decrypted there), not the app.
+    extras:
+      - label: e.g.
+        text: in Kubernetes, cert-manager + Let's Encrypt issues a cert into a TLS Secret the Ingress references; the ingress controller terminates HTTPS and forwards HTTP to the Service.
+      - label: Say
+        text: “mTLS (mutual TLS) adds a client cert too — common for service-to-service auth via a mesh.”
+    cloze:
+      text: When many HTTPS sites share one IP, the client sends the target hostname in cleartext in the {} extension of the TLS handshake, so the server knows which certificate to present.
+      answer: SNI
+      alts:
+        - server name indication
+    hint: How one IP serves many domains' certs — and where TLS usually terminates.
+  - topic: DNSSEC
+    desc: DNS Security Extensions — cryptographically SIGNS DNS records so resolvers can verify they weren't forged (defends cache poisoning / spoofing). It adds authenticity, NOT encryption — DNS answers are still public.
+    extras:
+      - label: e.g.
+        text: records carry RRSIG signatures; a chain of trust runs DNSKEY → the parent zone's DS record → up to the signed root.
+      - label: Trap
+        text: DNSSEC ≠ encrypted DNS. For privacy you want DoH/DoT (DNS over HTTPS/TLS); DNSSEC only proves the answer is authentic.
+    cloze:
+      text: DNSSEC adds authenticity to DNS records but not {}; for that you need DoH or DoT.
+      answer: encryption
+      alts:
+        - privacy
+        - confidentiality
+    hint: It signs DNS records for authenticity — but it does NOT do what?
+  - topic: Anycast
+    desc: One IP address announced from MANY locations at once; the network routes each client to the NEAREST instance. How CDNs, Cloudflare, and the DNS root servers serve the whole world from a single IP with low latency and built-in DDoS spread.
+    extras:
+      - label: e.g.
+        text: 1.1.1.1 (Cloudflare DNS) is anycast — you and someone across the world both dial '1.1.1.1' but land on different nearby data centers.
+      - label: Say
+        text: “Anycast gives geo-distribution and resilience transparently — the routing layer picks the closest healthy PoP.”
+    diagram: anycast
+    cloze:
+      text: One IP announced from many locations, routing each client to the nearest, is called {}.
+      answer: anycast
+    hint: One IP announced from many places; the network routes you to the nearest.
+  - topic: What TLS 1.3 improves (the modern default)
+    desc: "TLS 1.3 (2018) is the modern default. Four concrete things it changed over 1.2:"
+    extras:
+      - label: Say
+        text: “Prefer TLS 1.3, keep 1.2 for older clients, disable the deprecated 1.0/1.1.”
+      - label: Trap
+        text: 0-RTT resumption is fast but REPLAYABLE — don't allow it for non-idempotent requests (a replayed 0-RTT 'POST /charge' double-charges).
+    items:
+      - FASTER handshake — 1 round-trip instead of 2 (and 0-RTT resumption for repeat visits), so connections open noticeably quicker
+      - FORWARD SECRECY is now REQUIRED — only ephemeral ECDHE key exchange, so stealing the server's long-term key can't decrypt PAST traffic
+      - LEGACY CRYPTO REMOVED — no static-RSA key exchange, RC4, SHA-1, or CBC modes; the cipher list shrank to a few safe AEAD suites, so misconfiguration is far harder
+      - MORE of the handshake is ENCRYPTED — even the server certificate — leaking less metadata to eavesdroppers
+    mc:
+      - QUIC / HTTP/3
+      - mTLS (mutual TLS)
+      - Certificate chain of trust
+    cloze:
+      text: TLS {} completes its handshake in a single round trip and requires forward secrecy.
+      answer: "1.3"
+      alts:
+        - "13"
+    hint: The newer one is faster (fewer round-trips) and drops the legacy ciphers.
+  - topic: Certificate chain of trust
+    desc: "A server cert is trusted by CHAINING up: leaf (your server cert) → one or more intermediate CAs → a root CA preinstalled in the client's trust store. Validation walks the chain to a trusted root."
+    extras:
+      - label: e.g.
+        text: the server presents leaf + intermediates (the 'fullchain'); the root is already on the client, so it isn't sent.
+      - label: Trap
+        text: "the #1 cert bug is a MISSING INTERMEDIATE — it works in your browser (which cached it) but fails for other clients. Always ship the fullchain."
+    cloze:
+      text: "The #1 certificate bug is a missing {} cert — it works in your browser but fails for other clients."
+      answer: intermediate
+    hint: Trust flows from your leaf cert up through intermediates to a root.
+  - topic: The resolver path, step by step
+    desc: A simpler breakdown of what happens when your app resolves a name — the ordered stages, so you can recite them without the full end-to-end card.
+    extras:
+      - label: Why it matters
+        text: “dig works but my app can't resolve” means the app path (nsswitch, /etc/hosts) differs from dig, which talks straight to a nameserver. Test the app's REAL path with `getent hosts <name>`.
+      - label: Say
+        text: “The app calls getaddrinfo; nsswitch decides order; /etc/hosts and the stub cache come before any packet leaves the box.”
+    items:
+      - 1. The app calls getaddrinfo("host") — it never speaks DNS itself
+      - 2. libc reads /etc/nsswitch.conf to learn the ORDER of sources to try
+      - 3. /etc/hosts is checked first — a match here wins, with no network at all
+      - 4. Then the stub resolver (127.0.0.53, systemd-resolved) checks its local cache
+      - 5. Cache miss → it asks the upstream RECURSIVE resolver (your router / ISP / 1.1.1.1)
+      - 6. That resolver walks root → TLD → authoritative, caches the answer, returns the IP
+      - 7. Only NOW does the app open a TCP connection to that IP

@@ -1,0 +1,97 @@
+section:
+  key: C
+  name: Containers
+  color: "#14b8a6"
+cards:
+  - topic: Containers vs. VMs
+    desc: Process-level isolation sharing the host kernel vs. a full guest OS — and the weight/speed tradeoff.
+    cloze:
+      text: Containers share the host {}, whereas each VM ships a full guest OS.
+      answer: kernel
+    hint: Shared kernel versus a full guest OS — the weight/speed tradeoff.
+  - topic: "OS layers: node → pod → container"
+    desc: "The nesting on ONE shared kernel: a node has a single Linux kernel; a pod groups containers that share a network namespace (1 IP); a container is an isolated process with its own filesystem. Containers ship userspace, not a kernel."
+    diagram: nested_layers
+    match:
+      - - node
+        - one shared Linux kernel
+      - - pod
+        - one network namespace / 1 IP
+      - - container
+        - own filesystem, isolated process
+    cloze:
+      text: A {} groups containers that share one network namespace and a single IP.
+      answer: pod
+    hint: Three nested levels on one kernel — what each one owns.
+  - topic: What's shared vs. isolated across the folds
+    desc: "Who shares what as you nest node → pod → container:"
+    extras:
+      - label: namespace
+        text: a kernel NAMESPACE isolates what a process can SEE — net ns = its own network stack + IP, PID ns = its own process tree, mount ns = its own filesystem view. The 'what you can see' knob. Containers sharing a pod share the net + IPC namespaces.
+      - label: cgroup
+        text: a control group is the kernel feature that LIMITS and meters a process's CPU / memory / I/O. The 'how much you can use' knob — a container's memory limit (and the OOMKill when it's exceeded) is enforced here.
+      - label: IPC
+        text: Inter-Process Communication namespace — POSIX shared memory + semaphores. Shared within a pod, so co-located containers can talk over shared memory; separate pods cannot.
+      - label: Say
+        text: “Namespaces isolate what you SEE; cgroups limit what you USE. A container is just a process wearing both.”
+    table:
+      - - Boundary
+        - Shares
+        - Isolates (own)
+      - - Node → all
+        - kernel, CPU, RAM
+        - —
+      - - Pod
+        - net ns (1 IP), IPC, hostname
+        - —
+      - - Container
+        - the pod's net / IPC
+        - filesystem, PID, cgroup
+    match:
+      - - Node → all
+        - share kernel, CPU, RAM
+      - - Pod
+        - shares net ns (1 IP), IPC, hostname
+      - - Container
+        - isolates filesystem, PID, cgroup
+    hint: As you nest node→pod→container, who shares what and who isolates what?
+  - topic: Worker-node scaling (pods vs. nodes)
+    desc: "Two independent loops: the HPA adds/removes PODS on existing nodes; the Cluster Autoscaler (or Karpenter) adds/removes NODES — actual cloud VMs — when pods can't be scheduled or nodes sit idle."
+    extras:
+      - label: e.g.
+        text: a spike makes the HPA want 20 pods, but nodes are full so new pods sit Pending → the Cluster Autoscaler provisions 2 more EC2 nodes → pods schedule; when load drops it drains and terminates the extra nodes.
+      - label: How
+        text: "node scaling reaches the HARDWARE layer: each node is a VM/instance, so adding a node = the cloud booting another machine with its own kernel (minutes), while adding a pod just folds another process onto an existing kernel (ms)."
+    match:
+      - - HPA
+        - adds/removes PODS on existing nodes
+      - - Cluster Autoscaler
+        - adds/removes NODES (cloud VMs)
+      - - Karpenter
+        - faster just-in-time node provisioning
+    cloze:
+      text: The {} (or Karpenter) adds and removes nodes, while the HPA adds and removes pods.
+      answer: Cluster Autoscaler
+      alts:
+        - cluster autoscaler
+        - autoscaler
+    hint: Two independent loops — one scales pods, one scales nodes.
+  - topic: Docker commands (basic → advanced)
+    desc: Docker builds images (blueprints) and runs them as containers (running instances). Commands roughly basic → advanced.
+    extras:
+      - label: Trap
+        text: "docker run makes a NEW container every time — restart an existing one with docker start (running again gives 'name already in use'). The writable layer is ephemeral: no volume = data gone on rm."
+    items:
+      - build -t name:tag . — build an image from the Dockerfile in .
+      - run -d -p 8080:80 --name web img — run a container (detached, host:container port map)
+      - ps [-a] · logs -f <ctr> — list running/all containers / stream logs
+      - exec -it <ctr> sh — shell into a running container
+      - images · pull|push <img> — list / move images to a registry
+      - stop|start|rm <ctr> · rmi <img> — lifecycle / cleanup
+      - build --target <stage> — multi-stage build for a small final image
+      - inspect <obj> · stats — full JSON metadata / live CPU-mem usage
+      - volume create · run -v data:/path — persist data outside the container layer
+      - network create · run --network <net> — user-defined net for name-based DNS
+      - compose up -d | down — run/stop a multi-container stack from compose.yaml
+      - system prune -a · build --no-cache — reclaim space / bust the layer cache
+    hint: Build, run, inspect — then volumes, networks, compose.
