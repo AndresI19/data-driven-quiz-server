@@ -17,7 +17,8 @@ ENV PORT=80
 # Must match the base baked into the client build so the server mounts routes at the same prefix.
 ENV BASE_PATH=$BASE_PATH
 COPY package*.json ./
-RUN npm ci
+# The server runs via tsx (a devDependency), so keep dev deps even under NODE_ENV=production.
+RUN npm ci --include=dev
 COPY --from=build /app/dist ./dist
 COPY src ./src
 COPY cards ./cards
