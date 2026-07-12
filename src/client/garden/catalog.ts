@@ -130,7 +130,9 @@ export interface Animal {
   ch: number;
 }
 export const ANIMALS: Animal[] = [
-  { id: 'badger', name: 'Badger', fw: 42, fh: 17, n: 22, price: 150, cx: 10, cy: 0, cw: 22, ch: 16 },
+  // Badger fits its FULL frame (cx/cy=0, cw/ch=frame) so the shop thumbnail uses frame-fit — its
+  // original size — rather than blowing the small content box up like the content-fit others.
+  { id: 'badger', name: 'Badger', fw: 42, fh: 17, n: 22, price: 150, cx: 0, cy: 0, cw: 42, ch: 17 },
   { id: 'boar', name: 'Boar', fw: 46, fh: 24, n: 7, price: 250, cx: 4, cy: 0, cw: 37, ch: 24 },
   { id: 'stag', name: 'Stag', fw: 32, fh: 35, n: 24, price: 400, cx: 3, cy: 0, cw: 25, ch: 35 },
   { id: 'wolf', name: 'Wolf', fw: 64, fh: 28, n: 4, price: 700, cx: 19, cy: 0, cw: 26, ch: 28 },

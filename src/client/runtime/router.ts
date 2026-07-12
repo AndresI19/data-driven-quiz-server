@@ -4,7 +4,6 @@
 import { S } from './state.js';
 import { DB } from './db.js';
 import { setup } from '../pages/home.js';
-import { resumePage } from '../pages/resume.js';
 import { gardenPage } from '../garden/page.js';
 import { renderQ } from '../quiz/engine.js';
 import { start, resumeSnap } from '../quiz/session.js';
@@ -53,7 +52,6 @@ export function route(): void {
       p = '/home';
     }
     if (p === '/garden') gardenPage();
-    else if (p === '/resume') resumePage();
     else if (p === '/quiz') quizRoute();
     else setup(); // /home and anything unrecognized
   } finally {

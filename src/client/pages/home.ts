@@ -10,7 +10,6 @@ import { start, resumeActive, discardActive, retrySession, reviewIds } from '../
 import { reviewSession } from './review.js';
 import { favoritesPage } from './favorites.js';
 import { exportPage } from './export.js';
-import { resumePage } from './resume.js';
 import { setPath } from '../runtime/router.js';
 import { gardenValue, totalGardenValue, switchGarden } from '../garden/economy.js';
 import { gardenArt } from '../garden/sprites.js';
@@ -92,7 +91,7 @@ export function setup(): void {
   <div class="wrap homewrap">
     <div class="masthead">
       <h1>Cloud Developer Quiz</h1>
-      <div class="mast-by">by Andres Irarragorri &nbsp;·&nbsp; <button class="reslink" id="bywm" title="View résumé — Andres Irarragorri">🔗 check out my résumé →</button></div>
+      <div class="mast-by">by Andres Irarragorri &nbsp;·&nbsp; <a class="reslink" href="/" title="Back to home">← Home</a></div>
     </div>
     <div class="homecols">
     <div class="homecol homeleft">
@@ -308,6 +307,5 @@ export function setup(): void {
   if (hgp) hgp.addEventListener('click', () => { switchGarden(DB.gardenIdx - 1); setup(); });
   const hgn = app.querySelector('#hgnext');
   if (hgn) hgn.addEventListener('click', () => { switchGarden(DB.gardenIdx + 1); setup(); });
-  app.querySelector('#bywm')!.addEventListener('click', resumePage);
   startSplashes();
 }
