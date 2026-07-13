@@ -3,17 +3,24 @@
    @platform/ui — imported in main.ts, ahead of this file. The tokens below are the quiz's own:
    correct/incorrect and the coin gold have no counterpart on the home page, so they stay here. */
 :root{
-  /* A column of prose and a quiz card read better tight than the home page's project grid. */
-  --wrap-max:940px;
-  --wrap-pad:30px 22px 96px;
+  /* --wrap-max is NOT declared here any more: the content column comes from @platform/ui, so this
+     app and the home page share one gutter. It used to be a fixed 940px, which on a wide monitor sat
+     visibly narrower inside the home page's fluid column — the two had drifted apart in kind.
+     A tighter measure, where one is genuinely wanted, is --wrap-max-reading (see .wrap:has(.cardrow)).
+     Only the horizontal padding is normalised to the platform's 14px; the 30px top is this app's own
+     vertical rhythm (it has no banner to sit under) and is not a gutter. */
+  --wrap-pad:30px 14px 96px;
 
   --good:#12a150;--good-bg:#e6f7ee;--bad:#e11d48;--bad-bg:#fdecef;--gold:#f5b301;
 }
 @media (prefers-color-scheme:dark){:root{
   --good:#3ed081;--good-bg:#12331f;--bad:#ff5d78;--bad-bg:#361720;
 }}
-/* The quiz card + notes panel sit side by side, so that one view overrides the shared column. */
-.wrap:has(.cardrow){max-width:min(1300px,95vw)}
+/* The card + notes panel sit side by side, and used to need MORE room than the app's old fixed 940px
+   column — hence an override to 1300px. The shared column is now fluid up to 1440px, so that override
+   would do the opposite of what it was written for: it would make the one view that needs the most
+   width the narrowest on the site. Deleted rather than retuned; the play view takes the platform
+   column like everything else. */
 h1{font-size:27px;margin:0 0 3px;letter-spacing:-.6px;font-weight:820;
   background:linear-gradient(96deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
@@ -63,8 +70,10 @@ h1{font-size:27px;margin:0 0 3px;letter-spacing:-.6px;font-weight:820;
 .fabobj2{position:absolute;left:50%;transform:translateX(-50%);image-rendering:pixelated;pointer-events:none}
 .fab-coins{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:3px 14px;font-weight:800;font-size:17px;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
 .gardenwrap{max-width:920px}
-/* Home page: setup form + a live render of the garden (out of any box), side by side */
-.homewrap{max-width:1400px}
+/* Home page: setup form + a live render of the garden (out of any box), side by side.
+   No max-width of its own. It used to cap at 1400px — a SECOND width declaration sitting on top of
+   the shared column, which is how this page ended up 40px narrower than the platform home page even
+   after the column itself was normalised. The element already carries `.wrap`; that is the width. */
 .homecols{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
 .homecol{min-width:0}
 .homeleft{flex:1 1 460px;max-width:620px}
