@@ -3,12 +3,14 @@
 // Shared platform layers first, this app's stylesheet last — so anything here can override them.
 import '@platform/ui/tokens.css';
 import '@platform/ui/base.css';
+import '@platform/ui/gate.css';
 import './styles/game.css';
 import { app, initData } from './runtime/data.js';
 import { S } from './runtime/state.js';
 import { onSaved, saveDB } from './runtime/db.js';
-import { isSignedIn, pull, schedulePush } from './runtime/auth.js';
-import { gate, needsGate } from './pages/gate.js';
+import { isAdmin, isSignedIn } from '@platform/ui/auth';
+import { mountAccountFab, mountGate, needsGate } from '@platform/ui/gate';
+import { pull, schedulePush } from './runtime/auth.js';
 import { recomputeAutotile } from './garden/autotile.js';
 import { route } from './runtime/router.js';
 import { mountDebug } from './pages/debug.js';
@@ -42,7 +44,12 @@ async function boot(): Promise<void> {
     wm.textContent = '⚙ DEV MODE';
     document.body.appendChild(wm);
   }
-  mountDebug();
+  // The debug menu is an ADMIN tool: it can grant coins, unlock gardens and rewrite the document.
+  // Anyone could open it before. Hidden for everyone else now — and "hidden" is the honest word: it
+  // is a client-side check, so it stops a curious player, not a determined one. The debug menu only
+  // edits data the player already owns, so that is the right level of protection for it. Nothing that
+  // touches the SERVER is defended this way (see vMCP's admin guard, which is server-side).
+  if (isAdmin()) mountDebug();
   mountParticles();
   mountScreenBg();
 
@@ -56,11 +63,20 @@ async function boot(): Promise<void> {
   // over the app rather than instead of it — this is a decision about where your progress lives, not
   // a paywall, and it should not look like one.
   if (needsGate()) {
-    gate(() => route());
+    // No greetUrl here: the greeting belongs to the home page, and asking twice would be rude.
+    mountGate({
+      onDone: () => {
+        mountAccountFab();
+        void pull().finally(() => route());
+      },
+    });
   } else if (isSignedIn()) {
+    mountAccountFab();
     // A returning player: pick up whatever another browser did since last time. A conflict is handled
     // inside pull() by keeping BOTH copies — never by overwriting one in silence.
     void pull().then(() => route());
+  } else {
+    mountAccountFab(); // a guest still gets the chip: it is how they upgrade, or see what they chose
   }
 
   app.addEventListener('click', (e) => {
