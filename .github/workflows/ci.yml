@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# @platform/ui is a vendored git submodule, and both the typecheck (tsconfig extends a file inside it)
+# and the Docker build need it checked out — hence submodules: recursive on both jobs.
+jobs:
+  typecheck-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  image-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build the quiz image
+        run: docker build --pull --build-arg BASE_PATH=/cloud-developer-quiz/ -t scan-quiz:ci .
+      - name: Trivy scan (HIGH,CRITICAL)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: scan-quiz:ci
+          severity: HIGH,CRITICAL
+          exit-code: "0" # report-only: image carries a fixable-CVE backlog; flip to "1" after a hardening pass
+          ignore-unfixed: true

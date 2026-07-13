@@ -270,7 +270,11 @@ export function renderMA(c: GameCard): void {
         }
       });
     });
-    (app.querySelector('#mcheck') as HTMLButtonElement).disabled = keys.length !== pairs.length;
+    // Guarded: redraw() is also called from a 40ms setTimeout, which can fire after the view has
+    // been torn down or navigated away — at which point #mcheck is gone. Setting .disabled on null
+    // throws; skipping it when the button is absent is correct (there is nothing to toggle).
+    const mcheck = app.querySelector('#mcheck') as HTMLButtonElement | null;
+    if (mcheck) mcheck.disabled = keys.length !== pairs.length;
   }
 
   let drag: { li: number; sx: number; sy: number; moved: boolean } | null = null;
