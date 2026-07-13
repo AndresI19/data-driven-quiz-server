@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# flashcards — run The Engineer's Flashcards server from anywhere.
-# Put this bin dir on your PATH (see README), then just run `flashcards`.
+# quiz-server — run the data-driven quiz server from anywhere.
+# Put this bin dir on your PATH (see README), then just run `quiz-server`.
 set -euo pipefail
 
 # Derive the app directory from where this script actually lives, so the launcher works from any
@@ -9,22 +9,22 @@ APP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
 usage() {
   cat <<'EOF'
-flashcards — run The Engineer's Flashcards server (from any directory)
+quiz-server — run the data-driven quiz server (from any directory)
 
-usage: flashcards [--dev] [--port N]
+usage: quiz-server [--dev] [--port N]
 
   -d, --dev      dev server: hot reload + a "DEV MODE" badge (default is production)
   -p, --port N   port to serve on (default: 80 — needs sudo/setcap; see below)
   -h, --help     show this help
 
 examples:
-  flashcards                 # build + serve on http://localhost/home
-  flashcards --dev           # hot-reload dev server
-  flashcards --port 3000     # serve on http://localhost:3000/home  (no sudo needed)
+  quiz-server                # build + serve on http://localhost/home
+  quiz-server --dev           # hot-reload dev server
+  quiz-server --port 3000     # serve on http://localhost:3000/home  (no sudo needed)
 
-note: port 80 is privileged. Either run:  sudo -E flashcards
+note: port 80 is privileged. Either run:  sudo -E quiz-server
       or grant node the capability once:   sudo setcap 'cap_net_bind_service=+ep' "$(command -v node)"
-      or just use a high port:             flashcards --port 3000
+      or just use a high port:             quiz-server --port 3000
 EOF
 }
 
@@ -34,12 +34,12 @@ while [ $# -gt 0 ]; do
     -d|--dev)  DEV=1; shift ;;
     -p|--port) export PORT="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "flashcards: unknown option '$1'" >&2; usage; exit 1 ;;
+    *) echo "quiz-server: unknown option '$1'" >&2; usage; exit 1 ;;
   esac
 done
 
 cd "$APP_DIR"
-[ -d node_modules ] || { echo "flashcards: installing dependencies (first run)…"; npm install; }
+[ -d node_modules ] || { echo "quiz-server: installing dependencies (first run)…"; npm install; }
 
 PORT_SHOWN="${PORT:-80}"
 if [ "$DEV" -eq 1 ]; then

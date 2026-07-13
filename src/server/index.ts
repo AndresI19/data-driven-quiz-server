@@ -49,9 +49,9 @@ app.get(`${B}/print.html`, (_req, res) => {
 // The built client, its cache policy, the health probe and the SPA fallback — all shared with the
 // home page. Mounted LAST: it ends in a catch-all, so the cards and print routes above must be
 // registered first or they would be shadowed by index.html.
-serveClient(app, { clientDir: CLIENT_DIR, base: BASE, appName: 'flashcards-app' });
+serveClient(app, { clientDir: CLIENT_DIR, base: BASE, appName: 'data-driven-quiz-server' });
 
 app.listen(PORT, () => {
-  console.log(`flashcards-app serving on http://localhost:${PORT}`);
+  console.log(`data-driven-quiz-server listening on http://localhost:${PORT}${BASE}`);
   if (!existsSync(CLIENT_DIR)) console.log('  (dev: run `npm run dev` for the client with HMR)');
 });

@@ -1,9 +1,9 @@
 {
-  "name": "flashcards-app",
+  "name": "data-driven-quiz-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The Engineer's Flashcards \u2014 a data-driven flashcard quiz game with an isometric garden, served as a public web app.",
+  "description": "A data-driven quiz server: drop a YAML file into cards/ and it becomes a section, with the question types inferred from the fields each card carries. Isometric garden reward system included.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

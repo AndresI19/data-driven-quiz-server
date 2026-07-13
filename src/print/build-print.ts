@@ -87,7 +87,7 @@ export function buildPrintHtml(payload: CardsPayload): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Engineer's Flashcards — print sheet</title>
+<title>Cloud Developer Quiz — print sheet</title>
 <style>${PRINT_CSS}${TOOLBAR_CSS}</style></head>
 <body>
 ${toolbar}

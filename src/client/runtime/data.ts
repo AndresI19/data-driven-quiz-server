@@ -3,6 +3,17 @@
 import type { GameCard, CardsPayload } from '../../shared/card-schema.js';
 
 export const app = document.getElementById('app') as HTMLElement;
+
+/**
+ * The localStorage key everything is persisted under.
+ *
+ * It keeps the old name on purpose. This is not a public identifier — it is the address of every
+ * existing player's save: their lifetime stats, notes, favourites, coins and gardens. Renaming it
+ * when the repo was renamed would not have migrated that data, it would have orphaned it, and every
+ * player (including anyone with the site already open) would have silently started from zero.
+ *
+ * If it ever does need to change, it needs a migration that reads the old key first — not a rename.
+ */
 export const K = 'flashcards_v2';
 
 export const CARDS: GameCard[] = [];

@@ -57,7 +57,7 @@ function openDebugDialog(): void {
     const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'flashcards-data.json';
+    a.download = 'quiz-data.json';
     document.body.appendChild(a);
     a.click();
     a.remove();

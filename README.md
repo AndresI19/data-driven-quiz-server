@@ -13,8 +13,8 @@ be asked as, and wires it into the study deck, the printable sheet, and the rewa
 ## Quick start
 
 ```bash
-git clone --recurse-submodules https://github.com/AndresI19/flashcards-app.git
-cd flashcards-app
+git clone --recurse-submodules https://github.com/AndresI19/data-driven-quiz-server.git
+cd data-driven-quiz-server
 npm install
 npm run dev            # http://localhost:3000
 ```
@@ -129,8 +129,8 @@ npm run dev      # Vite dev server, HMR, cards reloaded on every request
 npm run serve    # build, then serve the built client with Express
 ```
 
-`bin/flashcards` is a convenience launcher that does the same from any directory — put `bin/` on your
-`PATH` and run `flashcards`, `flashcards --dev`, or `flashcards --port 3000`.
+`bin/quiz-server` is a convenience launcher that does the same from any directory — put `bin/` on your
+`PATH` and run `quiz-server`, `quiz-server --dev`, or `quiz-server --port 3000`.
 
 ### In a container
 
