@@ -18,6 +18,28 @@ import { startSplashes } from '../garden/splash.js';
 import { setScreenBg } from '../garden/screenbg.js';
 import { stopTicker } from '../quiz/timer.js';
 import { hidePause } from '../quiz/pause.js';
+import { current, isGuest, isSignedIn } from '@platform/ui/auth';
+
+/**
+ * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
+ * supported a back-end." That is now false for a signed-in player — their progress syncs — and
+ * telling them their gardens are about to vanish is worse than saying nothing. So it depends on who
+ * is playing:
+ *   guest      → the honest browser-only warning (unchanged; a guest genuinely has no back-end).
+ *   signed in  → a reassurance that it follows them, and where the copy lives.
+ */
+function savedNote(): string {
+  if (isSignedIn()) {
+    const who = current()?.username ?? '';
+    return `<div class="saved-note ok">☁️ Signed in as <b>${esc(who)}</b>. Your progress — quiz history, notes, gardens and coins — is saved to your account and follows you to any browser. Sign out from the top-right to switch users.</div>`;
+  }
+  if (isGuest()) {
+    return `<div class="saved-note">💾 You are playing as a <b>guest</b>. Your progress is saved in <b>this browser only</b> — clearing site data, private browsing, or opening the app elsewhere will start you fresh. Back it up any time with <b>Download JSON</b> in the 🪲 menu (bottom-right), or create an account from the account chip (top-right) to sync it.</div>`;
+  }
+  // Before a choice has been made the gate is up, so this is effectively unreachable — but if it is
+  // ever shown, the guest wording is the safe default: it never overstates what is saved.
+  return `<div class="saved-note">💾 Your progress is saved in <b>this browser</b> until you create an account.</div>`;
+}
 
 export function setup(): void {
   stopTicker();
@@ -149,7 +171,7 @@ export function setup(): void {
         <div class="gdboardwrap"><div class="gboard homeboard">${gardenArt()}</div></div>
         <div class="gd-cta">Click to tend it →</div>
       </button>
-      <div class="saved-note">💾 Your progress — quiz history, notes, gardens and coins — is saved in <b>this browser only</b>. Clearing site data, private browsing, or opening the app on another device or browser will start you fresh. Back it up any time with <b>Download JSON</b> in the 🪲 menu (bottom-right). <i>(I never supported a back-end.)</i></div>
+      ${savedNote()}
     </div>
     </div>
   </div>`;

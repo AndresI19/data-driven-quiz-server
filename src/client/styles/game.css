@@ -442,3 +442,7 @@ body.ambient .saved-note{background:color-mix(in srgb,var(--panel-2) 88%,#8b93a6
 /* effect "None" tile: a normal light tile (like the backgrounds-row None), not greyed */
 .fxbtn .palbgthumb.none{width:100%;height:100%;border-radius:7px}
 
+
+/* The signed-in variant of the persistence note: reassuring, not warning. */
+.saved-note.ok{border-color:color-mix(in srgb,var(--good) 40%,var(--line));
+  background:color-mix(in srgb,var(--good) 8%,var(--panel))}
