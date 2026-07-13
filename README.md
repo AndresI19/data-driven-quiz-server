@@ -19,10 +19,13 @@ npm install
 npm run dev            # http://localhost:3000
 ```
 
-> **`--recurse-submodules` matters.** The shared design system,
-> [`@platform/ui`](https://github.com/AndresI19/platform-ui), is a submodule at `vendor/platform-ui`,
-> and `npm install` resolves the dependency from there. Already cloned without it?
+> **`--recurse-submodules` matters.** The shared design system, `@platform/ui`, lives in
+> [portfolio-home](https://github.com/AndresI19/portfolio-home) — that repo is its source of truth —
+> and is vendored here as a submodule at `vendor/portfolio-home`. `npm install` resolves the
+> dependency from `vendor/portfolio-home/packages/platform-ui`. Already cloned without it?
 > `git submodule update --init --recursive`
+>
+> Only `packages/` is used; the image does not carry the rest of the home page (see `.dockerignore`).
 
 ```bash
 npm run build && npm start     # production build, served by Express
@@ -178,7 +181,7 @@ src/
     pages/                 home, review, favorites, export
   print/                 the printable sheet
   server/                Express: serves the payload, the print sheet and the built client
-vendor/platform-ui/    submodule — shared design tokens, base stylesheet, client middleware
+vendor/portfolio-home/ submodule — supplies @platform/ui (shared tokens, base stylesheet, client middleware)
 ```
 
 ## Tests

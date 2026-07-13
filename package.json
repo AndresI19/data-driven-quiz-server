@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@platform/ui": "file:vendor/platform-ui",
+    "@platform/ui": "file:vendor/portfolio-home/packages/platform-ui",
     "cross-env": "^7.0.3",
     "express": "^4.21.2",
     "gifenc": "^1.0.3",

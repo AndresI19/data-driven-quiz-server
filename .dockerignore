@@ -1,13 +1,18 @@
-# Keep the build context small and the image clean. NOTE: vendor/ is deliberately NOT ignored —
-# it holds the @platform/ui submodule that package.json resolves `file:vendor/platform-ui` against,
-# so `npm ci` fails without it.
+# Keep the build context small and the image clean.
 node_modules/
-vendor/*/node_modules/
 dist/
 coverage/
 .git/
 .github/
 .vite/
+
+# The @platform/ui package lives inside the portfolio-home submodule. npm resolves
+# `file:vendor/portfolio-home/packages/platform-ui` against it, so that path MUST be in the context —
+# but nothing else in portfolio-home is needed here. Excluding the rest keeps the whole home page
+# (its own src, its 1MB garden GIF, its résumé) out of the quiz's image.
+vendor/portfolio-home/*
+!vendor/portfolio-home/packages
+vendor/portfolio-home/packages/*/node_modules/
 
 # Not needed at runtime
 *.md
