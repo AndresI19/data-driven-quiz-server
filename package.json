@@ -11,7 +11,9 @@
     "serve": "npm run build && npm start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ui:sync": "bash scripts/sync-platform-ui.sh",
+    "prebuild": "bash scripts/sync-platform-ui.sh --check"
   },
   "dependencies": {
     "@platform/ui": "file:vendor/portfolio-home/packages/platform-ui",
