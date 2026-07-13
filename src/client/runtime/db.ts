@@ -124,10 +124,22 @@ if (!DB.settings) DB.settings = {} as Settings;
   if (Sset.hints == null) Sset.hints = true;
 }
 
+/**
+ * Anything that wants to know the document changed. There is exactly ONE write point in this app —
+ * this function — so sync hooks here rather than being sprinkled through the garden, the quiz engine
+ * and the session recorder. Registered by main.ts; a plain callback rather than an import so this
+ * module keeps knowing nothing about the network.
+ */
+const savedHooks: Array<() => void> = [];
+export function onSaved(fn: () => void): void {
+  savedHooks.push(fn);
+}
+
 export function saveDB(): void {
   try {
     localStorage.setItem(K, JSON.stringify(DB));
   } catch (e) {}
+  for (const fn of savedHooks) fn();
 }
 export function today(): string {
   try {

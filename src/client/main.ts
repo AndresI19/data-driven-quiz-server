@@ -6,7 +6,9 @@ import '@platform/ui/base.css';
 import './styles/game.css';
 import { app, initData } from './runtime/data.js';
 import { S } from './runtime/state.js';
-import { saveDB } from './runtime/db.js';
+import { onSaved, saveDB } from './runtime/db.js';
+import { isSignedIn, pull, schedulePush } from './runtime/auth.js';
+import { gate, needsGate } from './pages/gate.js';
 import { recomputeAutotile } from './garden/autotile.js';
 import { route } from './runtime/router.js';
 import { mountDebug } from './pages/debug.js';
@@ -43,6 +45,23 @@ async function boot(): Promise<void> {
   mountDebug();
   mountParticles();
   mountScreenBg();
+
+  // Sync on every save. saveDB is the ONE write point in this app, so this is the one hook needed —
+  // and it is debounced, because answering a card writes the document and we do not need to write the
+  // document to the network on every card. A guest never reaches the network at all: that is the
+  // promise the gate makes, and schedulePush is where it is kept.
+  onSaved(() => schedulePush());
+
+  // The gate: shown once, on the first visit, and never again once a choice has been made. It renders
+  // over the app rather than instead of it — this is a decision about where your progress lives, not
+  // a paywall, and it should not look like one.
+  if (needsGate()) {
+    gate(() => route());
+  } else if (isSignedIn()) {
+    // A returning player: pick up whatever another browser did since last time. A conflict is handled
+    // inside pull() by keeping BOTH copies — never by overwriting one in silence.
+    void pull().then(() => route());
+  }
 
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
