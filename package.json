@@ -16,11 +16,14 @@
     "prebuild": "bash scripts/sync-platform-ui.sh --check"
   },
   "dependencies": {
-    "@platform/ui": "file:vendor/portfolio-home/packages/platform-ui",
+    "@platform/ui": "file:vendor/project-platform/portfolio-home/packages/platform-ui",
+    "@types/pg": "^8.20.0",
     "cross-env": "^7.0.3",
     "express": "^4.21.2",
     "gifenc": "^1.0.3",
+    "jose": "^6.2.3",
     "js-yaml": "^4.1.0",
+    "pg": "^8.22.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

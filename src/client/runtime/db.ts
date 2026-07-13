@@ -93,7 +93,10 @@ if (!DB.flags) DB.flags = {};
   const legacy = (DB.garden && typeof DB.garden === 'object' ? DB.garden : {}) as Record<string, unknown>;
   if (DB.coins == null) DB.coins = (legacy.coins as number) ?? 0;
   if (DB.combo == null) DB.combo = (legacy.combo as number) ?? 0;
-  if (DB.infinite == null) DB.infinite = (legacy.infinite as boolean) ?? true;
+  // Default OFF. This used to default to `?? true`, which granted every player unlimited free
+  // currency — a dev "god mode" that shipped switched on. It is an ADMIN tool now: enforced false
+  // for non-admins at boot (see main.ts) and toggled only through the admin-only debug menu.
+  if (DB.infinite == null) DB.infinite = (legacy.infinite as boolean) ?? false;
   if (DB.spent == null) DB.spent = (legacy.spent as number) ?? 0;
   if (DB.maxScore == null) DB.maxScore = 0;
   if (!DB.ownedBg) DB.ownedBg = {};
@@ -124,10 +127,22 @@ if (!DB.settings) DB.settings = {} as Settings;
   if (Sset.hints == null) Sset.hints = true;
 }
 
+/**
+ * Anything that wants to know the document changed. There is exactly ONE write point in this app —
+ * this function — so sync hooks here rather than being sprinkled through the garden, the quiz engine
+ * and the session recorder. Registered by main.ts; a plain callback rather than an import so this
+ * module keeps knowing nothing about the network.
+ */
+const savedHooks: Array<() => void> = [];
+export function onSaved(fn: () => void): void {
+  savedHooks.push(fn);
+}
+
 export function saveDB(): void {
   try {
     localStorage.setItem(K, JSON.stringify(DB));
   } catch (e) {}
+  for (const fn of savedHooks) fn();
 }
 export function today(): string {
   try {

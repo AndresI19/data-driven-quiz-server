@@ -64,7 +64,8 @@ export function resetGarden(): void {
   DB.garden.cells = newBoard();
   DB.garden.hideFg = false;
   DB.garden.bg = null;
-  DB.infinite = true;
+  // No longer forces free money on. Resetting a garden is not a reason to hand out unlimited
+  // currency — that was part of the same god-mode-by-default bug.
   S.selBrush = null;
   saveDB();
 }
@@ -149,7 +150,7 @@ export function resetAllGardens(): void {
   DB.spent = 0;
   DB.combo = 0;
   DB.maxScore = 0;
-  DB.infinite = true;
+  DB.infinite = false;
   S.selBrush = null;
   saveDB();
 }

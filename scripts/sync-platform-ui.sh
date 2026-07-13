@@ -21,8 +21,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-SUB=vendor/portfolio-home
-PKG="$SUB/packages/platform-ui"
+SUB=vendor/project-platform
+PKG="$SUB/portfolio-home/packages/platform-ui"
 CHECK=0
 [ "${1:-}" = "--check" ] && CHECK=1
 
@@ -74,7 +74,7 @@ if ! git -C "$SUB" fetch --quiet origin 2>/dev/null; then
 fi
 
 PINNED="$(git -C "$SUB" rev-parse HEAD)"
-UPSTREAM="$(git -C "$SUB" rev-parse origin/main 2>/dev/null || git -C "$SUB" rev-parse origin/HEAD)"
+UPSTREAM="$(git -C "$SUB" rev-parse origin/feat/auth-experiment 2>/dev/null || git -C "$SUB" rev-parse origin/HEAD)"
 
 if [ "$PINNED" = "$UPSTREAM" ]; then
   echo "@platform/ui is up to date (${PINNED:0:7})"
@@ -98,10 +98,10 @@ echo "    What changes in the package itself:"
 # Only the package matters here. portfolio-home is vendored whole (it is the submodule), but this app
 # consumes exactly one directory of it — a commit that only touches that app's own pages changes
 # nothing for us, and saying so is more useful than listing it.
-if git -C "$SUB" diff --quiet "$PINNED" "$UPSTREAM" -- packages/platform-ui; then
+if git -C "$SUB" diff --quiet "$PINNED" "$UPSTREAM" -- portfolio-home/packages/platform-ui; then
   echo "      (nothing — the upstream commits do not touch packages/platform-ui)"
 else
-  git -C "$SUB" diff --stat "$PINNED" "$UPSTREAM" -- packages/platform-ui | sed 's/^/      /'
+  git -C "$SUB" diff --stat "$PINNED" "$UPSTREAM" -- portfolio-home/packages/platform-ui | sed 's/^/      /'
 fi
 echo
 

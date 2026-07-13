@@ -3,10 +3,14 @@
 // Shared platform layers first, this app's stylesheet last — so anything here can override them.
 import '@platform/ui/tokens.css';
 import '@platform/ui/base.css';
+import '@platform/ui/gate.css';
 import './styles/game.css';
 import { app, initData } from './runtime/data.js';
 import { S } from './runtime/state.js';
-import { saveDB } from './runtime/db.js';
+import { DB, onSaved, saveDB } from './runtime/db.js';
+import { isAdmin, isSignedIn } from '@platform/ui/auth';
+import { mountAccountFab, mountGate, needsGate } from '@platform/ui/gate';
+import { pull, schedulePush } from './runtime/auth.js';
 import { recomputeAutotile } from './garden/autotile.js';
 import { route } from './runtime/router.js';
 import { mountDebug } from './pages/debug.js';
@@ -31,6 +35,15 @@ async function boot(): Promise<void> {
   // Re-run water/spire autotiling against the current tile map, so a garden saved under an older
   // (buggy) map self-corrects on load — recomputeAutotile otherwise only runs on edits.
   recomputeAutotile();
+
+  // INVARIANT: only an admin may have infinite currency. A document could carry infinite=true from
+  // an admin who synced it, from the old default that shipped true, or from a hand-edited backup —
+  // so it is enforced here, on every load, rather than trusted. An admin keeps whatever they set via
+  // the debug menu; everyone else is corrected to false. This runs BEFORE pull() adopts a synced
+  // document too (see below), and pull() calls saveDB which re-triggers this through the guard in
+  // economy, so a freshly-adopted admin document is not stripped.
+  if (!isAdmin() && DB.infinite) DB.infinite = false;
+
   saveDB();
 
   // Dev-only build badge (tree-shaken out of the production bundle).
@@ -40,9 +53,40 @@ async function boot(): Promise<void> {
     wm.textContent = '⚙ DEV MODE';
     document.body.appendChild(wm);
   }
-  mountDebug();
+  // The debug menu is an ADMIN tool: it can grant coins, unlock gardens and rewrite the document.
+  // Anyone could open it before. Hidden for everyone else now — and "hidden" is the honest word: it
+  // is a client-side check, so it stops a curious player, not a determined one. The debug menu only
+  // edits data the player already owns, so that is the right level of protection for it. Nothing that
+  // touches the SERVER is defended this way (see vMCP's admin guard, which is server-side).
+  if (isAdmin()) mountDebug();
   mountParticles();
   mountScreenBg();
+
+  // Sync on every save. saveDB is the ONE write point in this app, so this is the one hook needed —
+  // and it is debounced, because answering a card writes the document and we do not need to write the
+  // document to the network on every card. A guest never reaches the network at all: that is the
+  // promise the gate makes, and schedulePush is where it is kept.
+  onSaved(() => schedulePush());
+
+  // The gate: shown once, on the first visit, and never again once a choice has been made. It renders
+  // over the app rather than instead of it — this is a decision about where your progress lives, not
+  // a paywall, and it should not look like one.
+  if (needsGate()) {
+    // No greetUrl here: the greeting belongs to the home page, and asking twice would be rude.
+    mountGate({
+      onDone: () => {
+        mountAccountFab();
+        void pull().finally(() => route());
+      },
+    });
+  } else if (isSignedIn()) {
+    mountAccountFab();
+    // A returning player: pick up whatever another browser did since last time. A conflict is handled
+    // inside pull() by keeping BOTH copies — never by overwriting one in silence.
+    void pull().then(() => route());
+  } else {
+    mountAccountFab(); // a guest still gets the chip: it is how they upgrade, or see what they chose
+  }
 
   app.addEventListener('click', (e) => {
     const t = e.target as Element;

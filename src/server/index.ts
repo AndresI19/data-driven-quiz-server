@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { serveClient } from '@platform/ui/server';
 import { loadCardsPayload } from '../shared/load-cards.js';
 import { buildPrintHtml } from '../print/build-print.js';
+import { migrate, mountProgress, progressEnabled } from './progress.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..'); // project root
@@ -32,6 +33,18 @@ function buildCards(): void {
   printHtml = buildPrintHtml(payload);
 }
 buildCards();
+
+// Progress is OPTIONAL and mounted BEFORE serveClient, which ends in a catch-all that would shadow
+// it. With no DATABASE_URL the quiz runs exactly as it always has — entirely in the browser — which
+// is what keeps a plain `npm run dev` a single command with no infrastructure.
+app.use(express.json({ limit: '1mb' }));
+if (progressEnabled) {
+  void migrate();
+  mountProgress(app, B);
+  console.log('[quiz] progress sync enabled');
+} else {
+  console.log('[quiz] progress sync OFF (no DATABASE_URL / AUTH_JWKS_URI) — browser-only, as before');
+}
 
 app.get(`${B}/api/cards.json`, (_req, res) => {
   res.type('application/json');
