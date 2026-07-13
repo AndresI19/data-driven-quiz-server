@@ -1,3 +1,4 @@
-[submodule "vendor/portfolio-home"]
-	path = vendor/portfolio-home
-	url = https://github.com/AndresI19/portfolio-home.git
+[submodule "vendor/project-platform"]
+	path = vendor/project-platform
+	url = https://github.com/AndresI19/project-platform.git
+	branch = feat/auth-experiment

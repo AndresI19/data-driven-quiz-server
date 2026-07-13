@@ -7,7 +7,7 @@ import '@platform/ui/gate.css';
 import './styles/game.css';
 import { app, initData } from './runtime/data.js';
 import { S } from './runtime/state.js';
-import { onSaved, saveDB } from './runtime/db.js';
+import { DB, onSaved, saveDB } from './runtime/db.js';
 import { isAdmin, isSignedIn } from '@platform/ui/auth';
 import { mountAccountFab, mountGate, needsGate } from '@platform/ui/gate';
 import { pull, schedulePush } from './runtime/auth.js';
@@ -35,6 +35,15 @@ async function boot(): Promise<void> {
   // Re-run water/spire autotiling against the current tile map, so a garden saved under an older
   // (buggy) map self-corrects on load — recomputeAutotile otherwise only runs on edits.
   recomputeAutotile();
+
+  // INVARIANT: only an admin may have infinite currency. A document could carry infinite=true from
+  // an admin who synced it, from the old default that shipped true, or from a hand-edited backup —
+  // so it is enforced here, on every load, rather than trusted. An admin keeps whatever they set via
+  // the debug menu; everyone else is corrected to false. This runs BEFORE pull() adopts a synced
+  // document too (see below), and pull() calls saveDB which re-triggers this through the guard in
+  // economy, so a freshly-adopted admin document is not stripped.
+  if (!isAdmin() && DB.infinite) DB.infinite = false;
+
   saveDB();
 
   // Dev-only build badge (tree-shaken out of the production bundle).

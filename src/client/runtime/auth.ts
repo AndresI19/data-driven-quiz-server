@@ -3,7 +3,7 @@
 //
 // What IS here is the part only the quiz has: reconciling a player's document with the server.
 
-import { authFetch, current, isSignedIn, setIdentity } from '@platform/ui/auth';
+import { authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
 import { DB, saveDB } from './db.js';
 
 const API = `${window.location.pathname.replace(/\/$/, '')}/api/progress`;
@@ -52,6 +52,7 @@ export async function pull(): Promise<PullOutcome> {
 
   if (localIsEmpty()) {
     Object.assign(DB, data);
+    if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
     saveDB();
     setIdentity({ ...id, version });
     return { kind: 'adopted-server' };
@@ -64,6 +65,7 @@ export async function pull(): Promise<PullOutcome> {
     /* out of quota — proceed; the server copy is the one being kept */
   }
   Object.assign(DB, data);
+  if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
   saveDB();
   setIdentity({ ...id, version });
   return { kind: 'kept-both', backupKey };
