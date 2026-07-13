@@ -9,7 +9,7 @@ import { resetAllGardens } from '../garden/economy.js';
 export function mountDebug(): void {
   const ver = document.createElement('div');
   ver.className = 'vertag';
-  ver.textContent = 'v' + __APP_VERSION__;
+  ver.textContent = __APP_VERSION__;
   document.body.appendChild(ver);
 
   const btn = document.createElement('button');
@@ -33,7 +33,7 @@ function openDebugDialog(): void {
   ov.className = 'pauseov';
   ov.innerHTML = `<div class="pausebox" style="text-align:left;min-width:330px">
     <div class="pausetitle" style="font-size:21px;margin-bottom:2px">🪲 Debug &amp; settings</div>
-    <div class="tiny" style="margin-bottom:16px">The Cloud Developer Quiz · v${__APP_VERSION__}</div>
+    <div class="tiny" style="margin-bottom:16px">The Cloud Developer Quiz · ${__APP_VERSION__}</div>
     <label class="dbgrow"><span>Infinite money</span><input type="checkbox" id="dbg-inf" ${DB.infinite ? 'checked' : ''}></label>
     <label class="dbgrow"><span>Show garden tile IDs <span class="tiny">sprite index · water bitmask</span></span><input type="checkbox" id="dbg-tiles" ${S.showTileIds ? 'checked' : ''}></label>
     <div class="dbgrow"><span>Export save file <span class="tiny">full backup — quiz history, notes, gardens, coins</span></span><button class="btn ghost sm" id="dbg-json">⬇ Download JSON</button></div>
