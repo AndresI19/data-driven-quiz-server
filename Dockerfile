@@ -1,13 +1,14 @@
-# Multi-stage: build the Vite client (base baked in), then serve it + cards + print sheet.
+# Multi-stage: build the Vite client and bundle the Express server into ONE self-contained file, then
+# ship both — plus the card decks — on an apt-patched slim base with no npm and no node_modules.
 #
-# The shared @platform/ui package lives in portfolio-home, which is its source of truth. That repo is
-# a git submodule at vendor/portfolio-home, so the package is INSIDE the build context and a plain
-# `docker build .` works with no extra flags.
+# The server used to run via tsx (a devDependency) from src/, forcing the runtime image to carry every
+# dev dependency. It is now esbuild-bundled into dist/server/index.mjs with everything inlined
+# (Express, @platform/ui, the card loader), so the runtime needs only the node binary, the bundle, and
+# the card YAML. Slim + `apt-get upgrade` (not distroless — distroless cannot patch its OS packages),
+# then npm stripped, collapses the CVE surface to node + the OS.
 #
-# .dockerignore keeps only vendor/portfolio-home/packages/ — the rest of the home page (its own src,
-# its assets) is not needed to compile ~100 lines of shared CSS, and would only bloat the image.
-#
-# Clone with --recurse-submodules, or vendor/ is empty and `npm ci` will fail.
+# The shared @platform/ui package lives in portfolio-home, a git submodule at vendor/portfolio-home,
+# so `docker build .` works with no flags. Clone with --recurse-submodules or vendor/ is empty.
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 # URL prefix the app is mounted under behind a reverse proxy. Baked into the client at build time.
@@ -19,7 +20,14 @@ COPY package*.json ./
 COPY vendor ./vendor
 RUN npm ci
 COPY . .
-RUN npm run build
+# Vite builds the client; esbuild bundles the server into dist/server/index.mjs — the SAME depth below
+# the app root as the original src/server/index.ts, so the server's `resolve(__dirname, '../..')` still
+# lands on /app and finds both dist/client and cards. ESM keeps import.meta.url working; the
+# createRequire banner lets the bundled CJS deps' require() calls resolve under ESM.
+RUN npm run build \
+    && npx esbuild src/server/index.ts --bundle --platform=node --format=esm \
+       --banner:js='import{createRequire}from"module";const require=createRequire(import.meta.url);' \
+       --outfile=dist/server/index.mjs
 
 FROM node:22-bookworm-slim AS run
 WORKDIR /app
@@ -28,13 +36,12 @@ ENV NODE_ENV=production
 ENV PORT=80
 # Must match the base baked into the client build, so the server mounts its routes at the same prefix.
 ENV BASE_PATH=$BASE_PATH
-COPY package*.json ./
-COPY vendor ./vendor
-# The server runs via tsx (a devDependency), so keep dev deps even under NODE_ENV=production.
-RUN npm ci --include=dev
+# Patch the OS, then strip npm (the runtime only runs `node`): both are pure CVE surface here.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+# The runtime: the self-contained server + client bundle, and the seed card decks (a PersistentVolume
+# is mounted over /app/cards in the cluster).
 COPY --from=build /app/dist ./dist
-COPY src ./src
 COPY cards ./cards
-COPY tsconfig.json ./
 EXPOSE 80
-CMD ["npm", "start"]
+CMD ["node", "dist/server/index.mjs"]

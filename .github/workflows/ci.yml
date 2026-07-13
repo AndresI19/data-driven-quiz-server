@@ -35,5 +35,5 @@ jobs:
         with:
           image-ref: scan-quiz:ci
           severity: HIGH,CRITICAL
-          exit-code: "0" # report-only: image carries a fixable-CVE backlog; flip to "1" after a hardening pass
+          exit-code: "1" # blocking: image is hardened to 0 HIGH/CRITICAL
           ignore-unfixed: true
