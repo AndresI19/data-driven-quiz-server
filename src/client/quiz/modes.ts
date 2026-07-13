@@ -1,34 +1,35 @@
 // The seven quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
-// inverse (IV), and label-the-YAML (DM). Ported verbatim; module globals now live on S and each
-// function aliases `const ses = S.ses!` so its body reads exactly like the original.
-import { app, CATS, MULTIPOOL } from '../runtime/data.js';
+// inverse (IV), and label-the-YAML (DM).
+//
+// Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
+// frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
+// what is left below is the part that genuinely differs between modes.
+import { app, MULTIPOOL } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import { esc, shuffle, norm, cssVar, setKey } from '../runtime/util.js';
+import { esc, shuffle, cssVar, setKey } from '../runtime/util.js';
 import { answeredNow } from './timer.js';
-import { record, dispute, distractors, czOK } from './grading.js';
-import { grantReward, breakCombo } from '../garden/economy.js';
-import { hud, navKey } from './engine.js';
+import { record, distractors, czOK, ivOK } from './grading.js';
+import { navKey } from './engine.js';
 import { advance } from './session.js';
+import { choiceIndex, drawCard, endCard, gradeNote, modeKeys, score, typedFeedback } from './card.js';
 import type { GameCard } from '../../shared/card-schema.js';
 
+/** Recall: show the topic, type from memory, then self-grade against the answer. */
 export function renderFB(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">recall</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="topic">${esc(c.topic)}</div>
+  const ses = drawCard(
+    c,
+    'recall',
+    `<div class="topic">${esc(c.topic)}</div>
       <div id="ans">
         <div class="ptip">Write what you remember, then reveal to compare.</div>
         <div id="hintbox" class="hintbox" style="display:none"></div>
         <textarea id="recall" class="recall" placeholder="Type your answer…"></textarea>
       </div>
-      <div class="actions" id="act">${DB.settings.hints && c.hint ? `<button class="btn ghost" id="hintbtn">Hint</button>` : ''}<button class="btn primary" id="reveal">Reveal answer &nbsp;<kbd>Ctrl+Enter</kbd></button></div>
-    </div></div>`;
+      <div class="actions" id="act">${DB.settings.hints && c.hint ? `<button class="btn ghost" id="hintbtn">Hint</button>` : ''}<button class="btn primary" id="reveal">Reveal answer &nbsp;<kbd>Ctrl+Enter</kbd></button></div>`,
+  );
   const ta = app.querySelector('#recall') as HTMLTextAreaElement;
   setTimeout(() => ta.focus(), 30);
+
   const hb = app.querySelector('#hintbtn') as HTMLButtonElement | null;
   if (hb)
     hb.addEventListener('click', () => {
@@ -43,6 +44,7 @@ export function renderFB(c: GameCard): void {
         hb.textContent = 'Hint';
       }
     });
+
   function reveal(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
@@ -52,54 +54,61 @@ export function renderFB(c: GameCard): void {
         <div class="col mine"><div class="col-h">Your recall</div><div class="mine-body">${mine ? esc(mine) : '<span class="muted">(left blank)</span>'}</div></div>
         <div class="col real"><div class="col-h">Answer</div><div class="answer">${c.back}</div></div>
       </div>`;
+
     if (!mine) {
+      // Nothing written is nothing to grade — it is simply missed. No payout: recall is honour-graded.
       record(c, false);
       const note = timedOut ? '⏱ Timed out (blank) — marked missed' : 'Left blank — marked missed';
-      app.querySelector('#act')!.outerHTML = `<div class="grade-note bad">${note}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-      app.querySelector('#next')!.addEventListener('click', advance);
+      endCard(c, `<div class="grade-note bad">${note}</div>`);
+      // The card is over, so `→` may now advance — which is why this re-arms the key handler.
       setKey((e) => {
         navKey(e, true);
       });
-    } else {
-      app.querySelector('#act')!.outerHTML = `${timedOut ? `<div class="grade-note bad" style="margin-bottom:8px">⏱ Time’s up — grade yourself honestly</div>` : ''}<div class="grade">
+      return;
+    }
+
+    // Something was written, so the player grades themselves. Deliberately NOT endCard: there is no
+    // Next button here, because leaving requires choosing satisfied/not — see the `false` passed to
+    // modeKeys below.
+    app.querySelector('#act')!.outerHTML = `${timedOut ? `<div class="grade-note bad" style="margin-bottom:8px">⏱ Time’s up — grade yourself honestly</div>` : ''}<div class="grade">
         <button class="btn bad" id="miss">Not satisfied <kbd>2</kbd></button>
         <button class="btn good" id="got">Satisfied <kbd>1</kbd></button></div>`;
-      app.querySelector('#got')!.addEventListener('click', () => {
-        record(c, true);
-        advance();
-      });
-      app.querySelector('#miss')!.addEventListener('click', () => {
-        record(c, false);
-        advance();
-      });
-    }
+    app.querySelector('#got')!.addEventListener('click', () => {
+      record(c, true);
+      advance();
+    });
+    app.querySelector('#miss')!.addEventListener('click', () => {
+      record(c, false);
+      advance();
+    });
   }
+
   ses._onTimeout = () => reveal(true);
   app.querySelector('#reveal')!.addEventListener('click', () => reveal(false));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, false)) return;
+
+  // `() => false`: recall is the one mode where `→` must NOT advance a finished card, because leaving
+  // without pressing satisfied/not-satisfied would skip record() and silently drop the answer.
+  modeKeys((e) => {
     if (!ses.answered) {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         reveal(false);
       }
-    } else {
-      const k = e.key.toLowerCase();
-      if (k === '1' || k === 'g') {
-        record(c, true);
-        advance();
-      } else if (k === '2' || k === 'm') {
-        record(c, false);
-        advance();
-      }
+      return;
     }
-  });
+    const k = e.key.toLowerCase();
+    if (k === '1' || k === 'g') {
+      record(c, true);
+      advance();
+    } else if (k === '2' || k === 'm') {
+      record(c, false);
+      advance();
+    }
+  }, () => false);
 }
 
+/** Identify: show the (masked) answer, pick the concept it describes. */
 export function renderBF(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
   const extras = (c.mc || []).map((s) => ({ topic: s }));
   const seen = new Set([c.topic]);
   const pool = shuffle((distractors(c, 7) as { topic: string }[]).concat(extras))
@@ -111,15 +120,18 @@ export function renderBF(c: GameCard): void {
     .slice(0, 7);
   const opts = shuffle(pool.concat(c));
   const L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-  const btns = opts.map((o, i) => `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`).join('');
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">identify</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="answer" id="bfans">${c.backMasked || c.back}</div>
+  const btns = opts
+    .map((o, i) => `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`)
+    .join('');
+
+  const ses = drawCard(
+    c,
+    'identify',
+    `<div class="answer" id="bfans">${c.backMasked || c.back}</div>
       <div style="margin-top:16px;font-weight:650">Which concept is this?</div>
-      <div class="choices" id="choices">${btns}</div>
-    </div></div>`;
+      <div class="choices" id="choices">${btns}</div>`,
+  );
+
   function finish(picked: HTMLElement | null): void {
     if (ses.answered) return;
     answeredNow();
@@ -131,104 +143,102 @@ export function renderBF(c: GameCard): void {
     if (picked && !ok) picked.classList.add('wrong');
     const ansEl = app.querySelector('#bfans');
     if (ansEl) ansEl.innerHTML = c.back; // reveal the un-masked answer
-    record(c, ok);
-    if (ok) grantReward('bf');
-    else breakCombo();
+    score(c, ok, 'bf');
+
+    // This mode has no #act to replace — its Next button is appended after the choices — so it does
+    // its own ending rather than calling endCard.
     const note = picked ? '' : '<div class="grade-note bad">⏱ Timed out</div>';
     const cont = document.createElement('div');
     cont.innerHTML = note + '<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>';
     app.querySelector('#choices')!.after(cont);
     app.querySelector('#next')!.addEventListener('click', advance);
   }
+
   ses._onTimeout = () => finish(null);
   app.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => finish(b as HTMLElement)));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
-    if (!ses.answered) {
-      const idx = ['1', '2', '3', '4', '5', '6', '7', '8'].indexOf(e.key);
-      if (idx >= 0) {
-        const b = app.querySelectorAll('.choice')[idx];
-        if (b) finish(b as HTMLElement);
-      }
+
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll('.choice')[idx];
+      if (b) finish(b as HTMLElement);
     }
   });
 }
 
+/** Fill-in: type the missing word into the sentence. */
 export function renderCZ(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
   const cz = c.cloze!;
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">fill in</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="cloze">${esc(cz.pre)}<input id="blank" class="blank" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="?">${esc(cz.post)}</div>
-      <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>
-    </div></div>`;
+  const ses = drawCard(
+    c,
+    'fill in',
+    `<div class="cloze">${esc(cz.pre)}<input id="blank" class="blank" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="?">${esc(cz.post)}</div>
+      <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
+  );
   const inp = app.querySelector('#blank') as HTMLInputElement;
   setTimeout(() => inp.focus(), 30);
+
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
     const ok = timedOut ? false : czOK(inp.value, cz);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
-    record(c, ok);
-    if (ok) grantReward('cz');
-    else breakCombo();
-    const canDispute = !timedOut && !ok && !!inp.value.trim();
+    score(c, ok, 'cz');
+
     const msg = timedOut
       ? `<span class="cz-bad">⏱ timed out · answer: <b>${esc(cz.answer)}</b></span>`
       : ok
         ? `<span class="cz-ok">✓ correct</span>`
         : `<span class="cz-bad">✗ answer: <b>${esc(cz.answer)}</b></span>`;
-    app.querySelector('#act')!.outerHTML = `<div class="cz-fb" id="czfb">${msg}${canDispute ? ` <button class="btn ghost sm" id="dispute" title="honor system — count as correct">I was right</button>` : ''}</div><div class="reveal-topic">${esc(c.topic)}</div><div class="answer" style="margin-top:6px">${c.back}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#next')!.addEventListener('click', advance);
-    const dsp = app.querySelector('#dispute');
-    if (dsp) dsp.addEventListener('click', () => dispute(c, inp));
+    // A dispute is only offered when the player actually typed something and it was marked wrong —
+    // there is nothing to honour-override about a blank or a timeout.
+    const canDispute = !timedOut && !ok && !!inp.value.trim();
+
+    endCard(c, typedFeedback(msg, canDispute), { reveal: true, disputeInput: inp });
   }
+
   ses._onTimeout = () => finish(true);
   app.querySelector('#submit')!.addEventListener('click', () => finish(false));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
-    if (!ses.answered) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        finish(false);
-      }
+
+  modeKeys((e) => {
+    if (!ses.answered && e.key === 'Enter') {
+      e.preventDefault();
+      finish(false);
     }
   });
 }
 
+/** Match: drag an arrow from each left item to its pair on the right. */
 export function renderMA(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
   const pairs = shuffle(c.match!.map((p) => [p[0], p[1]])).slice(0, Math.min(5, c.match!.length));
   const lefts = pairs.map((p) => p[0]);
   const rightVals = shuffle(pairs.map((p) => p[1]));
   const correctRi = pairs.map((p) => rightVals.indexOf(p[1]));
   const assign: Record<number, number> = {}; // li -> ri
   const PAL = ['#6366f1', '#0ea5e9', '#14b8a6', '#f59e0b', '#ec4899'];
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">match</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="topic" style="font-size:16px">${esc(c.topic)}</div>
+
+  const ses = drawCard(
+    c,
+    'match',
+    `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
       <div class="ptip">Drag an arrow from a left item to its match. Drag again to change it; tap a left item to clear it.</div>
       <div class="match" id="matchbox">
         <svg class="matchsvg" id="matchsvg"></svg>
         <div class="mcol" id="mL">${lefts.map((l, li) => `<div class="mitem" data-li="${li}"><span class="mtxt">${esc(l)}</span><span class="dot r"></span></div>`).join('')}</div>
         <div class="mcol" id="mR">${rightVals.map((r, ri) => `<div class="mitem" data-ri="${ri}"><span class="dot l"></span><span class="mtxt">${esc(r)}</span></div>`).join('')}</div>
       </div>
-      <div class="actions" id="act"><button class="btn primary" id="mcheck" disabled>Check</button></div>
-    </div></div>`;
+      <div class="actions" id="act"><button class="btn primary" id="mcheck" disabled>Check</button></div>`,
+  );
+
   const box = app.querySelector('#matchbox') as HTMLElement,
     svg = app.querySelector('#matchsvg') as SVGElement;
   const Lb = (li: number | string): HTMLElement => app.querySelector('#mL .mitem[data-li="' + li + '"]') as HTMLElement;
   const Rb = (ri: number | string): HTMLElement => app.querySelector('#mR .mitem[data-ri="' + ri + '"]') as HTMLElement;
-  const DEFS = '<defs><marker id="marr" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="context-stroke"/></marker></defs>';
+  const DEFS =
+    '<defs><marker id="marr" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="context-stroke"/></marker></defs>';
+
   function dot(item: HTMLElement, side: string): { x: number; y: number } {
     const d = item.querySelector('.dot.' + side)!.getBoundingClientRect(),
       bb = box.getBoundingClientRect();
@@ -262,6 +272,7 @@ export function renderMA(c: GameCard): void {
     });
     (app.querySelector('#mcheck') as HTMLButtonElement).disabled = keys.length !== pairs.length;
   }
+
   let drag: { li: number; sx: number; sy: number; moved: boolean } | null = null;
   const ptRel = (e: PointerEvent): { x: number; y: number } => {
     const bb = box.getBoundingClientRect();
@@ -306,6 +317,7 @@ export function renderMA(c: GameCard): void {
       redraw({ li: drag.li, x: p.x, y: p.y });
     }),
   );
+
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
@@ -326,19 +338,17 @@ export function renderMA(c: GameCard): void {
     }
     svg.innerHTML = h;
     box.classList.add('locked');
-    record(c, allRight);
-    if (allRight) grantReward('ma');
-    else breakCombo();
+    score(c, allRight, 'ma');
+
     const note = timedOut ? '⏱ Timed out' : allRight ? '✓ all matched!' : '✗ red = your wrong link; green marks the right target';
-    app.querySelector('#act')!.outerHTML = `<div class="grade-note" style="color:var(--${allRight ? 'good' : 'bad'})">${note}</div><div class="reveal-topic">${esc(c.topic)}</div><div class="answer" style="margin-top:6px">${c.back}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#next')!.addEventListener('click', advance);
+    endCard(c, gradeNote(allRight, note), { reveal: true });
   }
+
   ses._onTimeout = () => check(true);
   app.querySelector('#mcheck')!.addEventListener('click', () => check(false));
   setTimeout(() => redraw(null), 40);
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
+
+  modeKeys((e) => {
     if (!ses.answered && e.key === 'Enter' && Object.keys(assign).length === pairs.length) {
       e.preventDefault();
       check(false);
@@ -346,9 +356,8 @@ export function renderMA(c: GameCard): void {
   });
 }
 
+/** Multi-select: tick every member of a set. One wrong pick fails the card. */
 export function renderMS(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
   const nCorrect = Math.min(4, c.multi!.length);
   const chosen = shuffle(c.multi!.slice()).slice(0, nCorrect);
   const others: string[] = [];
@@ -360,15 +369,16 @@ export function renderMS(c: GameCard): void {
     .slice(0, Math.max(4, 8 - nCorrect));
   const opts = shuffle(chosen.map((n) => ({ n, ok: true })).concat(distract.map((n) => ({ n, ok: false }))));
   const picked = new Set<number>();
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">select all</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="topic" style="font-size:18px">Which of these are <b>${esc(c.topic)}</b>?</div>
+
+  const ses = drawCard(
+    c,
+    'select all',
+    `<div class="topic" style="font-size:18px">Which of these are <b>${esc(c.topic)}</b>?</div>
       <div class="ptip">Select every correct option — a wrong pick fails the card.</div>
       <div class="choices mschoices" id="choices">${opts.map((o, i) => `<button class="choice" data-i="${i}"><span class="k">☐</span>${esc(o.n)}</button>`).join('')}</div>
-      <div class="actions" id="act"><button class="btn primary" id="mscheck">Check</button></div>
-    </div></div>`;
+      <div class="actions" id="act"><button class="btn primary" id="mscheck">Check</button></div>`,
+  );
+
   app.querySelectorAll('.choice').forEach((b) =>
     b.addEventListener('click', () => {
       if (ses.answered) return;
@@ -384,6 +394,7 @@ export function renderMS(c: GameCard): void {
       }
     }),
   );
+
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
@@ -401,83 +412,66 @@ export function renderMS(c: GameCard): void {
         allRight = false;
       }
     });
-    record(c, allRight);
-    if (allRight) grantReward('ms');
-    else breakCombo();
+    score(c, allRight, 'ms');
+
     const note = timedOut ? '⏱ Timed out' : allRight ? '✓ perfect selection!' : '✗ the correct set is highlighted';
-    app.querySelector('#act')!.outerHTML = `<div class="grade-note" style="color:var(--${allRight ? 'good' : 'bad'})">${note}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#next')!.addEventListener('click', advance);
+    endCard(c, gradeNote(allRight, note));
   }
+
   ses._onTimeout = () => check(true);
   app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
-    if (!ses.answered) {
-      const idx = ['1', '2', '3', '4', '5', '6', '7', '8'].indexOf(e.key);
-      if (idx >= 0) {
-        const b = app.querySelectorAll('.choice')[idx];
-        if (b) (b as HTMLElement).click();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        check(false);
-      }
+
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll('.choice')[idx];
+      if (b) (b as HTMLElement).click();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      check(false);
     }
   });
 }
 
-// Inverse recall: show the (topic-masked) definition, recall the concept name. Honor-graded.
+/** Inverse recall: show the (topic-masked) definition, name the concept. Machine-graded by ivOK. */
 export function renderIV(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">name it</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="ptip">From the description, recall the CONCEPT (the card's title).</div>
+  const ses = drawCard(
+    c,
+    'name it',
+    `<div class="ptip">From the description, recall the CONCEPT (the card's title).</div>
       <div class="answer" id="ivdef">${c.backMasked || c.back}</div>
       <div class="cloze" style="margin-top:14px">Concept: <input id="blank" class="blank" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="the term…" style="min-width:220px"></div>
-      <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>
-    </div></div>`;
+      <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
+  );
   const inp = app.querySelector('#blank') as HTMLInputElement;
   setTimeout(() => inp.focus(), 30);
-  function ivOK(v: string): boolean {
-    v = norm(v);
-    if (!v) return false;
-    const t = norm(c.topic);
-    if (v === t) return true;
-    const tw = t.split(' ').filter((w) => w.length > 3);
-    if (!tw.length) return false;
-    const gw = new Set(v.split(' '));
-    const hit = tw.filter((w) => gw.has(w)).length;
-    return hit >= Math.ceil(tw.length * 0.6);
-  }
+
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    const ok = timedOut ? false : ivOK(inp.value);
+    const ok = timedOut ? false : ivOK(inp.value, c.topic);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
     const ansEl = app.querySelector('#ivdef');
     if (ansEl) ansEl.innerHTML = c.back;
-    record(c, ok);
-    if (!ok) breakCombo();
-    const canDispute = !timedOut && !ok && !!inp.value.trim();
+    score(c, ok, 'iv');
+
     const msg = timedOut
       ? `<span class="cz-bad">⏱ timed out · it was: <b>${esc(c.topic)}</b></span>`
       : ok
         ? `<span class="cz-ok">✓ ${esc(c.topic)}</span>`
         : `<span class="cz-bad">✗ it was: <b>${esc(c.topic)}</b></span>`;
-    app.querySelector('#act')!.outerHTML = `<div class="cz-fb" id="czfb">${msg}${canDispute ? ` <button class="btn ghost sm" id="dispute" title="honor system — count as correct">I was right</button>` : ''}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#next')!.addEventListener('click', advance);
-    const dsp = app.querySelector('#dispute');
-    if (dsp) dsp.addEventListener('click', () => dispute(c, inp));
+    const canDispute = !timedOut && !ok && !!inp.value.trim();
+
+    // No reveal: the answer is the topic, and it is already in the feedback line above.
+    endCard(c, typedFeedback(msg, canDispute), { disputeInput: inp });
   }
+
   ses._onTimeout = () => finish(true);
   app.querySelector('#submit')!.addEventListener('click', () => finish(false));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
+
+  modeKeys((e) => {
     if (!ses.answered && e.key === 'Enter') {
       e.preventDefault();
       finish(false);
@@ -485,25 +479,26 @@ export function renderIV(c: GameCard): void {
   });
 }
 
-// Drag labels onto the blanks in a YAML/code block (or tap a label then a blank).
+/** Label the YAML: drag labels into the blanks of a manifest (or tap a label, then a blank). */
 export function renderDM(c: GameCard): void {
-  const ses = S.ses!;
-  ses.answered = false;
   const M = c.manifest!;
   const chips = shuffle(M.blanks.concat(M.distractors || []).map((t) => ({ t })));
   let sel: HTMLElement | null = null;
-  const codeHtml = M.lines.map((line) => esc(line).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`)).join('\n');
+  const codeHtml = M.lines
+    .map((line) => esc(line).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`))
+    .join('\n');
   const chipHtml = chips.map((o, i) => `<span class="dchip" draggable="true" data-ci="${i}">${esc(o.t)}</span>`).join('');
-  app.innerHTML = `<div class="wrap">${hud()}
-    <div class="qcard">
-      <span class="dir">label the YAML</span>
-      <span class="catchip">${esc(CATS[c.cat])}</span>
-      <div class="topic" style="font-size:16px">${esc(c.topic)}</div>
+
+  const ses = drawCard(
+    c,
+    'label the YAML',
+    `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
       <div class="ptip">Drag each label into the right blank — or tap a label, then tap a blank. Fill every blank.</div>
       <pre class="dmcode">${codeHtml}</pre>
       <div class="dmtray" id="dmtray">${chipHtml}</div>
-      <div class="actions" id="act"><button class="btn primary" id="dmcheck" disabled>Check</button></div>
-    </div></div>`;
+      <div class="actions" id="act"><button class="btn primary" id="dmcheck" disabled>Check</button></div>`,
+  );
+
   const tray = app.querySelector('#dmtray') as HTMLElement;
   function refresh(): void {
     let all = true;
@@ -581,6 +576,7 @@ export function renderDM(c: GameCard): void {
       }
     });
   });
+
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
@@ -600,18 +596,16 @@ export function renderDM(c: GameCard): void {
       }
       slot.classList.add('filled');
     });
-    record(c, allRight);
-    if (allRight) grantReward('ma');
-    else breakCombo();
+    score(c, allRight, 'dm');
+
     const note = timedOut ? '⏱ Timed out' : allRight ? '✓ all labels correct!' : '✗ red = wrong; the correct label is now shown';
-    app.querySelector('#act')!.outerHTML = `<div class="grade-note" style="color:var(--${allRight ? 'good' : 'bad'})">${note}</div><div class="reveal-topic">${esc(c.topic)}</div><div class="answer" style="margin-top:6px">${c.back}</div><div class="actions"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#next')!.addEventListener('click', advance);
+    endCard(c, gradeNote(allRight, note), { reveal: true });
   }
+
   ses._onTimeout = () => check(true);
   app.querySelector('#dmcheck')!.addEventListener('click', () => check(false));
-  setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
-    if (navKey(e, !!ses.answered)) return;
+
+  modeKeys((e) => {
     if (!ses.answered && e.key === 'Enter') {
       const b = app.querySelector('#dmcheck') as HTMLButtonElement | null;
       if (b && !b.disabled) {

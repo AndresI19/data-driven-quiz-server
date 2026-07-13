@@ -1,0 +1,3 @@
+[submodule "vendor/platform-ui"]
+	path = vendor/platform-ui
+	url = https://github.com/AndresI19/platform-ui.git

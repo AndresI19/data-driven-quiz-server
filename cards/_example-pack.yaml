@@ -1,0 +1,83 @@
+# A worked example of every card type. NOT loaded — the loader skips files beginning with "_",
+# so this sits alongside _schema.md as a reference you can copy.
+#
+# To make it a real section: copy it to cards/<letter>-<name>.yaml. The leading letter orders the
+# section (a-…, b-…, k-… → last); the `section` block below names and colours it. No code changes —
+# the card's TYPE is inferred from which fields it carries.
+section:
+  key: K
+  name: Demo Drop-In Pack
+  color: '#c08a12'
+
+cards:
+  # 1. The minimum viable card: a topic and a description.
+  #    Gets you recall (fb) and identify (bf) for free — those two need no extra data.
+  - topic: Idempotency
+    desc: An operation that can be applied many times without changing the result beyond the first.
+
+  # 2. Add `cloze:` and the card can also be served as fill-in-the-blank (cz).
+  - topic: Backpressure
+    desc: A consumer signalling upstream that it cannot keep up, so producers slow down.
+    cloze:
+      text: When a consumer cannot keep up, the mechanism that tells producers to slow down is {}.
+      answer: backpressure
+      alts:
+        - flow control
+
+  # 3. Add `match:` and it can also be served as the drag-an-arrow match mode (ma).
+  - topic: Cache write policies
+    desc: How a cache and its backing store are kept in step.
+    # Quote the halves: an unquoted comma inside [a, b] makes YAML read it as a THIRD element,
+    # and the schema will (rightly) reject the card rather than guess what you meant.
+    match:
+      - ['write-through', 'written to cache and store together']
+      - ['write-back', 'written to cache now, store later']
+      - ['write-around', 'written straight to the store, skipping the cache']
+
+  # 4. Add `multi:` and it can also be served as select-all (ms).
+  #    The distractors come from the OTHER cards' multi lists — no extra authoring needed.
+  - topic: ACID properties
+    desc: The guarantees a classical transaction makes.
+    multi:
+      - Atomicity
+      - Consistency
+      - Isolation
+      - Durability
+
+  # 5. Add `manifest:` and it can also be served as label-the-YAML (dm).
+  #    {0}, {1}, … are the blanks; `blanks` is the answer in order; `distractors` are the decoys.
+  - topic: A Kubernetes Deployment
+    desc: The object that manages a replicated, self-healing set of Pods.
+    manifest:
+      lines:
+        - 'apiVersion: apps/v1'
+        - 'kind: {0}'
+        - 'spec:'
+        - '  replicas: {1}'
+      blanks:
+        - Deployment
+        - '3'
+      distractors:
+        - StatefulSet
+        - Service
+
+  # 6. `inverse: true` opts the card into name-it (iv): show the definition, recall the term.
+  - topic: Consistent hashing
+    desc: Mapping keys to nodes on a ring so that adding or removing a node moves only a small share of keys.
+    inverse: true
+
+  # 7. `mc:` supplies hand-written wrong answers for identify, instead of letting the app pick
+  #    plausible distractors from other cards.
+  - topic: The CAP theorem
+    desc: Under a network partition a system must choose between consistency and availability.
+    mc:
+      - The PACELC theorem
+      - The FLP impossibility result
+      - Amdahl's law
+    hint: three letters, one of which you must give up
+
+  # 8. `recall: true` forces the card to ALWAYS be self-graded recall — it opts out of every
+  #    machine-graded mode, even if it carried the data for them.
+  - topic: Explain eventual consistency to a non-engineer
+    desc: There is no single right wording — this one is for you to judge yourself on.
+    recall: true

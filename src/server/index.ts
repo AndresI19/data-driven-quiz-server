@@ -2,6 +2,7 @@ import express from 'express';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { serveClient } from '@platform/ui/server';
 import { loadCardsPayload } from '../shared/load-cards.js';
 import { buildPrintHtml } from '../print/build-print.js';
 
@@ -11,12 +12,15 @@ const CARDS_DIR = resolve(ROOT, 'cards');
 const CLIENT_DIR = resolve(ROOT, 'dist/client'); // vite build output (includes /assets)
 
 const app = express();
-const PORT = Number(process.env.PORT) || 80; // 80 = standard HTTP; needs privilege (see README)
+// 3000, not 80: binding 80 needs root, which is a hostile default for someone who just cloned this
+// and ran `npm start`. The container sets PORT=80 explicitly, where it is running as its own user.
+const PORT = Number(process.env.PORT) || 3000;
 
-// URL prefix the app is mounted under (must match Vite's `base`). Trailing-slashed; '/' at root.
-// The reverse proxy forwards this prefix unchanged, so every route lives beneath it.
-const BASE = process.env.BASE_PATH || '/cloud-developer-quiz/';
-const B = BASE.replace(/\/$/, ''); // '' at root, else '/cloud-developer-quiz'
+// URL prefix the app is mounted under; must match Vite's `base` (both read BASE_PATH). Defaults to
+// the root — on its own the quiz is a whole site. A platform that mounts it under a path supplies
+// BASE_PATH, and forwards that prefix unchanged, so every route below hangs beneath it.
+const BASE = process.env.BASE_PATH || '/';
+const B = BASE.endsWith('/') ? BASE.slice(0, -1) : BASE; // '' at root, else '/cloud-developer-quiz'
 
 // Cards are validated + transformed once at startup, then served as static JSON.
 // The print sheet is likewise built once from the same payload.
@@ -28,8 +32,6 @@ function buildCards(): void {
   printHtml = buildPrintHtml(payload);
 }
 buildCards();
-
-app.get(`${B}/api/health`, (_req, res) => res.json({ ok: true }));
 
 app.get(`${B}/api/cards.json`, (_req, res) => {
   res.type('application/json');
@@ -44,28 +46,10 @@ app.get(`${B}/print.html`, (_req, res) => {
   res.send(printHtml);
 });
 
-// Static: the built client (and its bundled assets), mounted under the prefix so requests for
-// <base>assets/* resolve (and <base>/ serves index.html). Long cache for hashed assets.
-if (existsSync(CLIENT_DIR)) {
-  app.use(
-    B || '/',
-    express.static(CLIENT_DIR, {
-      setHeaders(res, path) {
-        if (path.includes(`${'/assets/'}`) || /\.[0-9a-f]{8}\./.test(path)) {
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-      },
-    }),
-  );
-  // SPA fallback for client-routed deep links under the prefix.
-  app.get(`${B}/*`, (_req, res) => res.sendFile(resolve(CLIENT_DIR, 'index.html')));
-} else {
-  app.get(`${B}/*`, (_req, res) =>
-    res
-      .status(503)
-      .send('Client not built yet. Run `npm run build` first (or use `npm run dev` for HMR).'),
-  );
-}
+// The built client, its cache policy, the health probe and the SPA fallback — all shared with the
+// home page. Mounted LAST: it ends in a catch-all, so the cards and print routes above must be
+// registered first or they would be shadowed by index.html.
+serveClient(app, { clientDir: CLIENT_DIR, base: BASE, appName: 'flashcards-app' });
 
 app.listen(PORT, () => {
   console.log(`flashcards-app serving on http://localhost:${PORT}`);

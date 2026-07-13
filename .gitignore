@@ -1,4 +1,23 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-*.log
+
+# Test / tool caches
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local environment. Nothing in this repo needs a secret — PORT and BASE_PATH are the only two
+# variables, and neither is sensitive — but an ignored .env means a future one cannot be committed
+# by accident.
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
 .DS_Store
+.idea/
+.vscode/
+*.log

@@ -25,9 +25,22 @@ export interface Block {
   price: number;
   pool?: number[];
   water?: boolean;
+  /** Absent means buyable. Grass is the exception: it is grown by watering dirt, not bought. */
+  buyable?: boolean;
 }
+/**
+ * Every block, once.
+ *
+ * `grass` is here even though it cannot be bought — it is made by watering dirt (WATER_COST). It has
+ * to be in the table anyway, because its name and its value are needed all the same: they used to be
+ * kept in two OTHER places (a `BLOCK_VALUE` map and an inline name map in sprites.ts), which is three
+ * tables that had to agree about four blocks and silently didn't have to about the fifth.
+ *
+ * `buyable: false` is what keeps it out of the shop, rather than its absence from the table.
+ */
 export const BLOCKS: Record<string, Block> = {
   dirt: { name: 'Dirt', price: 14, pool: DIRT_V },
+  grass: { name: 'Grass', price: 18, pool: GRASS_V, buyable: false },
   rock: { name: 'Rock', price: 20, pool: ROCK_V },
   spire: { name: 'Spire', price: 22, pool: SPIRE_V },
   water: { name: 'Water', price: 18, water: true },
@@ -182,8 +195,16 @@ export const BACKGROUNDS: Background[] = [
 export const ANIM_BY_ID: Record<string, Animal> = {};
 ANIMALS.forEach((a) => (ANIM_BY_ID[a.id] = a));
 
-export const REWARD_BASE: Record<string, number> = { bf: 20, cz: 24, ma: 40, ms: 34 };
-export const BLOCK_VALUE: Record<string, number> = { dirt: 14, grass: 18, rock: 20, spire: 22, water: 18 };
+// Coins for a correct card, by mode. `fb` is absent on purpose — it is self-graded, so paying for it
+// would pay the honour system. Every machine-graded mode must appear here: `iv` was missing, so a
+// correct inverse-recall card silently paid nothing and did not advance the combo, and `dm` used to
+// borrow `ma`'s entry (same value, but it read as a typo rather than a decision).
+export const REWARD_BASE: Record<string, number> = { bf: 20, cz: 24, iv: 24, ma: 40, ms: 34, dm: 40 };
+/** What a placed block is worth. Derived — a block's value IS its price; it was a second hand-kept
+    table that had to be edited in lockstep with BLOCKS, and nothing made you. */
+export const BLOCK_VALUE: Record<string, number> = Object.fromEntries(
+  Object.entries(BLOCKS).map(([id, b]) => [id, b.price]),
+);
 
 // Isometric placement: 80px tiles, 40x20 diamond step, drawn back-to-front (z = col+row).
 export const ISO_W = 80,
@@ -203,4 +224,32 @@ export function newBoard(): (GardenCell | null)[] {
   for (let r = 2; r < 7; r++)
     for (let c = 2; c < 7; c++) cells[r * 10 + c] = { block: 'dirt', v: pick(DIRT_V) }; // centre 5x5 of dirt
   return cells;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Board geometry. These live next to WATER_MAP because they are what produces the key into it.
+// ---------------------------------------------------------------------------------------------
+
+/** Land = a non-water block. Water, empty and off-board are all "not land", so they grow no rim. */
+export function isLand(cell: GardenCell | null): boolean {
+  return !!(cell && cell.block !== 'water');
+}
+
+/**
+ * The autotile key for the water cell at `i`: one bit per land-facing edge.
+ * NE=1 (r-1,c) · NW=2 (r,c-1) · SE=4 (r,c+1) · SW=8 (r+1,c).
+ *
+ * This is the index into WATER_MAP, and it used to be computed in two places — the autotiler and
+ * the debug tile-id overlay — which meant the overlay could disagree with the tile it was labelling.
+ * That is the one thing an overlay exists not to do.
+ */
+export function waterMask(cells: (GardenCell | null)[], i: number): number {
+  const r = (i / 10) | 0,
+    c = i % 10;
+  let m = 0;
+  if (r > 0 && isLand(cells[(r - 1) * 10 + c])) m |= 1; // NE
+  if (c > 0 && isLand(cells[r * 10 + c - 1])) m |= 2; // NW
+  if (c < 9 && isLand(cells[r * 10 + c + 1])) m |= 4; // SE
+  if (r < 9 && isLand(cells[(r + 1) * 10 + c])) m |= 8; // SW
+  return m;
 }

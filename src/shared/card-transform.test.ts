@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   esc,
@@ -142,4 +142,43 @@ test('toGameCard suppresses objective modes on recall-only cards', () => {
   assert.equal(gc.multi, null);
   assert.equal(gc.manifest, null);
   assert.equal(gc.inverse, false); // inverse is suppressed on recall cards
+});
+
+/**
+ * Every field the author docs advertise must actually reach the game.
+ *
+ * `multi:` was documented as "Explicit multi-select member names", accepted by the zod schema, and
+ * then silently dropped: the transform only ever inferred a multi list from `items`, and only when
+ * the topic happened to contain "framework" or "core k8s objects". A card could author the field
+ * correctly and get no select-all mode. This is the test that would have caught it — and it is
+ * written per-field, so the next field to be added cannot go dead the same way.
+ */
+test('an authored multi: list is honoured', () => {
+  const c = {
+    id: 'X1', cat: 'X', topic: 'ACID properties', desc: 'Transaction guarantees.',
+    multi: ['Atomicity', 'Consistency', 'Isolation', 'Durability'],
+  };
+  assert.deepEqual(multi(c as never), ['Atomicity', 'Consistency', 'Isolation', 'Durability']);
+});
+
+test('a multi: list too short to make a question is rejected', () => {
+  const c = { id: 'X2', cat: 'X', topic: 'Pair', desc: '', multi: ['one', 'two'] };
+  assert.equal(multi(c as never), null);
+});
+
+test('the legacy items-inference still works for the cards that rely on it', () => {
+  const c = {
+    id: 'X3', cat: 'X', topic: 'Agent frameworks', desc: '',
+    items: ['LangChain — chains', 'LlamaIndex (RAG)', 'CrewAI — crews'],
+  };
+  assert.deepEqual(multi(c as never), ['LangChain', 'LlamaIndex', 'CrewAI']);
+});
+
+test('an explicit list wins over the inference', () => {
+  const c = {
+    id: 'X4', cat: 'X', topic: 'Agent frameworks', desc: '',
+    items: ['LangChain — chains', 'LlamaIndex (RAG)', 'CrewAI — crews'],
+    multi: ['Only', 'These', 'Three'],
+  };
+  assert.deepEqual(multi(c as never), ['Only', 'These', 'Three']);
 });

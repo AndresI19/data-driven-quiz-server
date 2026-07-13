@@ -40,7 +40,7 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 | `table` | list of rows (list of string) | First row is the header. |
 | `diagram` | string | A key into `_diagrams.yaml` (an inline SVG). |
 | `match` | list of `[left, right]` | Explicit line-matching pairs (match mode). |
-| `multi` | list of string | Explicit multi-select member names. |
+| `multi` | list of string | Explicit multi-select member names (≥3, else the card gets no select-all). |
 | `mc` | list of string | Extra distractors for identify mode. |
 | `cloze` | `{text, answer, alts?}` | Fill-in-the-blank; `text` holds one `{}` placeholder. |
 | `hint` | string | Explicit "where to start" cue (else one is auto-derived from `desc`). |
@@ -51,11 +51,12 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 
 ## Derived behavior (no authoring needed)
 
-Some modes are inferred from the content, matching the original game:
+An explicit field always wins. These inferences are the *fallback*, for cards that do not author one:
 - **match** is auto-derived from a 2-column `table` (≥3 rows) or from `items` shaped
   `verb — purpose` when the topic mentions "command".
 - **multi** is auto-derived from `items` when the topic mentions "framework" or
-  "core k8s objects".
+  "core k8s objects". (Until recently this was the ONLY way to get select-all — an authored
+  `multi:` list was accepted by the schema and then silently dropped. It is now honoured.)
 - **hint** falls back to a trimmed opener from `desc` when no explicit `hint` is given.
 - **identify mode** masks the topic's own words inside the answer automatically.
 

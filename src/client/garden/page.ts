@@ -16,7 +16,7 @@ import {
 } from './catalog.js';
 import {
   gardenValue, totalGardenValue, resetGarden, updateMaxScore, canBuyGarden, buyGarden, switchGarden,
-  unlockBg, applyBg, clearBg, unlockFx, applyFx, clearFx, NEW_GARDEN_COST, nextGardenThreshold,
+  unlockDecor, applyDecor, clearDecor, type Decor, NEW_GARDEN_COST, nextGardenThreshold,
 } from './economy.js';
 import { gardenBoardInner, animThumb, tileDesc } from './sprites.js';
 import { brushSel, brushHint, costTag, applyBrush } from './interact.js';
@@ -110,7 +110,9 @@ export function gardenPage(): void {
     : `<span class="tiny gslot">next garden at \u{1F3C6} ${nextGardenThreshold()} total</span>`;
   app.innerHTML = `<div class="wrap gardenwrap">
     <div class="rvbar">
-      <button class="btn ghost sm" id="gback">← Home</button>
+      <!-- Returns to the quiz's own home screen (setup), not the platform home page — so it is
+           labelled "Back" rather than "Home", which would collide with the top-left home link. -->
+      <button class="btn ghost sm" id="gback" title="back to the quiz home screen">← Back</button>
       <div class="coinbal big">\u{1FA99} ${DB.infinite ? '∞' : DB.coins}</div>
       <span class="gscore big" title="achievement — total value across ALL your gardens (unlocks new gardens)">\u{1F3C6} ${totalGardenValue()}</span>
       <span class="gscore" title="this garden's value">\u{1F3C5} ${gardenValue()}</span>
@@ -173,24 +175,21 @@ export function gardenPage(): void {
       gardenPage();
     }),
   );
-  app.querySelectorAll('.fxbtn').forEach((b) =>
-    b.addEventListener('click', () => {
-      const id = (b as HTMLElement).dataset.fx!;
-      if (id === '__none') clearFx();
-      else if (!DB.ownedFx[id]) unlockFx(id); // 1st click: unlock
-      else applyFx(id); // 2nd click: apply
-      gardenPage();
-    }),
-  );
-  app.querySelectorAll('.bgbtn').forEach((b) =>
-    b.addEventListener('click', () => {
-      const id = (b as HTMLElement).dataset.bg!;
-      if (id === '__none') clearBg();
-      else if (!DB.ownedBg[id]) unlockBg(id); // 1st click: unlock
-      else applyBg(id); // 2nd click: apply
-      gardenPage();
-    }),
-  );
+  // One shop rule for both decor slots: '__none' clears, an un-owned item unlocks on the first
+  // click, and an owned one applies on the second.
+  const wireDecor = (slot: Decor, sel: string, owned: Record<string, boolean>): void => {
+    app.querySelectorAll(sel).forEach((b) =>
+      b.addEventListener('click', () => {
+        const id = (b as HTMLElement).dataset[slot]!;
+        if (id === '__none') clearDecor(slot);
+        else if (!owned[id]) unlockDecor(slot, id);
+        else applyDecor(slot, id);
+        gardenPage();
+      }),
+    );
+  };
+  wireDecor('fx', '.fxbtn', DB.ownedFx);
+  wireDecor('bg', '.bgbtn', DB.ownedBg);
   const hint = app.querySelector('#palhint');
   const cells = app.querySelectorAll<HTMLElement>('.gcell');
   const cursor = brushCursor();

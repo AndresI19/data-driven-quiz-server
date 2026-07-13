@@ -13,6 +13,11 @@ export interface Garden {
   bg: string | null; // selected background id, or null
   fx: string | null; // selected particle effect id, or null
 }
+/** A fresh garden. Lives here rather than in the catalog because the catalog cannot see this type —
+    db.ts imports the catalog, not the other way round. Was an object literal written out twice. */
+export function newGarden(): Garden {
+  return { cells: newBoard(), hideFg: false, bg: null, fx: null };
+}
 export interface SessionRec {
   id: string;
   label: string;

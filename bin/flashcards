@@ -3,7 +3,9 @@
 # Put this bin dir on your PATH (see README), then just run `flashcards`.
 set -euo pipefail
 
-APP_DIR="/home/ClaudeSpace/git-workspace/claude-workspace/flashcards-app"
+# Derive the app directory from where this script actually lives, so the launcher works from any
+# checkout. It used to hardcode one absolute path on one machine.
+APP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
 usage() {
   cat <<'EOF'

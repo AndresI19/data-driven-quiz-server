@@ -11,13 +11,13 @@ export interface RawCard extends AuthoredCard {
 }
 
 /** Python's html.escape(s, quote=True): & < > " ' — in that order. */
+// Escapes the same five characters Python's html.escape() does. One pass over the string, not five —
+// and, more to the point, the ordering hazard disappears: chaining .replace() calls only worked
+// because `&` was escaped first, and a future edit that moved it would have double-escaped the rest.
+// A single character class cannot be got wrong that way.
+const ESC_MAP: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
 export function esc(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+  return s.replace(/[&<>"']/g, (c) => ESC_MAP[c]);
 }
 
 /**
@@ -110,12 +110,27 @@ export function match(c: RawCard): [string, string][] | null {
   return null;
 }
 
-/** Multi-select member names for framework / core-k8s-objects list cards. */
+/**
+ * Multi-select member names: an explicit `multi:` list, or — for the older cards that predate the
+ * field — inferred from a list card's `items`.
+ *
+ * The explicit branch is the one that was missing. `multi:` has always been in the schema and the
+ * author docs ("Explicit multi-select member names"), but this function only ever looked at `items`,
+ * and then only when the TOPIC happened to contain the word "framework" or "core k8s objects". So a
+ * card that authored a perfectly good `multi:` list silently got no select-all mode, and the feature
+ * worked purely by accident of how a topic was named. Every other authorable field (match, cloze,
+ * manifest, mc) is honoured when given; this one was not.
+ *
+ * The inference is kept, because ten cards across three sections rely on it today.
+ */
 export function multi(c: RawCard): string[] | null {
+  if (c.multi && c.multi.length >= 3) return c.multi.slice();
+
   const t = c.topic.toLowerCase();
   if (!(t.includes('framework') || t.includes('core k8s objects'))) return null;
   const names: string[] = [];
   for (const it of c.items ?? []) {
+    // "Kubernetes — the orchestrator (v1.30)" → "Kubernetes"
     const name = it.split(' — ')[0].split(' (')[0].trim();
     if (name) names.push(name);
   }

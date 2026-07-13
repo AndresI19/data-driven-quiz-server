@@ -39,6 +39,7 @@ export function stopTicker(): void {
     clearInterval(S.ticker);
     S.ticker = null;
   }
+  unbind();
 }
 export function startTicker(): void {
   stopTicker();
@@ -47,6 +48,29 @@ export function startTicker(): void {
   tick();
   S.ticker = setInterval(tick, 250);
 }
+/**
+ * The clock's view. tick() runs four times a second for the whole quiz and used to re-query all five
+ * of these every time — twenty DOM lookups a second for elements that only change when the card does.
+ *
+ * The cache has to be LAZY, not eager: startTicker() is called from renderQ *before* the mode draws
+ * and before decorateCard adds the .tbar, so binding at start time would capture the previous card's
+ * nodes. Instead each ref is re-resolved only when the one we hold has left the document — which
+ * happens exactly once per card, when the mode replaces app.innerHTML.
+ */
+let stime: Element | null = null;
+let ctime: Element | null = null;
+let bar: Element | null = null;
+let fill: HTMLElement | null = null;
+let barText: Element | null = null;
+
+const stale = (el: Element | null): boolean => el === null || !el.isConnected;
+
+/** Drop the cache. Called when a card ends, so the next card cannot inherit its predecessor's nodes. */
+function unbind(): void {
+  stime = ctime = bar = null;
+  fill = barText = null;
+}
+
 export function tick(): void {
   const ses = S.ses;
   if (!ses) {
@@ -54,21 +78,28 @@ export function tick(): void {
     return;
   }
   const now = Date.now();
-  const st = app.querySelector('#stime');
-  if (st) st.textContent = fmtClock(ses.elapsedMs + (now - S.cardStart));
+
+  if (stale(stime)) stime = app.querySelector('#stime');
+  if (stime) stime.textContent = fmtClock(ses.elapsedMs + (now - S.cardStart));
+
+  if (stale(ctime)) ctime = app.querySelector('#ctime');
   const held = (S.answeredAt || now) - S.cardStart;
-  const ct = app.querySelector('#ctime');
-  if (ct) ct.textContent = Math.floor(held / 1000) + 's';
+  if (ctime) ctime.textContent = Math.floor(held / 1000) + 's';
+
   if (S.curLimit > 0) {
     const remS = Math.max(0, S.curLimit - (now - S.cardStart) / 1000);
-    const bar = app.querySelector('.tbar');
+    // The bar is appended by decorateCard, which runs after the first tick — so it legitimately
+    // starts absent and appears a moment later. Re-resolving while stale covers both cases.
+    if (stale(bar)) {
+      bar = app.querySelector('.tbar');
+      fill = bar ? (bar.querySelector('i') as HTMLElement | null) : null;
+      barText = bar ? bar.querySelector('.tbar-t') : null;
+    }
     if (bar) {
       if (!ses.answered) {
         const frac = Math.max(0, remS / S.curLimit);
-        const fill = bar.querySelector('i') as HTMLElement | null;
         if (fill) fill.style.width = frac * 100 + '%';
-        const t = bar.querySelector('.tbar-t');
-        if (t) t.textContent = Math.ceil(remS) + 's';
+        if (barText) barText.textContent = Math.ceil(remS) + 's';
         bar.classList.toggle('low', frac <= 0.25);
       } else {
         bar.classList.add('done');

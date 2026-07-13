@@ -1,5 +1,8 @@
 // Boot: fetch the validated card payload, populate the data holders, wire the two global
 // listeners (pause button + diagram zoom; P/Escape shortcuts), and mount the home screen.
+// Shared platform layers first, this app's stylesheet last — so anything here can override them.
+import '@platform/ui/tokens.css';
+import '@platform/ui/base.css';
 import './styles/game.css';
 import { app, initData } from './runtime/data.js';
 import { S } from './runtime/state.js';

@@ -3,8 +3,8 @@
 import { DB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import {
-  ASSET, TIMG, ISO_W, ISO_HX, ISO_HY, ISO_OX,
-  FEAT_BY_ID, ANIM_BY_ID, type Feature, type Animal, type GardenCell,
+  ASSET, TIMG, ISO_W, ISO_HX, ISO_HY, ISO_OX, BLOCKS,
+  FEAT_BY_ID, ANIM_BY_ID, waterMask, type Feature, type Animal, type GardenCell,
 } from './catalog.js';
 
 // Mini isometric 4x4 all-grass render for the home button: tree N, stag S, rock E, log W.
@@ -124,18 +124,9 @@ function tileIdOverlay(): string {
     const p = cellPos(i);
     let label = String(cell.v);
     if (cell.block === 'water') {
-      const r = (i / 10) | 0,
-        c = i % 10;
-      const NE = r > 0 ? C[(r - 1) * 10 + c] : null,
-        NW = c > 0 ? C[r * 10 + c - 1] : null,
-        SE = c < 9 ? C[r * 10 + c + 1] : null,
-        SW = r < 9 ? C[(r + 1) * 10 + c] : null;
-      let m = 0;
-      if (isLand(NE)) m |= 1;
-      if (isLand(NW)) m |= 2;
-      if (isLand(SE)) m |= 4;
-      if (isLand(SW)) m |= 8;
-      label = cell.v + '·m' + m;
+      // The SAME mask the autotiler used to choose the tile. Computed here independently, the
+      // overlay could disagree with the tile it is labelling — which defeats the overlay.
+      label = cell.v + '·m' + waterMask(C, i);
     }
     h += `<span class="tileid" style="left:${p.x + ISO_HX}px;top:${p.y + ISO_HY}px">${label}</span>`;
   }
@@ -159,10 +150,9 @@ export function tileDesc(i: number): string {
   const cell = DB.garden.cells[i],
     loc = 'col ' + (i % 10) + ' · row ' + ((i / 10) | 0);
   if (!cell) return loc + ' — empty';
-  const bn =
-    (({ dirt: 'Dirt', grass: 'Grass', rock: 'Rock', spire: 'Spire', water: 'Water' } as Record<string, string>)[
-      cell.block
-    ]) || cell.block;
+  // The block's name comes from the block table — this was a third copy of it, and the only reason
+  // it existed is that `grass` used to be missing from BLOCKS.
+  const bn = BLOCKS[cell.block]?.name || cell.block;
   const parts = [bn];
   if (cell.feature) {
     const f = FEAT_BY_ID[cell.feature];
@@ -174,6 +164,3 @@ export function tileDesc(i: number): string {
   }
   return loc + ' — ' + parts.join(' · ');
 }
-export function isLand(cell: GardenCell | null): boolean {
-  return !!(cell && cell.block !== 'water');
-} // land = a non-water block; water/empty = not land

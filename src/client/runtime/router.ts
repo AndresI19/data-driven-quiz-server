@@ -15,7 +15,9 @@ let routing = false;
 // Internal route paths ('/home', '/garden', …) stay prefix-free; these two helpers translate to and
 // from the on-the-wire location.pathname so every call site can ignore the base entirely.
 const BASE = import.meta.env.BASE_URL;
-const BASE_NOSLASH = BASE.replace(/\/$/, ''); // '' at root, else '/cloud-developer-quiz'
+// endsWith/slice, not a regex — the function right below already strips the prefix with
+// startsWith/slice, and the file was doing the mirror operation two different ways.
+const BASE_NOSLASH = BASE.endsWith('/') ? BASE.slice(0, -1) : BASE; // '' at root, else '/cloud-developer-quiz'
 
 /** Internal route path ('/home') → full location path ('/cloud-developer-quiz/home'). */
 function toUrl(path: string): string {

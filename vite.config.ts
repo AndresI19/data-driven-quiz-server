@@ -7,7 +7,11 @@ const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
 // URL prefix the app is served under (behind the reverse proxy). Trailing-slashed. Override with
 // BASE_PATH=/ to run at root. Baked into the build (index.html asset URLs + import.meta.env.BASE_URL)
 // and mirrored by the Express server + the dev middleware below so dev and prod share one URL scheme.
-const BASE = process.env.BASE_PATH || '/cloud-developer-quiz/';
+// The URL prefix this app is mounted under. Defaults to the ROOT: on its own, the quiz is a whole
+// site. The platform that hosts it behind a path (/cloud-developer-quiz/) supplies BASE_PATH — the
+// app itself must not assume it lives there, or a fresh clone would serve assets from a prefix that
+// does not exist.
+const BASE = process.env.BASE_PATH || '/';
 
 // Dev-only: serve the same /api/cards.json the Express server serves in production,
 // so the client fetches from one URL in both modes (no proxy, no second process).

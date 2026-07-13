@@ -88,10 +88,11 @@ export function setup(): void {
     </div>`
     : '';
   app.innerHTML = `
+  <a class="homelink" href="/" title="Back to the platform home page">← Home</a>
   <div class="wrap homewrap">
     <div class="masthead">
       <h1>Cloud Developer Quiz</h1>
-      <div class="mast-by">by Andres Irarragorri &nbsp;·&nbsp; <a class="reslink" href="/" title="Back to home">← Home</a></div>
+      <div class="mast-by">by Andres Irarragorri</div>
     </div>
     <div class="homecols">
     <div class="homecol homeleft">

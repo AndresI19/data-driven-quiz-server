@@ -1,7 +1,7 @@
 // Shared coin wallet + garden value, multi-garden purchase/switching, and background purchase.
 // Wallet (coins/combo/infinite/spent) lives on DB (shared across gardens); DB.garden is the
 // active board.
-import { DB, saveDB } from '../runtime/db.js';
+import { DB, saveDB, newGarden } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { REWARD_BASE, BLOCK_VALUE, FEAT_BY_ID, ANIM_BY_ID, newBoard, BG_PRICE, APPLY_COST } from './catalog.js';
 
@@ -117,7 +117,7 @@ export function canBuyGarden(): boolean {
 export function buyGarden(): boolean {
   if (!canBuyGarden() || !afford(NEW_GARDEN_COST)) return false;
   spend(NEW_GARDEN_COST);
-  DB.gardens.push({ cells: newBoard(), hideFg: false, bg: null, fx: null });
+  DB.gardens.push(newGarden());
   DB.gardenIdx = DB.gardens.length - 1;
   DB.garden = DB.gardens[DB.gardenIdx];
   saveDB();
@@ -140,7 +140,7 @@ export function nextGardenThreshold(): number {
 }
 /** Debug: wipe ALL garden progress — extra gardens, backgrounds, coins, unlocks. */
 export function resetAllGardens(): void {
-  DB.gardens = [{ cells: newBoard(), hideFg: false, bg: null, fx: null }];
+  DB.gardens = [newGarden()];
   DB.gardenIdx = 0;
   DB.garden = DB.gardens[0];
   DB.ownedBg = {};
@@ -154,46 +154,46 @@ export function resetAllGardens(): void {
   saveDB();
 }
 
-// ---- backgrounds ---- two steps: unlock (BG_PRICE, owned forever), then apply (APPLY_COST, lifts 🏆)
-export function unlockBg(id: string): boolean {
-  if (DB.ownedBg[id]) return true;
+// ---------------------------------------------------------------------------------------------
+// Decor: the backdrop and the falling-particle effect.
+//
+// Both are bought the same way — unlock once (BG_PRICE, yours forever), then apply to the current
+// garden (APPLY_COST, which is what lifts the 🏆 score). The two used to be written out twice, six
+// near-identical functions differing only in which dictionary they looked in and which field of the
+// garden they set. That is what a parameter is for.
+// ---------------------------------------------------------------------------------------------
+
+/** The two decor slots. A slot names both the garden field and the ownership ledger. */
+export type Decor = 'bg' | 'fx';
+
+const OWNED: Record<Decor, () => Record<string, boolean>> = {
+  bg: () => DB.ownedBg,
+  fx: () => DB.ownedFx,
+};
+
+/** Buy the right to use a decor item. Idempotent: already owning it is success, and costs nothing. */
+export function unlockDecor(slot: Decor, id: string): boolean {
+  const owned = OWNED[slot]();
+  if (owned[id]) return true;
   if (!afford(BG_PRICE)) return false;
   spend(BG_PRICE);
-  DB.ownedBg[id] = true;
+  owned[id] = true;
   saveDB();
   return true;
-}
-export function applyBg(id: string): boolean {
-  if (!DB.ownedBg[id] || DB.garden.bg === id) return false;
-  if (!afford(APPLY_COST)) return false;
-  spend(APPLY_COST);
-  DB.garden.bg = id;
-  saveDB();
-  return true;
-}
-export function clearBg(): void {
-  DB.garden.bg = null;
-  saveDB();
 }
 
-// ---- effects (falling particles) ----
-export function unlockFx(id: string): boolean {
-  if (DB.ownedFx[id]) return true;
-  if (!afford(BG_PRICE)) return false;
-  spend(BG_PRICE);
-  DB.ownedFx[id] = true;
-  saveDB();
-  return true;
-}
-export function applyFx(id: string): boolean {
-  if (!DB.ownedFx[id] || DB.garden.fx === id) return false;
+/** Put an owned item on the current garden. Fails if it is not owned, or is already the active one. */
+export function applyDecor(slot: Decor, id: string): boolean {
+  if (!OWNED[slot]()[id] || DB.garden[slot] === id) return false;
   if (!afford(APPLY_COST)) return false;
   spend(APPLY_COST);
-  DB.garden.fx = id;
+  DB.garden[slot] = id;
   saveDB();
   return true;
 }
-export function clearFx(): void {
-  DB.garden.fx = null;
+
+/** Take it off. Free — you keep the unlock. */
+export function clearDecor(slot: Decor): void {
+  DB.garden[slot] = null;
   saveDB();
 }

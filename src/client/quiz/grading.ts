@@ -16,6 +16,29 @@ export function czOK(val: string, cz: Cloze): boolean {
   if (v === norm(cz.answer)) return true;
   return (cz.alts || []).some((a) => norm(a) === v);
 }
+
+/**
+ * Grade an inverse-recall answer: the player is shown a definition and types the topic back.
+ *
+ * Exact match wins outright. Otherwise it is a keyword vote — the "significant" words of the topic
+ * (>3 characters, so "the"/"of" cannot carry a pass), of which at least 60% must appear in the
+ * answer. That tolerance is why "load balancer" scores against "a load balancer" but not against
+ * "balancer" alone in a longer topic.
+ *
+ * Lived inside renderIV, which meant the one piece of grading logic in this app that is pure and
+ * worth testing was the one piece that could not be imported.
+ */
+export function ivOK(val: string, topic: string): boolean {
+  const v = norm(val);
+  if (!v) return false;
+  const t = norm(topic);
+  if (v === t) return true;
+  const significant = t.split(' ').filter((w) => w.length > 3);
+  if (!significant.length) return false;
+  const given = new Set(v.split(' '));
+  const hits = significant.filter((w) => given.has(w)).length;
+  return hits >= Math.ceil(significant.length * 0.6);
+}
 export function rate(c: GameCard): number {
   const s = DB.stats[c.id];
   return s && s.seen ? s.missed / s.seen : 0.9;
@@ -34,28 +57,38 @@ const STOP = new Set(
     ' ',
   ),
 );
-function toks(s: unknown): string[] {
-  return String(s)
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, ' ')
-    .split(/\s+/)
+/** The significant words of a string: lowercased, punctuation-stripped, stopwords and stubs dropped. */
+export function toks(s: unknown): string[] {
+  // norm() already lowercases, collapses every run of non-alphanumerics to ONE space, and trims —
+  // so the string it returns can only be separated by single spaces. This used to re-implement
+  // norm() and then split on /\s+/, a regex that could never match anything but a single space.
+  return norm(s)
+    .split(' ')
     .filter((w) => w.length > 2 && !STOP.has(w));
 }
-function sim(a: string, b: string): number {
-  const A = new Set(toks(a));
+
+/** How many significant words `b` shares with an already-tokenised `a`. */
+function simWith(a: Set<string>, b: string): number {
   let n = 0;
-  for (const w of toks(b)) if (A.has(w)) n++;
+  for (const w of toks(b)) if (a.has(w)) n++;
   return n;
 }
 export function distractors(card: GameCard, n: number): GameCard[] {
+  // The answer's own tokens, built ONCE. This used to be rebuilt inside sim() on every call, and
+  // sim() was called twice per candidate — once to filter and once to score — so a 120-card deck
+  // re-tokenised the same topic ~240 times per multiple-choice card. It is now tokenised once, and
+  // each candidate is measured once, with the measurement reused for the score.
+  const answer = new Set(toks(card.topic));
+
   // Blacklist NEAR-DUPLICATE topics: a candidate sharing 2+ significant words with the answer
   // is too-similar context and makes the choice ambiguous.
-  const pool = CARDS.filter((c) => c.id !== card.id && c.topic !== card.topic && sim(card.topic, c.topic) < 2).map(
-    (c) => ({
+  const pool = CARDS.filter((c) => c.id !== card.id && c.topic !== card.topic)
+    .map((c) => ({ c, shared: simWith(answer, c.topic) }))
+    .filter((x) => x.shared < 2)
+    .map(({ c, shared }) => ({
       c,
-      s: (c.cat === card.cat ? 2 : 0) + sim(card.topic, c.topic) * 1.5 + Math.random() * 0.5,
-    }),
-  );
+      s: (c.cat === card.cat ? 2 : 0) + shared * 1.5 + Math.random() * 0.5,
+    }));
   pool.sort((a, b) => b.s - a.s);
   const out: GameCard[] = [],
     seen = new Set([card.topic]);
