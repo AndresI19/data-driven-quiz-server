@@ -52,6 +52,21 @@ if [ ! -e "$SUB/.git" ] || ! git -C "$SUB" rev-parse HEAD >/dev/null 2>&1; then
   exit 1
 fi
 
+# A DIRTY SUBMODULE IS A REAL STATE, not an edge case: it is exactly what you get when someone edits
+# the design system in place to test a change before it is upstream. `git checkout` inside the
+# submodule then fails, and git's raw error ("local changes would be overwritten") lands in the middle
+# of this script's output with no hint of which repo it is even talking about.
+if [ "$CHECK" = 0 ] && [ -n "$(git -C "$SUB" status --porcelain)" ]; then
+  echo "error: $SUB has uncommitted changes — the design system has been edited in place." >&2
+  echo "       Those edits are not tracked by this repo, and pulling would destroy them." >&2
+  echo >&2
+  git -C "$SUB" status --short | sed 's/^/         /' >&2
+  echo >&2
+  echo "       Upstream them in portfolio-home, or discard them:" >&2
+  echo "         git -C $SUB checkout -- ." >&2
+  exit 1
+fi
+
 if ! git -C "$SUB" fetch --quiet origin 2>/dev/null; then
   [ "$CHECK" = 1 ] && exit 0   # offline: cannot compare, so do not complain
   echo "error: could not fetch upstream — check your network." >&2
