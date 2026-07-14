@@ -15,7 +15,13 @@ export interface RawCard extends AuthoredCard {
 // and, more to the point, the ordering hazard disappears: chaining .replace() calls only worked
 // because `&` was escaped first, and a future edit that moved it would have double-escaped the rest.
 // A single character class cannot be got wrong that way.
-const ESC_MAP: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
+const ESC_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#x27;',
+};
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ESC_MAP[c]);
 }
@@ -26,16 +32,16 @@ export function esc(s: string): string {
  */
 export function backBody(c: RawCard, diagrams: Record<string, string>, fold = false): string {
   const parts: string[] = [`<div class="desc">${esc(c.desc)}</div>`];
-  if (c.items && c.items.length) {
+  if (c.items?.length) {
     const lis = c.items.map((it) => `<li>${esc(it)}</li>`).join('');
     parts.push(`<ul class="items">${lis}</ul>`);
   }
-  if (c.table && c.table.length) {
+  if (c.table?.length) {
     const rows = c.table;
     const head = rows[0].map((h) => `<th>${esc(h)}</th>`).join('');
     const body = rows
       .slice(1)
-      .map((r) => '<tr>' + r.map((cell) => `<td>${esc(cell)}</td>`).join('') + '</tr>')
+      .map((r) => `<tr>${r.map((cell) => `<td>${esc(cell)}</td>`).join('')}</tr>`)
       .join('');
     parts.push(`<table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`);
   }
@@ -47,9 +53,7 @@ export function backBody(c: RawCard, diagrams: Record<string, string>, fold = fa
     extraParts.push(`<div class="diagram">${diagrams[c.diagram]}</div>`);
   }
   if (fold && extraParts.length) {
-    parts.push(
-      '<details class="foldmore"><summary>More detail</summary>' + extraParts.join('') + '</details>',
-    );
+    parts.push(`<details class="foldmore"><summary>More detail</summary>${extraParts.join('')}</details>`);
   } else {
     parts.push(...extraParts);
   }
@@ -57,9 +61,7 @@ export function backBody(c: RawCard, diagrams: Record<string, string>, fold = fa
 }
 
 /** cloze object {pre,post,answer,alts} from an authored {text,answer,alts?}. */
-export function clozeObj(
-  c: RawCard,
-): { pre: string; post: string; answer: string; alts: string[] } | null {
+export function clozeObj(c: RawCard): { pre: string; post: string; answer: string; alts: string[] } | null {
   const t = c.cloze;
   if (!t) return null;
   const parts = t.text.split('{}');
@@ -83,7 +85,7 @@ export function hint(c: RawCard): string {
   let cut = d.slice(0, 48);
   const sp = cut.lastIndexOf(' ');
   if (sp > 18) cut = cut.slice(0, sp);
-  return cut + '…';
+  return `${cut}…`;
 }
 
 /** Line-matching pairs: explicit match=, a 2-column table, or "verb — purpose" command items. */
@@ -156,7 +158,7 @@ export function topicWords(topic: string): string[] {
 export function maskText(text: string, words: string[]): string {
   let out = text;
   for (const w of words) {
-    const re = new RegExp('\\b' + escapeRegExp(w) + '\\w*', 'gi');
+    const re = new RegExp(`\\b${escapeRegExp(w)}\\w*`, 'gi');
     out = out.replace(re, (m) => '▁'.repeat(Math.min(7, Math.max(3, m.length))));
   }
   return out;

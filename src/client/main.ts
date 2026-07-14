@@ -5,20 +5,20 @@ import '@platform/ui/tokens.css';
 import '@platform/ui/base.css';
 import '@platform/ui/gate.css';
 import './styles/game.css';
-import { app, initData } from './runtime/data.js';
-import { S } from './runtime/state.js';
-import { DB, onSaved, saveDB } from './runtime/db.js';
 import { isAdmin, isSignedIn } from '@platform/ui/auth';
 import { mountAccountFab, mountGate, needsGate } from '@platform/ui/gate';
-import { pull, schedulePush } from './runtime/auth.js';
-import { recomputeAutotile } from './garden/autotile.js';
-import { route } from './runtime/router.js';
-import { mountDebug } from './pages/debug.js';
-import { mountScreenBg } from './garden/screenbg.js';
-import { mountParticles } from './garden/particles.js';
-import { pauseGame, unpauseGame, openZoom, closeZoom } from './quiz/pause.js';
-import { closePeek } from './quiz/engine.js';
 import type { CardsPayload } from '../shared/card-schema.js';
+import { recomputeAutotile } from './garden/autotile.js';
+import { mountParticles } from './garden/particles.js';
+import { mountScreenBg } from './garden/screenbg.js';
+import { mountDebug } from './pages/debug.js';
+import { closePeek } from './quiz/engine.js';
+import { closeZoom, openZoom, pauseGame, unpauseGame } from './quiz/pause.js';
+import { pull, schedulePush } from './runtime/auth.js';
+import { app, initData } from './runtime/data.js';
+import { DB, onSaved, saveDB } from './runtime/db.js';
+import { route } from './runtime/router.js';
+import { S } from './runtime/state.js';
 
 async function boot(): Promise<void> {
   app.textContent = 'Loading…';
@@ -27,7 +27,7 @@ async function boot(): Promise<void> {
     const res = await fetch(`${import.meta.env.BASE_URL}api/cards.json`);
     payload = (await res.json()) as CardsPayload;
   } catch (err) {
-    app.textContent = 'Failed to load cards: ' + String(err);
+    app.textContent = `Failed to load cards: ${String(err)}`;
     return;
   }
   initData(payload);
@@ -108,7 +108,7 @@ async function boot(): Promise<void> {
       return;
     }
     if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      const tag = ((document.activeElement && document.activeElement.tagName) || '').toLowerCase();
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
       if (S.pausedAt) {
         e.preventDefault();
         unpauseGame();

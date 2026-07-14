@@ -1,6 +1,6 @@
 // Boot-time card data, filled in place from /api/cards.json so every reference stays a bare
 // name (CARDS, CATS, …) exactly as in the original single-file game.
-import type { GameCard, CardsPayload } from '../../shared/card-schema.js';
+import type { CardsPayload, GameCard } from '../../shared/card-schema.js';
 
 export const app = document.getElementById('app') as HTMLElement;
 

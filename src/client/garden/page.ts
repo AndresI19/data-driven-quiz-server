@@ -1,29 +1,56 @@
+import { setup } from '../pages/home.js';
+import { hidePause } from '../quiz/pause.js';
+import { stopTicker } from '../quiz/timer.js';
 // The garden editor page: garden switcher, palette (tools/blocks/plants+wood/trees/rocks/animals/
 // backgrounds — each row scrolls horizontally to stay compact), the board, hover row/column
 // highlight, tool cursors, and all its wiring.
 import { app } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
+import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { setKey } from '../runtime/util.js';
-import { stopTicker } from '../quiz/timer.js';
-import { hidePause } from '../quiz/pause.js';
-import { setup } from '../pages/home.js';
 import {
-  ASSET, TIMG, BLOCKS, WATER_OPEN, WATER_COST, FEATURES, ANIMALS,
-  BACKGROUNDS, BG_URL, BG_PRICE, APPLY_COST, TREE_COLORS, TREE_PRICE, FEAT_BY_ID,
-  TOOL_IMG, EFFECTS, FX_URL,
-  type Feature, type Animal, type Effect,
+  ANIMALS,
+  APPLY_COST,
+  ASSET,
+  type Animal,
+  BACKGROUNDS,
+  BG_PRICE,
+  BG_URL,
+  BLOCKS,
+  EFFECTS,
+  type Effect,
+  FEATURES,
+  FEAT_BY_ID,
+  FX_URL,
+  type Feature,
+  TIMG,
+  TOOL_IMG,
+  TREE_COLORS,
+  TREE_PRICE,
+  WATER_COST,
+  WATER_OPEN,
 } from './catalog.js';
 import {
-  gardenValue, totalGardenValue, resetGarden, updateMaxScore, canBuyGarden, buyGarden, switchGarden,
-  unlockDecor, applyDecor, clearDecor, type Decor, NEW_GARDEN_COST, nextGardenThreshold,
+  type Decor,
+  NEW_GARDEN_COST,
+  applyDecor,
+  buyGarden,
+  canBuyGarden,
+  clearDecor,
+  gardenValue,
+  nextGardenThreshold,
+  resetGarden,
+  switchGarden,
+  totalGardenValue,
+  unlockDecor,
+  updateMaxScore,
 } from './economy.js';
-import { gardenBoardInner, animThumb, tileDesc } from './sprites.js';
-import { brushSel, brushHint, costTag, applyBrush } from './interact.js';
 import { exportGardenGif } from './export-gif.js';
-import { startSplashes } from './splash.js';
-import { setPath } from '../runtime/router.js';
+import { applyBrush, brushHint, brushSel, costTag } from './interact.js';
 import { setScreenBg } from './screenbg.js';
+import { startSplashes } from './splash.js';
+import { animThumb, gardenBoardInner, tileDesc } from './sprites.js';
 
 // Hotspot (px) per tool cursor, in each PNG's own pixels (cursors render at natural size).
 const TOOL_HOTSPOT: Record<string, [number, number]> = {
@@ -61,21 +88,23 @@ export function gardenPage(): void {
   updateMaxScore();
   const G = DB.garden;
   const palTool = (id: string, label: string, cost: number | null): string =>
-    `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : '\u{1FA99}' + cost}</span></button>`;
+    `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : `\u{1FA99}${cost}`}</span></button>`;
   const palBlock = (id: string): string => {
     const s = BLOCKS[id];
     const spr = id === 'water' ? WATER_OPEN : s.pool![0];
     return `<button class="palbtn${brushSel('block', id)}" data-bt="block" data-bi="${id}"><img class="palimg" src="${TIMG(spr)}" draggable="false" alt=""><span class="pallab">${s.name}</span><span class="palcost">\u{1FA99}${s.price}</span></button>`;
   };
   const palFeat = (f: Feature): string => {
-    const img = f.pack ? ASSET + 'decor/' + f.cat + '/' + f.file : TIMG(f.t!);
+    const img = f.pack ? `${ASSET}decor/${f.cat}/${f.file}` : TIMG(f.t!);
     const thumb = `<img class="palimg" src="${img}" draggable="false" alt="">`;
     return `<button class="palbtn${brushSel('feature', f.id)}" data-bt="feature" data-bi="${f.id}"><span class="palimgwrap">${thumb}</span><span class="pallab">${f.name}</span><span class="palcost">${costTag(f.price)}</span></button>`;
   };
   const palTree = (cc: [string, string]): string => {
     const [COLOR, name] = cc;
-    const tfw = 74, tfh = 128;
-    const ts = Math.min(46 / tfw, 46 / tfh), th = Math.round(tfh * ts);
+    const tfw = 74;
+    const tfh = 128;
+    const ts = Math.min(46 / tfw, 46 / tfh);
+    const th = Math.round(tfh * ts);
     const thumb = `<span class="paltree" style="width:${Math.round(tfw * ts)}px;height:${th}px;background-image:url(${ASSET}decor/tree/spruce_${COLOR}.png);background-size:auto ${th}px;background-position:0 0"></span>`;
     return `<button class="palbtn${brushSel('tree', COLOR)}" data-bt="tree" data-bi="${COLOR}"><span class="palimgwrap">${thumb}</span><span class="pallab">${name}</span><span class="palcost">\u{1FA99}${TREE_PRICE}</span></button>`;
   };
@@ -86,7 +115,11 @@ export function gardenPage(): void {
     const items = BACKGROUNDS.map((bg) => {
       const owned = !!DB.ownedBg[bg.id];
       const active = G.bg === bg.id;
-      const cost = active ? 'active' : owned ? '\u{1FA99}' + APPLY_COST + ' apply' : '\u{1F512} \u{1FA99}' + BG_PRICE;
+      const cost = active
+        ? 'active'
+        : owned
+          ? `\u{1FA99}${APPLY_COST} apply`
+          : `\u{1F512} \u{1FA99}${BG_PRICE}`;
       return `<button class="palbtn bgbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-bg="${bg.id}"><span class="palbgthumb" style="background-image:url(${BG_URL(bg.id)})"></span><span class="pallab">${bg.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
     }).join('');
     return none + items;
@@ -96,14 +129,20 @@ export function gardenPage(): void {
     const items = EFFECTS.map((e: Effect) => {
       const owned = !!DB.ownedFx[e.id];
       const active = G.fx === e.id;
-      const cost = active ? 'active' : owned ? '\u{1FA99}' + APPLY_COST + ' apply' : '\u{1F512} \u{1FA99}' + BG_PRICE;
+      const cost = active
+        ? 'active'
+        : owned
+          ? `\u{1FA99}${APPLY_COST} apply`
+          : `\u{1F512} \u{1FA99}${BG_PRICE}`;
       const th = 34;
       const preview = `<span class="palfxthumb" style="width:${e.fw}px;height:${e.fh}px;background-image:url(${FX_URL(e.id)});animation:fx-spin-${e.id} ${e.dur}s steps(${e.n}) infinite;transform:scale(${(th / e.fw).toFixed(2)})"></span>`;
       return `<button class="palbtn fxbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-fx="${e.id}"><span class="palimgwrap">${preview}</span><span class="pallab">${e.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
     }).join('');
     return none + items;
   };
-  const plants = FEATURES.filter((f) => !f.tree && (f.sec === 'Bushes' || f.sec === 'Flowers' || f.sec === 'Wood'));
+  const plants = FEATURES.filter(
+    (f) => !f.tree && (f.sec === 'Bushes' || f.sec === 'Flowers' || f.sec === 'Wood'),
+  );
   const rocks = FEATURES.filter((f) => f.sec === 'Rocks');
   const buyBtn = canBuyGarden()
     ? `<button class="btn primary sm" id="gbuy" title="start a fresh garden">+ New garden (\u{1FA99}${NEW_GARDEN_COST})</button>`
@@ -195,9 +234,9 @@ export function gardenPage(): void {
   const cursor = brushCursor();
   cells.forEach((b) => {
     if (cursor) b.style.cursor = cursor;
-    const i = +b.dataset.i!,
-      c = i % 10,
-      r = (i / 10) | 0;
+    const i = +b.dataset.i!;
+    const c = i % 10;
+    const r = (i / 10) | 0;
     b.addEventListener('click', () => applyBrush(i));
     b.addEventListener('mouseenter', () => {
       if (hint) hint.textContent = tileDesc(i);
@@ -206,8 +245,8 @@ export function gardenPage(): void {
         x.classList.toggle('rc', j % 10 === c || ((j / 10) | 0) === r);
       });
       b.classList.add('cell-hot');
-      const gc = app.querySelector('.gg-col[data-c="' + c + '"]'),
-        gr = app.querySelector('.gg-row[data-r="' + r + '"]');
+      const gc = app.querySelector(`.gg-col[data-c="${c}"]`);
+      const gr = app.querySelector(`.gg-row[data-r="${r}"]`);
       if (gc) gc.classList.add('hot');
       if (gr) gr.classList.add('hot');
     });

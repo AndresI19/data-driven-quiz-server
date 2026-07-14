@@ -1,24 +1,24 @@
+import { current, isGuest, isSignedIn } from '@platform/ui/auth';
+import { audioInit, setVolume, sndFlip } from '../audio/sound.js';
+import { gardenValue, switchGarden, totalGardenValue } from '../garden/economy.js';
+import { gardenPage } from '../garden/page.js';
+import { setScreenBg } from '../garden/screenbg.js';
+import { startSplashes } from '../garden/splash.js';
+import { gardenArt } from '../garden/sprites.js';
+import { lifetime } from '../quiz/grading.js';
+import { hidePause } from '../quiz/pause.js';
+import { discardActive, resumeActive, retrySession, reviewIds, start } from '../quiz/session.js';
+import { stopTicker } from '../quiz/timer.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
 // favorites + sessions panels, the live garden mini-render, and the debug menu. Ported verbatim.
-import { app, CATS, CATCOL, CARDS, byId } from '../runtime/data.js';
+import { CARDS, CATCOL, CATS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
+import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { esc, fmtClock, fmtSpeed, setKey } from '../runtime/util.js';
-import { setVolume, audioInit, sndFlip } from '../audio/sound.js';
-import { lifetime } from '../quiz/grading.js';
-import { start, resumeActive, discardActive, retrySession, reviewIds } from '../quiz/session.js';
-import { reviewSession } from './review.js';
-import { favoritesPage } from './favorites.js';
 import { exportPage } from './export.js';
-import { setPath } from '../runtime/router.js';
-import { gardenValue, totalGardenValue, switchGarden } from '../garden/economy.js';
-import { gardenArt } from '../garden/sprites.js';
-import { gardenPage } from '../garden/page.js';
-import { startSplashes } from '../garden/splash.js';
-import { setScreenBg } from '../garden/screenbg.js';
-import { stopTicker } from '../quiz/timer.js';
-import { hidePause } from '../quiz/pause.js';
-import { current, isGuest, isSignedIn } from '@platform/ui/auth';
+import { favoritesPage } from './favorites.js';
+import { reviewSession } from './review.js';
 
 /**
  * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
@@ -73,7 +73,10 @@ export function setup(): void {
     </div>`
     : '';
   const sess = DB.sessions || [];
-  const noteTotal = sess.reduce((n, s) => n + Object.keys(s.notes || {}).filter((k) => (s.notes[k] || '').trim()).length, 0);
+  const noteTotal = sess.reduce(
+    (n, s) => n + Object.keys(s.notes || {}).filter((k) => (s.notes[k] || '').trim()).length,
+    0,
+  );
   const sessHtml = sess.length
     ? `
     <div class="panel" style="margin-top:16px">
@@ -125,7 +128,12 @@ export function setup(): void {
         <div class="secchips" id="secchips">
           <button class="secchip all" data-sec="all">All (${CARDS.length})</button>
           ${Object.keys(DB.favorites).length ? `<button class="secchip fav" data-sec="fav">★ Favorites</button>` : ''}
-          ${Object.keys(CATS).map((k) => `<button class="secchip sc" data-sec="${k}" data-tip="${esc(CATS[k])}" style="--cat:${CATCOL[k]}">${k}</button>`).join('')}
+          ${Object.keys(CATS)
+            .map(
+              (k) =>
+                `<button class="secchip sc" data-sec="${k}" data-tip="${esc(CATS[k])}" style="--cat:${CATCOL[k]}">${k}</button>`,
+            )
+            .join('')}
         </div></div>
       <div class="row"><div class="lab">Length</div>
         <div class="sndrow">
@@ -161,11 +169,15 @@ export function setup(): void {
     </div>
     </div>
     <div class="homecol homeright">
-      ${DB.gardens.length > 1 ? `<div class="gswitch homegswitch">
+      ${
+        DB.gardens.length > 1
+          ? `<div class="gswitch homegswitch">
         <button class="btn ghost sm" id="hgprev" ${DB.gardenIdx === 0 ? 'disabled' : ''} title="previous garden">←</button>
         <span class="gswitch-lab">Garden ${DB.gardenIdx + 1} / ${DB.gardens.length}</span>
         <button class="btn ghost sm" id="hgnext" ${DB.gardenIdx >= DB.gardens.length - 1 ? 'disabled' : ''} title="next garden">→</button>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
       <button class="homegarden" id="homegarden" title="Open the garden editor">
         <div class="gd-head"><span class="lab gdtitle">\u{1F331} My Garden</span><span class="gdcur"><span class="gscore big" title="achievement — total across all gardens">\u{1F3C6} ${totalGardenValue()}</span><span class="gscore" title="this garden">\u{1F3C5} ${gardenValue()}</span><span class="fab-coins">\u{1FA99} ${DB.infinite ? '∞' : DB.coins}</span></span></div>
         <div class="gdboardwrap"><div class="gboard homeboard">${gardenArt()}</div></div>
@@ -204,13 +216,13 @@ export function setup(): void {
     }),
   );
   app.querySelector('#start')!.addEventListener('click', () => start());
-  const vol = app.querySelector('#vol') as HTMLInputElement,
-    volnum = app.querySelector('#volnum') as HTMLElement;
+  const vol = app.querySelector('#vol') as HTMLInputElement;
+  const volnum = app.querySelector('#volnum') as HTMLElement;
   vol.value = String(DB.settings.volume);
-  volnum.textContent = DB.settings.volume + '%';
+  volnum.textContent = `${DB.settings.volume}%`;
   vol.addEventListener('input', () => {
-    DB.settings.volume = parseInt(vol.value, 10);
-    volnum.textContent = DB.settings.volume + '%';
+    DB.settings.volume = Number.parseInt(vol.value, 10);
+    volnum.textContent = `${DB.settings.volume}%`;
     setVolume();
     saveDB();
   });
@@ -220,12 +232,12 @@ export function setup(): void {
       sndFlip();
     }
   });
-  const tspeed = app.querySelector('#tspeed') as HTMLInputElement,
-    tspeednum = app.querySelector('#tspeednum') as HTMLElement;
+  const tspeed = app.querySelector('#tspeed') as HTMLInputElement;
+  const tspeednum = app.querySelector('#tspeednum') as HTMLElement;
   tspeed.value = String(DB.settings.timeSpeed);
   tspeednum.textContent = fmtSpeed(DB.settings.timeSpeed);
   tspeed.addEventListener('input', () => {
-    DB.settings.timeSpeed = parseFloat(tspeed.value);
+    DB.settings.timeSpeed = Number.parseFloat(tspeed.value);
     tspeednum.textContent = fmtSpeed(DB.settings.timeSpeed);
     saveDB();
   });
@@ -246,7 +258,7 @@ export function setup(): void {
   const cf = app.querySelector('#clearfav');
   if (cf)
     cf.addEventListener('click', () => {
-      if (confirm('Remove all ' + favIds.length + ' favorites?')) {
+      if (confirm(`Remove all ${favIds.length} favorites?`)) {
         DB.favorites = {};
         if (S.cfg.scope === 'fav') S.cfg.scope = 'all';
         saveDB();
@@ -256,7 +268,7 @@ export function setup(): void {
   const cn = app.querySelector('#clearnotes');
   if (cn)
     cn.addEventListener('click', () => {
-      if (confirm('Clear all ' + noteTotal + ' notes from every session? (Sessions are kept.)')) {
+      if (confirm(`Clear all ${noteTotal} notes from every session? (Sessions are kept.)`)) {
         DB.sessions.forEach((s) => {
           s.notes = {};
           s.noteCount = 0;
@@ -269,7 +281,7 @@ export function setup(): void {
   const cs = app.querySelector('#clearsess');
   if (cs)
     cs.addEventListener('click', () => {
-      if (confirm('Delete all ' + sess.length + ' saved sessions? This also removes their notes.')) {
+      if (confirm(`Delete all ${sess.length} saved sessions? This also removes their notes.`)) {
         DB.sessions = [];
         saveDB();
         setup();
@@ -281,16 +293,17 @@ export function setup(): void {
   }
   app.querySelectorAll('.sess').forEach((el) => {
     const id = (el as HTMLElement).dataset.id!;
-    const spd = el.querySelector('.sess-speed') as HTMLInputElement | null,
-      spdn = el.querySelector('.sess-speednum') as HTMLElement | null;
-    if (spd) spd.addEventListener('input', () => {
-      spdn!.textContent = fmtSpeed(parseFloat(spd.value));
-    });
+    const spd = el.querySelector('.sess-speed') as HTMLInputElement | null;
+    const spdn = el.querySelector('.sess-speednum') as HTMLElement | null;
+    if (spd)
+      spd.addEventListener('input', () => {
+        spdn!.textContent = fmtSpeed(Number.parseFloat(spd.value));
+      });
     el.querySelectorAll('[data-sact]').forEach((b) =>
       b.addEventListener('click', (ev) => {
         ev.preventDefault();
         const act = (b as HTMLElement).dataset.sact;
-        if (act === 'retry') retrySession(id, spd ? parseFloat(spd.value) : undefined);
+        if (act === 'retry') retrySession(id, spd ? Number.parseFloat(spd.value) : undefined);
         else if (act === 'review') reviewSession(id);
         else if (act === 'del') {
           DB.sessions = DB.sessions.filter((x) => x.id !== id);
@@ -300,17 +313,17 @@ export function setup(): void {
       }),
     );
   });
-  const len = app.querySelector('#len') as HTMLInputElement,
-    lennum = app.querySelector('#lennum') as HTMLElement;
+  const len = app.querySelector('#len') as HTMLInputElement;
+  const lennum = app.querySelector('#lennum') as HTMLElement;
   if (typeof S.cfg.count !== 'number') S.cfg.count = 20;
   const setLen = (): void => {
-    const v = parseInt(len.value, 10);
-    lennum.textContent = v >= CARDS.length ? 'All (' + CARDS.length + ')' : v + ' cards';
+    const v = Number.parseInt(len.value, 10);
+    lennum.textContent = v >= CARDS.length ? `All (${CARDS.length})` : `${v} cards`;
   };
   len.value = String(Math.min(S.cfg.count, CARDS.length));
   setLen();
   len.addEventListener('input', () => {
-    S.cfg.count = parseInt(len.value, 10);
+    S.cfg.count = Number.parseInt(len.value, 10);
     setLen();
   });
   const rs = app.querySelector('#resetstats');
@@ -327,8 +340,16 @@ export function setup(): void {
   const hg = app.querySelector('#homegarden');
   if (hg) hg.addEventListener('click', gardenPage);
   const hgp = app.querySelector('#hgprev');
-  if (hgp) hgp.addEventListener('click', () => { switchGarden(DB.gardenIdx - 1); setup(); });
+  if (hgp)
+    hgp.addEventListener('click', () => {
+      switchGarden(DB.gardenIdx - 1);
+      setup();
+    });
   const hgn = app.querySelector('#hgnext');
-  if (hgn) hgn.addEventListener('click', () => { switchGarden(DB.gardenIdx + 1); setup(); });
+  if (hgn)
+    hgn.addEventListener('click', () => {
+      switchGarden(DB.gardenIdx + 1);
+      setup();
+    });
   startSplashes();
 }

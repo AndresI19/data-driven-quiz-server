@@ -1,8 +1,8 @@
+import { type GardenCell, newBoard } from '../garden/catalog.js';
 // Persistent store (localStorage key 'flashcards_v2'): lifetime per-card stats, the in-progress
 // session, saved retry decks, sessions, favorites, flags, settings, and the garden. The init +
 // migration block runs once at import and matches the original defaults exactly.
 import { K } from './data.js';
-import { newBoard, type GardenCell } from '../garden/catalog.js';
 import type { QItem } from './state.js';
 
 // A garden board. Wallet/unlocks are shared (on DBShape), so a Garden only holds its own tiles,
@@ -106,7 +106,9 @@ if (!DB.flags) DB.flags = {};
       DB.garden && Array.isArray(DB.garden.cells) && !(legacy.gardens as unknown)
         ? DB.garden.cells
         : newBoard();
-    DB.gardens = [{ cells, hideFg: (legacy.hideFg as boolean) ?? false, bg: (legacy.bg as string) ?? null, fx: null }];
+    DB.gardens = [
+      { cells, hideFg: (legacy.hideFg as boolean) ?? false, bg: (legacy.bg as string) ?? null, fx: null },
+    ];
     DB.gardenIdx = 0;
   }
   if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;

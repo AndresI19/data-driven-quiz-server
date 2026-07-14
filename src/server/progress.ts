@@ -1,5 +1,5 @@
+import type { Express, NextFunction, Request, Response } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import type { Express, Request, Response, NextFunction } from 'express';
 import pg from 'pg';
 
 /**
@@ -60,7 +60,8 @@ export async function migrate(): Promise<void> {
 /** The projection. Every value here is read out of the document — none is taken on trust. */
 function derive(data: unknown): { coins: number; answered: number; correct: number } {
   const d = (data ?? {}) as { coins?: unknown; stats?: Record<string, { seen?: number; missed?: number }> };
-  const coins = typeof d.coins === 'number' && Number.isFinite(d.coins) ? Math.max(0, Math.trunc(d.coins)) : 0;
+  const coins =
+    typeof d.coins === 'number' && Number.isFinite(d.coins) ? Math.max(0, Math.trunc(d.coins)) : 0;
 
   let seen = 0;
   let missed = 0;
@@ -102,10 +103,9 @@ export function mountProgress(app: Express, base: string): void {
   if (!pool) return;
 
   app.get(`${base}/api/progress`, requireAuth, async (req: Authed, res) => {
-    const { rows } = await pool.query(
-      'SELECT data, version, updated_at FROM progress WHERE sub = $1',
-      [req.sub],
-    );
+    const { rows } = await pool.query('SELECT data, version, updated_at FROM progress WHERE sub = $1', [
+      req.sub,
+    ]);
     if (!rows[0]) {
       // Not an error: a brand-new player simply has nothing yet. The client then uploads whatever is
       // in its localStorage, which is the migration path — see PUT below.

@@ -38,9 +38,20 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
 
 const CLOZE = card({
   id: 'A2',
-  cloze: { pre: 'Splitting a dataset across nodes is ', post: '.', answer: 'sharding', alts: ['partitioning'] },
+  cloze: {
+    pre: 'Splitting a dataset across nodes is ',
+    post: '.',
+    answer: 'sharding',
+    alts: ['partitioning'],
+  },
 });
-const MATCH = card({ id: 'A3', match: [['LB', 'spreads traffic'], ['CDN', 'caches at the edge']] });
+const MATCH = card({
+  id: 'A3',
+  match: [
+    ['LB', 'spreads traffic'],
+    ['CDN', 'caches at the edge'],
+  ],
+});
 const MULTI = card({ id: 'A4', multi: ['availability', 'partition tolerance'] });
 const MANIFEST = card({
   id: 'A5',

@@ -1,12 +1,12 @@
 // Reads cards/*.yaml (one file per section) + cards/_diagrams.yaml, validates each with
 // zod, assigns per-section IDs, runs the transforms, and returns the game-ready payload.
 // Used by BOTH the Vite dev middleware and the Express server — one data pipeline.
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import { z } from 'zod';
 import type { CardsPayload, GameCard } from './card-schema.js';
-import { toGameCard, type RawCard } from './card-transform.js';
+import { type RawCard, toGameCard } from './card-transform.js';
 
 const ExtraSchema = z.object({ label: z.string(), text: z.string() }).strict();
 const ClozeSchema = z
@@ -41,9 +41,7 @@ const AuthoredCardSchema = z
   .strict();
 
 const SectionSchema = z.object({ key: z.string(), name: z.string(), color: z.string() }).strict();
-const SectionFileSchema = z
-  .object({ section: SectionSchema, cards: z.array(AuthoredCardSchema) })
-  .strict();
+const SectionFileSchema = z.object({ section: SectionSchema, cards: z.array(AuthoredCardSchema) }).strict();
 
 const DiagramsSchema = z.record(z.string(), z.string());
 

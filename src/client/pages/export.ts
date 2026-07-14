@@ -1,11 +1,11 @@
+import { setScreenBg } from '../garden/screenbg.js';
+import { hidePause } from '../quiz/pause.js';
+import { stopTicker } from '../quiz/timer.js';
 // Export page: a shareable digest of flagged + noted cards, plus a full-save JSON download. Verbatim.
 import { app, byId } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { setKey } from '../runtime/util.js';
-import { stopTicker } from '../quiz/timer.js';
-import { hidePause } from '../quiz/pause.js';
-import { setScreenBg } from '../garden/screenbg.js';
 import { setup } from './home.js';
 
 export function exportPage(): void {
@@ -24,7 +24,7 @@ export function exportPage(): void {
         if ((n[id] || '').trim()) notes[id] = n[id];
       }
     });
-  if (DB.active && DB.active.notes) {
+  if (DB.active?.notes) {
     const n = DB.active.notes;
     for (const id in n) {
       if ((n[id] || '').trim()) notes[id] = n[id];
@@ -33,14 +33,15 @@ export function exportPage(): void {
   const ids = Object.keys(notes).filter((id) => byId[id]);
   const flagged = Object.keys(DB.flags).filter((id) => byId[id]);
   const noteBlock = ids.length
-    ? ids.map((id) => `${DB.flags[id] ? '⚑ ' : ''}[${id}] ${byId[id].topic}\n    ${notes[id].replace(/\n/g, '\n    ')}`).join('\n\n')
+    ? ids
+        .map(
+          (id) =>
+            `${DB.flags[id] ? '⚑ ' : ''}[${id}] ${byId[id].topic}\n    ${notes[id].replace(/\n/g, '\n    ')}`,
+        )
+        .join('\n\n')
     : '(no notes recorded yet)';
   const flagBlock = flagged.length
-    ? '⚑ FLAGGED FOR REVIEW (' +
-      flagged.length +
-      '):\n' +
-      flagged.map((id) => `  [${id}] ${byId[id].topic}${notes[id] ? '' : ' — (no note)'}`).join('\n') +
-      '\n\n'
+    ? `⚑ FLAGGED FOR REVIEW (${flagged.length}):\n${flagged.map((id) => `  [${id}] ${byId[id].topic}${notes[id] ? '' : ' — (no note)'}`).join('\n')}\n\n`
     : '';
   const digest = flagBlock + noteBlock;
   app.innerHTML = `<div class="wrap">
