@@ -573,7 +573,7 @@ h1 {
   border: 1px solid var(--line);
   background: var(--panel-2);
   color: var(--ink);
-  font: 700 12px/1.15 inherit;
+  font: 700 12px / 1.15 inherit;
   text-align: center;
   cursor: pointer;
   opacity: 0.66;

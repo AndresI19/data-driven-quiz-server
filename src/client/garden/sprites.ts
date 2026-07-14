@@ -181,9 +181,7 @@ export function gardenBoardInner(): string {
     art += cellArt(G.upper[i], i, 1, false, L === 1 ? 'live' : 'dim');
   }
   const active = L === 0 ? G.cells : G.upper;
-  const hit = active
-    .map((c, i) => hitCell(c, i, L, L === 0 || supportsUpper(G.cells[i])))
-    .join('');
+  const hit = active.map((c, i) => hitCell(c, i, L, L === 0 || supportsUpper(G.cells[i]))).join('');
   return gGuides() + art + hit + (S.showTileIds ? tileIdOverlay() : '');
 }
 export function gardenArt(): string {
