@@ -1,18 +1,18 @@
-import { test } from 'vitest';
 import assert from 'node:assert/strict';
+import { test } from 'vitest';
 import {
-  esc,
+  type RawCard,
   backBody,
-  clozeObj,
+  backMasked,
   chars,
+  clozeObj,
+  esc,
   hint,
+  maskText,
   match,
   multi,
-  topicWords,
-  maskText,
-  backMasked,
   toGameCard,
-  type RawCard,
+  topicWords,
 } from './card-transform.js';
 
 const raw = (over: Partial<RawCard>): RawCard => ({ id: 'A1', cat: 'A', topic: '', desc: '', ...over });
@@ -25,7 +25,12 @@ test('esc matches Python html.escape (& < > " \' in order)', () => {
 
 test('clozeObj splits the sentence on the single {} placeholder', () => {
   const c = raw({ cloze: { text: 'A {} app serves any request.', answer: 'stateless' } });
-  assert.deepEqual(clozeObj(c), { pre: 'A ', post: ' app serves any request.', answer: 'stateless', alts: [] });
+  assert.deepEqual(clozeObj(c), {
+    pre: 'A ',
+    post: ' app serves any request.',
+    answer: 'stateless',
+    alts: [],
+  });
   assert.equal(clozeObj(raw({})), null);
 });
 
@@ -69,8 +74,16 @@ test('match derives verb — purpose pairs from command cards', () => {
 });
 
 test('match passes through an explicit match=', () => {
-  const c = raw({ match: [['RBAC', 'by role'], ['ABAC', 'by attribute']] });
-  assert.deepEqual(match(c), [['RBAC', 'by role'], ['ABAC', 'by attribute']]);
+  const c = raw({
+    match: [
+      ['RBAC', 'by role'],
+      ['ABAC', 'by attribute'],
+    ],
+  });
+  assert.deepEqual(match(c), [
+    ['RBAC', 'by role'],
+    ['ABAC', 'by attribute'],
+  ]);
 });
 
 test('multi extracts member names only for framework / core-k8s cards', () => {
@@ -133,7 +146,11 @@ test('toGameCard suppresses objective modes on recall-only cards', () => {
     recall: true,
     inverse: true,
     cloze: { text: 'a {} b', answer: 'x' },
-    match: [['a', 'b'], ['c', 'd'], ['e', 'f']],
+    match: [
+      ['a', 'b'],
+      ['c', 'd'],
+      ['e', 'f'],
+    ],
   });
   const gc = toGameCard(c, {});
   assert.equal(gc.recall, true);
@@ -155,7 +172,10 @@ test('toGameCard suppresses objective modes on recall-only cards', () => {
  */
 test('an authored multi: list is honoured', () => {
   const c = {
-    id: 'X1', cat: 'X', topic: 'ACID properties', desc: 'Transaction guarantees.',
+    id: 'X1',
+    cat: 'X',
+    topic: 'ACID properties',
+    desc: 'Transaction guarantees.',
     multi: ['Atomicity', 'Consistency', 'Isolation', 'Durability'],
   };
   assert.deepEqual(multi(c as never), ['Atomicity', 'Consistency', 'Isolation', 'Durability']);
@@ -168,7 +188,10 @@ test('a multi: list too short to make a question is rejected', () => {
 
 test('the legacy items-inference still works for the cards that rely on it', () => {
   const c = {
-    id: 'X3', cat: 'X', topic: 'Agent frameworks', desc: '',
+    id: 'X3',
+    cat: 'X',
+    topic: 'Agent frameworks',
+    desc: '',
     items: ['LangChain — chains', 'LlamaIndex (RAG)', 'CrewAI — crews'],
   };
   assert.deepEqual(multi(c as never), ['LangChain', 'LlamaIndex', 'CrewAI']);
@@ -176,7 +199,10 @@ test('the legacy items-inference still works for the cards that rely on it', () 
 
 test('an explicit list wins over the inference', () => {
   const c = {
-    id: 'X4', cat: 'X', topic: 'Agent frameworks', desc: '',
+    id: 'X4',
+    cat: 'X',
+    topic: 'Agent frameworks',
+    desc: '',
     items: ['LangChain — chains', 'LlamaIndex (RAG)', 'CrewAI — crews'],
     multi: ['Only', 'These', 'Three'],
   };

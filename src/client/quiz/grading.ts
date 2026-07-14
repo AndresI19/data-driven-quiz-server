@@ -1,12 +1,12 @@
+import type { GameCard } from '../../shared/card-schema.js';
+import { sndCorrect, sndWrong } from '../audio/sound.js';
 // Grading + distractor selection: answer normalization, lifetime stats, near-duplicate-aware
 // multiple-choice distractors, and record/dispute. Ported verbatim.
-import { app, CARDS } from '../runtime/data.js';
+import { CARDS, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { norm } from '../runtime/util.js';
-import { sndCorrect, sndWrong } from '../audio/sound.js';
 import { persist } from './session.js';
-import type { GameCard } from '../../shared/card-schema.js';
 
 type Cloze = NonNullable<GameCard['cloze']>;
 
@@ -41,11 +41,11 @@ export function ivOK(val: string, topic: string): boolean {
 }
 export function rate(c: GameCard): number {
   const s = DB.stats[c.id];
-  return s && s.seen ? s.missed / s.seen : 0.9;
+  return s?.seen ? s.missed / s.seen : 0.9;
 }
 export function lifetime(): string {
-  let seen = 0,
-    miss = 0;
+  let seen = 0;
+  let miss = 0;
   for (const id in DB.stats) {
     seen += DB.stats[id].seen;
     miss += DB.stats[id].missed;
@@ -90,8 +90,8 @@ export function distractors(card: GameCard, n: number): GameCard[] {
       s: (c.cat === card.cat ? 2 : 0) + shared * 1.5 + Math.random() * 0.5,
     }));
   pool.sort((a, b) => b.s - a.s);
-  const out: GameCard[] = [],
-    seen = new Set([card.topic]);
+  const out: GameCard[] = [];
+  const seen = new Set([card.topic]);
   for (const { c } of pool) {
     if (out.length >= n) break;
     if (seen.has(c.topic)) continue;

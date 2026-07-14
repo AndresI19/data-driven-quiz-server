@@ -7,7 +7,12 @@ import { czOK, ivOK } from './grading.js';
 // what counts as a correct answer.
 
 describe('czOK — fill-in-the-blank', () => {
-  const cz = { pre: 'Splitting a dataset across nodes is ', post: '.', answer: 'sharding', alts: ['partitioning'] };
+  const cz = {
+    pre: 'Splitting a dataset across nodes is ',
+    post: '.',
+    answer: 'sharding',
+    alts: ['partitioning'],
+  };
 
   test('accepts the exact answer', () => {
     expect(czOK('sharding', cz)).toBe(true);

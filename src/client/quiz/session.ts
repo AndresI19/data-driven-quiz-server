@@ -1,15 +1,15 @@
+import type { GameCard } from '../../shared/card-schema.js';
+import { stopSplashes } from '../garden/splash.js';
+import { setup } from '../pages/home.js';
 // Session lifecycle + persistence: begin/resume/retry/advance/finalize and the start-from-setup
 // entry points. Ported verbatim.
-import { app, CARDS, byId } from '../runtime/data.js';
-import { DB, saveDB, stamp, type ActiveSnap } from '../runtime/db.js';
+import { CARDS, app, byId } from '../runtime/data.js';
+import { type ActiveSnap, DB, saveDB, stamp } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { shuffle } from '../runtime/util.js';
-import { stopSplashes } from '../garden/splash.js';
-import { stopTicker } from './timer.js';
-import { rate } from './grading.js';
 import { renderQ } from './engine.js';
-import { setup } from '../pages/home.js';
-import type { GameCard } from '../../shared/card-schema.js';
+import { rate } from './grading.js';
+import { stopTicker } from './timer.js';
 
 interface BeginOpts {
   label?: string;
@@ -101,13 +101,16 @@ export function retrySession(id: string, speed?: number): void {
   const cards = shuffle(s.missedIds.map((cid) => byId[cid]).filter(Boolean));
   if (cards.length)
     begin(cards, {
-      label: 'Retry · ' + s.label,
+      label: `Retry · ${s.label}`,
       timeSpeed: speed != null ? speed : s.timeSpeed != null ? s.timeSpeed : DB.settings.timeSpeed,
     });
 }
 export function reviewIds(s: { missedIds?: string[]; notes?: Record<string, string> }): string[] {
   return Array.from(
-    new Set([...(s.missedIds || []), ...Object.keys(s.notes || {}).filter((k) => (s.notes![k] || '').trim())]),
+    new Set([
+      ...(s.missedIds || []),
+      ...Object.keys(s.notes || {}).filter((k) => (s.notes![k] || '').trim()),
+    ]),
   ).filter((id) => byId[id]);
 }
 export function advance(): void {
@@ -127,7 +130,7 @@ export function finalize(): void {
   const notes = ses.notes || {};
   const noteCount = Object.keys(notes).filter((k) => (notes[k] || '').trim()).length;
   const rec = {
-    id: 's' + Date.now(),
+    id: `s${Date.now()}`,
     label: ses.label || 'Session',
     at: stamp(),
     total: ses.q.length,
@@ -145,7 +148,7 @@ export function finalize(): void {
   // Set-completion bonus: base per 10-card bracket is 10,20,40,80,160... summed, then x accuracy.
   const brackets = Math.floor(ses.q.length / 10);
   if (brackets > 0 && ses.q.length) {
-    const base = 10 * (Math.pow(2, brackets) - 1); // 10,30,70,150,310...
+    const base = 10 * (2 ** brackets - 1); // 10,30,70,150,310...
     const bonus = Math.round(base * (ses.correct / ses.q.length));
     if (bonus > 0) {
       DB.coins += bonus;
@@ -175,16 +178,22 @@ export function start(): void {
     return;
   }
   const dmap: Record<string, string> = {
-    fb: 'recall', bf: 'choice', cz: 'fill-in', ma: 'match', ms: 'multi', iv: 'inverse', dm: 'label the YAML', mixed: 'mixed',
+    fb: 'recall',
+    bf: 'choice',
+    cz: 'fill-in',
+    ma: 'match',
+    ms: 'multi',
+    iv: 'inverse',
+    dm: 'label the YAML',
+    mixed: 'mixed',
   };
-  const label =
-    (S.cfg.scope === 'all'
+  const label = `${
+    S.cfg.scope === 'all'
       ? 'All sections'
       : S.cfg.scope === 'fav'
         ? '★ Favorites'
-        : '§ ' + (S.cfg.scope as string[]).join(' ')) +
-    ' · ' +
-    dmap[S.cfg.direction];
+        : `§ ${(S.cfg.scope as string[]).join(' ')}`
+  } · ${dmap[S.cfg.direction]}`;
   begin(cards, { label });
 }
 export function startDeck(id: string): void {
@@ -210,7 +219,7 @@ export function resumeActive(): void {
 }
 export function discardActive(): void {
   const a = DB.active;
-  if (a && a.deckId) {
+  if (a?.deckId) {
     const dk = DB.decks.find((d) => d.id === a.deckId);
     if (dk) dk.progress = null;
   }

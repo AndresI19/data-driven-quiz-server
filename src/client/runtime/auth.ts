@@ -17,9 +17,7 @@ export type PullOutcome =
 /** A fresh browser: no sessions, no coins, no stats. */
 function localIsEmpty(): boolean {
   return (
-    (DB.sessions?.length ?? 0) === 0 &&
-    (DB.coins ?? 0) === 0 &&
-    Object.keys(DB.stats ?? {}).length === 0
+    (DB.sessions?.length ?? 0) === 0 && (DB.coins ?? 0) === 0 && Object.keys(DB.stats ?? {}).length === 0
   );
 }
 

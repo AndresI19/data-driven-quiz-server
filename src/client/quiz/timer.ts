@@ -1,9 +1,9 @@
+import type { GameCard } from '../../shared/card-schema.js';
 // Timers: session total + per-card, with an optional per-card timeout that fires ses._onTimeout.
 // Ported verbatim (module globals now live on S).
 import { app } from '../runtime/data.js';
 import { S } from '../runtime/state.js';
 import { fmtClock } from '../runtime/util.js';
-import type { GameCard } from '../../shared/card-schema.js';
 
 export function baseSeconds(c: GameCard, mode: string): number {
   // content-aware base time: longer cards get more seconds. cps = chars/sec budget per mode.
@@ -12,7 +12,7 @@ export function baseSeconds(c: GameCard, mode: string): number {
     return Math.max(20, n * 8);
   }
   if (mode === 'dm') {
-    const n = c.manifest && c.manifest.blanks ? c.manifest.blanks.length : 4;
+    const n = c.manifest?.blanks ? c.manifest.blanks.length : 4;
     return Math.max(24, n * 9);
   }
   if (mode === 'ms') {
@@ -84,7 +84,7 @@ export function tick(): void {
 
   if (stale(ctime)) ctime = app.querySelector('#ctime');
   const held = (S.answeredAt || now) - S.cardStart;
-  if (ctime) ctime.textContent = Math.floor(held / 1000) + 's';
+  if (ctime) ctime.textContent = `${Math.floor(held / 1000)}s`;
 
   if (S.curLimit > 0) {
     const remS = Math.max(0, S.curLimit - (now - S.cardStart) / 1000);
@@ -98,8 +98,8 @@ export function tick(): void {
     if (bar) {
       if (!ses.answered) {
         const frac = Math.max(0, remS / S.curLimit);
-        if (fill) fill.style.width = frac * 100 + '%';
-        if (barText) barText.textContent = Math.ceil(remS) + 's';
+        if (fill) fill.style.width = `${frac * 100}%`;
+        if (barText) barText.textContent = `${Math.ceil(remS)}s`;
         bar.classList.toggle('low', frac <= 0.25);
       } else {
         bar.classList.add('done');

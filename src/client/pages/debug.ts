@@ -1,9 +1,9 @@
+import { resetAllGardens } from '../garden/economy.js';
 // Persistent debug/settings surface: a bug-icon FAB (bottom-right) that opens a settings dialog,
 // plus a version tag below it. Replaces the old inline "debug" menu on the home page.
 import { DB, saveDB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
 import { route } from '../runtime/router.js';
-import { resetAllGardens } from '../garden/economy.js';
+import { S } from '../runtime/state.js';
 
 /** Add the version tag + bug FAB to <body> once, at boot (persist across page renders). */
 export function mountDebug(): void {
@@ -64,7 +64,11 @@ function openDebugDialog(): void {
     setTimeout(() => URL.revokeObjectURL(a.href), 1500);
   });
   ov.querySelector('#dbg-reset')!.addEventListener('click', () => {
-    if (confirm('Reset ALL garden progress? This removes every extra garden, all purchased backgrounds, your coins, and all unlocks. This cannot be undone.')) {
+    if (
+      confirm(
+        'Reset ALL garden progress? This removes every extra garden, all purchased backgrounds, your coins, and all unlocks. This cannot be undone.',
+      )
+    ) {
       resetAllGardens();
       closeDebugDialog();
       route();

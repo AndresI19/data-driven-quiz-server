@@ -1,12 +1,12 @@
+import { gardenPage } from '../garden/page.js';
+import { setup } from '../pages/home.js';
+import { renderQ } from '../quiz/engine.js';
+import { resumeSnap, start } from '../quiz/session.js';
+import { DB } from './db.js';
 // Minimal history-API router. Each top-level page announces its own URL via setPath() when it
 // renders, so both direct calls (button clicks) and route() (deep-links / back-forward) keep the
 // address bar in sync. route() maps the current path to a page; popstate re-routes.
 import { S } from './state.js';
-import { DB } from './db.js';
-import { setup } from '../pages/home.js';
-import { gardenPage } from '../garden/page.js';
-import { renderQ } from '../quiz/engine.js';
-import { start, resumeSnap } from '../quiz/session.js';
 
 let routing = false;
 
@@ -27,7 +27,7 @@ function toUrl(path: string): string {
 function toRoute(pathname: string): string {
   let p = pathname;
   if (BASE_NOSLASH && p.startsWith(BASE_NOSLASH)) p = p.slice(BASE_NOSLASH.length) || '/';
-  return p.startsWith('/') ? p : '/' + p;
+  return p.startsWith('/') ? p : `/${p}`;
 }
 
 /** A page calls this at the top of its render to reflect itself in the URL (no-op while routing). */

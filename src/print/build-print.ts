@@ -1,8 +1,8 @@
+import type { CardsPayload, GameCard } from '../shared/card-schema.js';
 // Builds the printable 8-cards-per-page duplex sheet as a standalone HTML document — a port of
 // the Python generator's print output (card_front / card_back / BACK_ORDER + the print CSS).
 // A screen-only toolbar adds Print and Back; @media print hides it so only the cards print.
 import { esc } from '../shared/card-transform.js';
-import type { CardsPayload, GameCard } from '../shared/card-schema.js';
 
 // Print CSS — ported verbatim from gen_flashcards.py (the `CSS` string of the print output).
 const PRINT_CSS = `
@@ -76,8 +76,10 @@ export function buildPrintHtml(payload: CardsPayload): string {
   const pages: string[] = [];
   for (const group of chunk(cards, 8)) {
     const g: (GameCard | null)[] = [...group, ...Array(8 - group.length).fill(null)];
-    pages.push('<div class="page">' + [0, 1, 2, 3, 4, 5, 6, 7].map((i) => cardFront(g[i], cats)).join('') + '</div>');
-    pages.push('<div class="page back-page">' + BACK_ORDER.map((i) => cardBack(g[i])).join('') + '</div>');
+    pages.push(
+      `<div class="page">${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => cardFront(g[i], cats)).join('')}</div>`,
+    );
+    pages.push(`<div class="page back-page">${BACK_ORDER.map((i) => cardBack(g[i])).join('')}</div>`);
   }
   const toolbar = `<div class="ptoolbar no-print">
     <a class="pbtn" href="./">← Back to app</a>

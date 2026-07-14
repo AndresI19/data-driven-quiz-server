@@ -1,18 +1,18 @@
+import type { GameCard } from '../../shared/card-schema.js';
 // The seven quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
 // inverse (IV), and label-the-YAML (DM).
 //
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
 // what is left below is the part that genuinely differs between modes.
-import { app, MULTIPOOL } from '../runtime/data.js';
+import { MULTIPOOL, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
-import { esc, shuffle, cssVar, setKey } from '../runtime/util.js';
-import { answeredNow } from './timer.js';
-import { record, distractors, czOK, ivOK } from './grading.js';
-import { navKey } from './engine.js';
-import { advance } from './session.js';
+import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, gradeNote, modeKeys, score, typedFeedback } from './card.js';
-import type { GameCard } from '../../shared/card-schema.js';
+import { navKey } from './engine.js';
+import { czOK, distractors, ivOK, record } from './grading.js';
+import { advance } from './session.js';
+import { answeredNow } from './timer.js';
 
 /** Recall: show the topic, type from memory, then self-grade against the answer. */
 export function renderFB(c: GameCard): void {
@@ -36,7 +36,7 @@ export function renderFB(c: GameCard): void {
       const box = app.querySelector('#hintbox') as HTMLElement | null;
       if (!box) return;
       if (box.style.display === 'none') {
-        box.textContent = '→ ' + c.hint;
+        box.textContent = `→ ${c.hint}`;
         box.style.display = '';
         hb.textContent = 'Hide hint';
       } else {
@@ -70,7 +70,8 @@ export function renderFB(c: GameCard): void {
     // Something was written, so the player grades themselves. Deliberately NOT endCard: there is no
     // Next button here, because leaving requires choosing satisfied/not — see the `false` passed to
     // modeKeys below.
-    app.querySelector('#act')!.outerHTML = `${timedOut ? `<div class="grade-note bad" style="margin-bottom:8px">⏱ Time’s up — grade yourself honestly</div>` : ''}<div class="grade">
+    app.querySelector('#act')!.outerHTML =
+      `${timedOut ? `<div class="grade-note bad" style="margin-bottom:8px">⏱ Time’s up — grade yourself honestly</div>` : ''}<div class="grade">
         <button class="btn bad" id="miss">Not satisfied <kbd>2</kbd></button>
         <button class="btn good" id="got">Satisfied <kbd>1</kbd></button></div>`;
     app.querySelector('#got')!.addEventListener('click', () => {
@@ -88,23 +89,26 @@ export function renderFB(c: GameCard): void {
 
   // `() => false`: recall is the one mode where `→` must NOT advance a finished card, because leaving
   // without pressing satisfied/not-satisfied would skip record() and silently drop the answer.
-  modeKeys((e) => {
-    if (!ses.answered) {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        reveal(false);
+  modeKeys(
+    (e) => {
+      if (!ses.answered) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          reveal(false);
+        }
+        return;
       }
-      return;
-    }
-    const k = e.key.toLowerCase();
-    if (k === '1' || k === 'g') {
-      record(c, true);
-      advance();
-    } else if (k === '2' || k === 'm') {
-      record(c, false);
-      advance();
-    }
-  }, () => false);
+      const k = e.key.toLowerCase();
+      if (k === '1' || k === 'g') {
+        record(c, true);
+        advance();
+      } else if (k === '2' || k === 'm') {
+        record(c, false);
+        advance();
+      }
+    },
+    () => false,
+  );
 }
 
 /** Identify: show the (masked) answer, pick the concept it describes. */
@@ -121,7 +125,10 @@ export function renderBF(c: GameCard): void {
   const opts = shuffle(pool.concat(c));
   const L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   const btns = opts
-    .map((o, i) => `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`)
+    .map(
+      (o, i) =>
+        `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`,
+    )
     .join('');
 
   const ses = drawCard(
@@ -149,7 +156,7 @@ export function renderBF(c: GameCard): void {
     // its own ending rather than calling endCard.
     const note = picked ? '' : '<div class="grade-note bad">⏱ Timed out</div>';
     const cont = document.createElement('div');
-    cont.innerHTML = note + '<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>';
+    cont.innerHTML = `${note}<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
     app.querySelector('#choices')!.after(cont);
     app.querySelector('#next')!.addEventListener('click', advance);
   }
@@ -232,19 +239,26 @@ export function renderMA(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="mcheck" disabled>Check</button></div>`,
   );
 
-  const box = app.querySelector('#matchbox') as HTMLElement,
-    svg = app.querySelector('#matchsvg') as SVGElement;
-  const Lb = (li: number | string): HTMLElement => app.querySelector('#mL .mitem[data-li="' + li + '"]') as HTMLElement;
-  const Rb = (ri: number | string): HTMLElement => app.querySelector('#mR .mitem[data-ri="' + ri + '"]') as HTMLElement;
+  const box = app.querySelector('#matchbox') as HTMLElement;
+  const svg = app.querySelector('#matchsvg') as SVGElement;
+  const Lb = (li: number | string): HTMLElement =>
+    app.querySelector(`#mL .mitem[data-li="${li}"]`) as HTMLElement;
+  const Rb = (ri: number | string): HTMLElement =>
+    app.querySelector(`#mR .mitem[data-ri="${ri}"]`) as HTMLElement;
   const DEFS =
     '<defs><marker id="marr" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="context-stroke"/></marker></defs>';
 
   function dot(item: HTMLElement, side: string): { x: number; y: number } {
-    const d = item.querySelector('.dot.' + side)!.getBoundingClientRect(),
-      bb = box.getBoundingClientRect();
+    const d = item.querySelector(`.dot.${side}`)!.getBoundingClientRect();
+    const bb = box.getBoundingClientRect();
     return { x: d.left + d.width / 2 - bb.left, y: d.top + d.height / 2 - bb.top };
   }
-  function path(a: { x: number; y: number }, b: { x: number; y: number }, col: string, dashed: boolean): string {
+  function path(
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+    col: string,
+    dashed: boolean,
+  ): string {
     return `<path d="M${a.x},${a.y} L${b.x},${b.y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" ${dashed ? 'stroke-dasharray="6 5"' : ''} marker-end="url(#marr)"/>`;
   }
   function redraw(drag: { li: number; x: number; y: number } | null): void {
@@ -292,8 +306,8 @@ export function renderMA(c: GameCard): void {
     if (!drag) return;
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
-    const el = document.elementFromPoint(e.clientX, e.clientY),
-      r = el && el.closest('#mR .mitem');
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const r = el?.closest('#mR .mitem');
     if (r) {
       const ri = +(r as HTMLElement).dataset.ri!;
       Object.keys(assign).forEach((k) => {
@@ -325,8 +339,8 @@ export function renderMA(c: GameCard): void {
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    let allRight = true,
-      h = DEFS;
+    let allRight = true;
+    let h = DEFS;
     for (let li = 0; li < pairs.length; li++) {
       const good = assign[li] === correctRi[li];
       if (!good) allRight = false;
@@ -335,7 +349,12 @@ export function renderMA(c: GameCard): void {
       if (assign[li] != null) {
         const rb2 = Rb(assign[li]);
         if (rb2 && !good) rb2.classList.add('mbad');
-        h += path(dot(lb, 'r'), dot(Rb(assign[li]), 'l'), good ? cssVar('--good') || '#12a150' : cssVar('--bad') || '#e11d48', false);
+        h += path(
+          dot(lb, 'r'),
+          dot(Rb(assign[li]), 'l'),
+          good ? cssVar('--good') || '#12a150' : cssVar('--bad') || '#e11d48',
+          false,
+        );
       }
       const rb = Rb(correctRi[li]);
       if (rb) rb.classList.add('mgood');
@@ -344,7 +363,11 @@ export function renderMA(c: GameCard): void {
     box.classList.add('locked');
     score(c, allRight, 'ma');
 
-    const note = timedOut ? '⏱ Timed out' : allRight ? '✓ all matched!' : '✗ red = your wrong link; green marks the right target';
+    const note = timedOut
+      ? '⏱ Timed out'
+      : allRight
+        ? '✓ all matched!'
+        : '✗ red = your wrong link; green marks the right target';
     endCard(c, gradeNote(allRight, note), { reveal: true });
   }
 
@@ -404,7 +427,7 @@ export function renderMS(c: GameCard): void {
     answeredNow();
     let allRight = !timedOut;
     opts.forEach((o, i) => {
-      const b = app.querySelector('.choice[data-i="' + i + '"]') as HTMLButtonElement;
+      const b = app.querySelector(`.choice[data-i="${i}"]`) as HTMLButtonElement;
       b.disabled = true;
       const sel = picked.has(i);
       if (o.ok && sel) b.classList.add('correct');
@@ -418,7 +441,11 @@ export function renderMS(c: GameCard): void {
     });
     score(c, allRight, 'ms');
 
-    const note = timedOut ? '⏱ Timed out' : allRight ? '✓ perfect selection!' : '✗ the correct set is highlighted';
+    const note = timedOut
+      ? '⏱ Timed out'
+      : allRight
+        ? '✓ perfect selection!'
+        : '✗ the correct set is highlighted';
     endCard(c, gradeNote(allRight, note));
   }
 
@@ -489,9 +516,13 @@ export function renderDM(c: GameCard): void {
   const chips = shuffle(M.blanks.concat(M.distractors || []).map((t) => ({ t })));
   let sel: HTMLElement | null = null;
   const codeHtml = M.lines
-    .map((line) => esc(line).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`))
+    .map((line) =>
+      esc(line).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`),
+    )
     .join('\n');
-  const chipHtml = chips.map((o, i) => `<span class="dchip" draggable="true" data-ci="${i}">${esc(o.t)}</span>`).join('');
+  const chipHtml = chips
+    .map((o, i) => `<span class="dchip" draggable="true" data-ci="${i}">${esc(o.t)}</span>`)
+    .join('');
 
   const ses = drawCard(
     c,
@@ -521,13 +552,13 @@ export function renderDM(c: GameCard): void {
       }
     });
     if (slot.dataset.ci) {
-      const prev = tray.querySelector('.dchip[data-ci="' + slot.dataset.ci + '"]');
+      const prev = tray.querySelector(`.dchip[data-ci="${slot.dataset.ci}"]`);
       if (prev) prev.classList.remove('used');
     }
     slot.dataset.ci = String(ci);
     slot.textContent = chips[ci].t;
     slot.classList.add('filled');
-    const chipEl = tray.querySelector('.dchip[data-ci="' + ci + '"]');
+    const chipEl = tray.querySelector(`.dchip[data-ci="${ci}"]`);
     if (chipEl) chipEl.classList.add('used');
     refresh();
   }
@@ -571,7 +602,7 @@ export function renderDM(c: GameCard): void {
         sel.classList.remove('sel');
         sel = null;
       } else if (slot.dataset.ci) {
-        const chip = tray.querySelector('.dchip[data-ci="' + slot.dataset.ci + '"]');
+        const chip = tray.querySelector(`.dchip[data-ci="${slot.dataset.ci}"]`);
         if (chip) chip.classList.remove('used');
         slot.textContent = '';
         delete slot.dataset.ci;
@@ -587,8 +618,8 @@ export function renderDM(c: GameCard): void {
     let allRight = !timedOut;
     app.querySelectorAll('.dslot').forEach((slotEl) => {
       const slot = slotEl as HTMLElement;
-      const si = +slot.dataset.si!,
-        ci = slot.dataset.ci;
+      const si = +slot.dataset.si!;
+      const ci = slot.dataset.ci;
       const got = ci != null && ci !== '' ? chips[+ci].t : null;
       const want = M.blanks[si];
       if (got === want) {
@@ -602,7 +633,11 @@ export function renderDM(c: GameCard): void {
     });
     score(c, allRight, 'dm');
 
-    const note = timedOut ? '⏱ Timed out' : allRight ? '✓ all labels correct!' : '✗ red = wrong; the correct label is now shown';
+    const note = timedOut
+      ? '⏱ Timed out'
+      : allRight
+        ? '✓ all labels correct!'
+        : '✗ red = wrong; the correct label is now shown';
     endCard(c, gradeNote(allRight, note), { reveal: true });
   }
 

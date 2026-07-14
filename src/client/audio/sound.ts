@@ -1,8 +1,8 @@
 // Subtle synthesized sound effects (Web Audio, no assets). Ported verbatim.
 import { DB } from '../runtime/db.js';
 
-let AC: AudioContext | null = null,
-  master: GainNode | null = null;
+let AC: AudioContext | null = null;
+let master: GainNode | null = null;
 
 export function setVolume(): void {
   if (master) {
@@ -14,7 +14,10 @@ export function setVolume(): void {
 export function audioInit(): void {
   if (!AC) {
     try {
-      AC = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      AC = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )();
       master = AC.createGain();
       master.connect(AC.destination);
       setVolume();
@@ -33,8 +36,8 @@ function blip(freqs: number[], dur: number, type?: OscillatorType, peak?: number
   if (!AC || DB.settings.muted || DB.settings.volume <= 0) return;
   const t0 = AC.currentTime;
   freqs.forEach((f, i) => {
-    const o = AC!.createOscillator(),
-      g = AC!.createGain();
+    const o = AC!.createOscillator();
+    const g = AC!.createGain();
     o.type = type || 'sine';
     o.frequency.value = f;
     const s = t0 + i * 0.07;
@@ -58,9 +61,9 @@ export function sndFlip(): void {
 }
 function noiseBurst(dur: number, peak?: number): void {
   if (!AC || DB.settings.muted || DB.settings.volume <= 0) return;
-  const n = Math.floor(AC.sampleRate * dur),
-    buf = AC.createBuffer(1, n, AC.sampleRate),
-    d = buf.getChannelData(0);
+  const n = Math.floor(AC.sampleRate * dur);
+  const buf = AC.createBuffer(1, n, AC.sampleRate);
+  const d = buf.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   const src = AC.createBufferSource();
   src.buffer = buf;

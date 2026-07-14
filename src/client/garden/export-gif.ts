@@ -1,3 +1,4 @@
+import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 // Export the garden as a small animated GIF (~5s loop). Element boxes are static; only spritesheet
 // FRAMES advance. Rather than relying on the browser to advance CSS animations during capture
 // (which fails headless / under reduced-motion), we compute each sprite's frame deterministically
@@ -6,7 +7,6 @@
 import { app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import { BG_URL, EFFECTS, FX_URL } from './catalog.js';
-import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 const FRAMES = 25; // 25 * 200ms = 5s loop
 const DELAY = 200; // ms per GIF frame (gifenc units are ms)
@@ -77,12 +77,12 @@ export async function exportGardenGif(): Promise<void> {
   }
   try {
     const br = board.getBoundingClientRect();
-    const originX = br.left,
-      originY = br.top - HEADROOM;
-    const capW = br.width,
-      capH = br.height + HEADROOM;
-    const cw = Math.round(capW * SCALE),
-      ch = Math.round(capH * SCALE);
+    const originX = br.left;
+    const originY = br.top - HEADROOM;
+    const capW = br.width;
+    const capH = br.height + HEADROOM;
+    const cw = Math.round(capW * SCALE);
+    const ch = Math.round(capH * SCALE);
 
     const garts = Array.prototype.slice
       .call(board.querySelectorAll('.gart'))
@@ -104,12 +104,12 @@ export async function exportGardenGif(): Promise<void> {
         } else {
           const bg = el.style.backgroundImage;
           it.url = bg.slice(bg.indexOf('(') + 1, bg.lastIndexOf(')')).replace(/["']/g, '');
-          it.fw = parseInt(el.style.width);
-          it.fh = parseInt(el.style.height);
+          it.fw = Number.parseInt(el.style.width);
+          it.fh = Number.parseInt(el.style.height);
           const cls = [...el.classList].find((c) => ANIM[c]);
           if (cls) {
             [it.n, it.dur] = ANIM[cls];
-            it.delay = parseFloat(getComputedStyle(el).animationDelay) || 0;
+            it.delay = Number.parseFloat(getComputedStyle(el).animationDelay) || 0;
           }
           urls.add(it.url);
         }
@@ -150,8 +150,8 @@ export async function exportGardenGif(): Promise<void> {
     const drawBg = (): void => {
       if (bgImg) {
         const s = Math.max(cw / bgImg.width, ch / bgImg.height);
-        const w = bgImg.width * s,
-          h = bgImg.height * s;
+        const w = bgImg.width * s;
+        const h = bgImg.height * s;
         ctx.drawImage(bgImg, (cw - w) / 2, (ch - h) / 2, w, h);
       } else {
         ctx.fillStyle = '#e9ecf4';
@@ -189,8 +189,8 @@ export async function exportGardenGif(): Promise<void> {
           if (prog < 0) prog += 1;
           const y = -fxMargin + prog * fxTravel;
           const x = p.startX - FX_DRIFT * (prog * fxTravel);
-          const dw = fx.fw * p.scale * SCALE,
-            dh = fx.fh * p.scale * SCALE;
+          const dw = fx.fw * p.scale * SCALE;
+          const dh = fx.fh * p.scale * SCALE;
           let sp = (norm * p.kSpin + p.spinPhase) % 1;
           if (sp < 0) sp += 1;
           const frame = Math.min(fx.n - 1, Math.floor(sp * fx.n));
@@ -202,7 +202,12 @@ export async function exportGardenGif(): Promise<void> {
       const { data } = ctx.getImageData(0, 0, cw, ch);
       const palette = quantize(data, 256);
       const index = applyPalette(data, palette);
-      gif.writeFrame(index, cw, ch, f === 0 ? { palette, delay: DELAY, repeat: 0 } : { palette, delay: DELAY });
+      gif.writeFrame(
+        index,
+        cw,
+        ch,
+        f === 0 ? { palette, delay: DELAY, repeat: 0 } : { palette, delay: DELAY },
+      );
     }
     gif.finish();
 

@@ -1,13 +1,13 @@
+import { setScreenBg } from '../garden/screenbg.js';
+import { addFav } from '../quiz/engine.js';
+import { hidePause } from '../quiz/pause.js';
+import { reviewIds } from '../quiz/session.js';
+import { stopTicker } from '../quiz/timer.js';
 // Notes / review page for a saved session: step through missed + noted cards, edit notes. Verbatim.
-import { app, byId, CATS } from '../runtime/data.js';
+import { CATS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { esc, setKey } from '../runtime/util.js';
-import { stopTicker } from '../quiz/timer.js';
-import { hidePause } from '../quiz/pause.js';
-import { reviewIds } from '../quiz/session.js';
-import { addFav } from '../quiz/engine.js';
-import { setScreenBg } from '../garden/screenbg.js';
 import { setup } from './home.js';
 
 export function reviewSession(id: string): void {
@@ -21,8 +21,8 @@ export function reviewSession(id: string): void {
   setScreenBg(false);
   let idx = 0;
   function render(): void {
-    const cid = ids[idx],
-      c = byId[cid];
+    const cid = ids[idx];
+    const c = byId[cid];
     const missed = (s!.missedIds || []).includes(cid);
     app.innerHTML = `<div class="wrap">
       <div class="rvbar">
@@ -48,7 +48,7 @@ export function reviewSession(id: string): void {
       </div>
     </div>`;
     const nt = app.querySelector('#rvnote') as HTMLTextAreaElement;
-    nt.value = (s!.notes && s!.notes[cid]) || '';
+    nt.value = s!.notes?.[cid] || '';
     nt.addEventListener('input', () => {
       if (!s!.notes) s!.notes = {};
       const v = nt.value;
@@ -73,7 +73,12 @@ export function reviewSession(id: string): void {
     addFav(c);
   }
   setKey((e) => {
-    if (e.target && (e.target as HTMLElement).classList && (e.target as HTMLElement).classList.contains('noteta')) return;
+    if (
+      e.target &&
+      (e.target as HTMLElement).classList &&
+      (e.target as HTMLElement).classList.contains('noteta')
+    )
+      return;
     if (e.key === 'ArrowLeft') {
       if (idx > 0) {
         idx--;

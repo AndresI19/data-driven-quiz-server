@@ -1,16 +1,24 @@
+import { sndDig, sndPlant, sndWater, sndWrong } from '../audio/sound.js';
 // Garden interaction: the brush model (tools/blocks/features/animals), placement rules, refunds,
 // and the palette hint/warn strings. Ported verbatim.
 import { app } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { pick } from '../runtime/util.js';
-import { sndWrong, sndWater, sndPlant, sndDig } from '../audio/sound.js';
-import {
-  BLOCKS, GRASS_V, WATER_COST, WATER_OPEN, BLOCK_VALUE, FEAT_BY_ID, ANIM_BY_ID,
-  TREE_TYPE_IDS, TREE_PRICE, TREE_COLORS,
-} from './catalog.js';
-import { afford, spend, refund } from './economy.js';
 import { recomputeAutotile } from './autotile.js';
+import {
+  ANIM_BY_ID,
+  BLOCKS,
+  BLOCK_VALUE,
+  FEAT_BY_ID,
+  GRASS_V,
+  TREE_COLORS,
+  TREE_PRICE,
+  TREE_TYPE_IDS,
+  WATER_COST,
+  WATER_OPEN,
+} from './catalog.js';
+import { afford, refund, spend } from './economy.js';
 import { gardenPage } from './page.js';
 
 export function nudge(sel: string): void {
@@ -31,9 +39,9 @@ export function warn(msg: string): void {
   sndWrong();
 }
 export function applyBrush(i: number): void {
-  const C = DB.garden.cells,
-    cell = C[i],
-    b = S.selBrush;
+  const C = DB.garden.cells;
+  const cell = C[i];
+  const b = S.selBrush;
   if (!b) {
     nudge('.palette');
     return warn('Pick a tool or item below first.');
@@ -74,7 +82,7 @@ export function applyBrush(i: number): void {
   }
   if (b.type === 'tool' && b.id === 'rotate') {
     // wrench: turn an animal to face a new way, else cycle a dirt/rock variant
-    if (cell && cell.animal) {
+    if (cell?.animal) {
       cell.adir = ((cell.adir || 0) + 1) % 4;
       sndDig();
       done();
@@ -104,9 +112,9 @@ export function applyBrush(i: number): void {
   }
   if (b.type === 'feature') {
     const f = FEAT_BY_ID[b.id];
-    if (!cell) return warn('Put a block there first — ' + f.name + ' needs ' + f.on.join('/') + '.');
+    if (!cell) return warn(`Put a block there first — ${f.name} needs ${f.on.join('/')}.`);
     if (cell.feature) return warn('That tile already has a feature — dig it first.');
-    if (f.on.indexOf(cell.block) < 0) return warn(f.name + ' goes on ' + f.on.join('/') + ', not ' + cell.block + '.');
+    if (f.on.indexOf(cell.block) < 0) return warn(`${f.name} goes on ${f.on.join('/')}, not ${cell.block}.`);
     if (!afford(f.price)) return warn('Not enough \u{1FA99} coins — answer cards to earn more.');
     spend(f.price);
     cell.feature = f.id;
@@ -118,10 +126,11 @@ export function applyBrush(i: number): void {
     // b.id is a COLOUR; plant a random tree TYPE of that colour.
     if (!cell) return warn('Put a block there first — a tree needs grass or dirt.');
     if (cell.feature) return warn('That tile already has a feature — dig it first.');
-    if (cell.block !== 'grass' && cell.block !== 'dirt') return warn('Trees go on grass or dirt, not ' + cell.block + '.');
+    if (cell.block !== 'grass' && cell.block !== 'dirt')
+      return warn(`Trees go on grass or dirt, not ${cell.block}.`);
     if (!afford(TREE_PRICE)) return warn('Not enough \u{1FA99} coins — answer cards to earn more.');
     spend(TREE_PRICE);
-    cell.feature = 'tr_' + pick(TREE_TYPE_IDS) + '_' + b.id;
+    cell.feature = `tr_${pick(TREE_TYPE_IDS)}_${b.id}`;
     sndPlant();
     done();
     return;
@@ -131,7 +140,7 @@ export function applyBrush(i: number): void {
     if (cell.block === 'water') return warn("Animals can't stand on water.");
     if (cell.feature) {
       const f = FEAT_BY_ID[cell.feature];
-      if (f && f.tree) return warn("Animals can't stand where a tree is — dig it first.");
+      if (f?.tree) return warn("Animals can't stand where a tree is — dig it first.");
     }
     if (cell.animal) return warn('There is already an animal on that tile.');
     const a = ANIM_BY_ID[b.id];
@@ -150,22 +159,23 @@ export function brushHint(): string {
   if (!S.selBrush) return 'Pick a tool or item below, then tap a tile.';
   const b = S.selBrush;
   if (b.type === 'tool') {
-    if (b.id === 'water') return 'Tap a DIRT tile to water it into grass (\u{1FA99}' + WATER_COST + ').';
-    if (b.id === 'dig') return 'Tap a tile to peel one layer — animal, feature, then block — for half the cost back.';
+    if (b.id === 'water') return `Tap a DIRT tile to water it into grass (\u{1FA99}${WATER_COST}).`;
+    if (b.id === 'dig')
+      return 'Tap a tile to peel one layer — animal, feature, then block — for half the cost back.';
     if (b.id === 'rotate') return 'Tap an animal to turn it, or a dirt/rock tile to cycle its variant.';
   }
   if (b.type === 'tree') {
     const col = TREE_COLORS.find((c) => c[0] === b.id);
-    return 'Tap a grass/dirt tile to plant a random ' + (col ? col[1] : '') + ' tree.';
+    return `Tap a grass/dirt tile to plant a random ${col ? col[1] : ''} tree.`;
   }
-  if (b.type === 'block') return 'Tap an EMPTY tile to place ' + BLOCKS[b.id].name + '.';
+  if (b.type === 'block') return `Tap an EMPTY tile to place ${BLOCKS[b.id].name}.`;
   if (b.type === 'feature') {
     const f = FEAT_BY_ID[b.id];
-    return 'Tap a ' + f.on.join('/').toUpperCase() + ' tile to place ' + f.name + '.';
+    return `Tap a ${f.on.join('/').toUpperCase()} tile to place ${f.name}.`;
   }
-  if (b.type === 'animal') return 'Tap a land tile to release the ' + ANIM_BY_ID[b.id].name + '.';
+  if (b.type === 'animal') return `Tap a land tile to release the ${ANIM_BY_ID[b.id].name}.`;
   return '';
 }
 export function costTag(p: number): string {
-  return p ? '\u{1FA99}' + p : 'free';
+  return p ? `\u{1FA99}${p}` : 'free';
 }

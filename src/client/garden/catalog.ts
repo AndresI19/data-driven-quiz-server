@@ -6,7 +6,7 @@ import { pick } from '../runtime/util.js';
 // import.meta.env.BASE_URL is the URL prefix Vite baked in (trailing-slashed; '/' at root), so
 // asset URLs resolve correctly whether the app is at '/' or behind a proxy at '/cloud-developer-quiz/'.
 export const ASSET = `${import.meta.env.BASE_URL}assets/`;
-export const TIMG = (i: number): string => ASSET + 'tiles/tile_' + String(i).padStart(3, '0') + '.png';
+export const TIMG = (i: number): string => `${ASSET}tiles/tile_${String(i).padStart(3, '0')}.png`;
 
 // Block variant pools — placing a block picks a random member (water is autotiled instead).
 export const DIRT_V = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 26];
@@ -16,7 +16,16 @@ export const SPIRE_V = [64];
 // Directional water autotile. Edge bits: NE=1 (r-1,c) · NW=2 (r,c-1) · SE=4 (r,c+1) · SW=8 (r+1,c);
 // a bit is set when that neighbour is LAND (a non-water block; water/empty/off-board = no rim).
 export const WATER_MAP: Record<number, number> = {
-  0: 104, 1: 105, 2: 106, 4: 107, 8: 108, 3: 109, 12: 110, 5: 112, 10: 111, 15: 113,
+  0: 104,
+  1: 105,
+  2: 106,
+  4: 107,
+  8: 108,
+  3: 109,
+  12: 110,
+  5: 112,
+  10: 111,
+  15: 113,
 }; // NE+SE(5) and NW+SW(10) tiles swapped per playtest
 export const WATER_OPEN = 104; // interior (no land edges)
 
@@ -47,9 +56,9 @@ export const BLOCKS: Record<string, Block> = {
 };
 export const WATER_COST = 4; // watering dirt -> grass
 
-const GRASS_ONLY = ['grass'],
-  ROCKABLE = ['grass', 'dirt', 'rock'],
-  GROUNDY = ['grass', 'dirt'];
+const GRASS_ONLY = ['grass'];
+const ROCKABLE = ['grass', 'dirt', 'rock'];
+const GROUNDY = ['grass', 'dirt'];
 
 export interface Feature {
   id: string;
@@ -81,12 +90,78 @@ export const FEATURES: Feature[] = [
   { id: 'fl_mix', sec: 'Flowers', name: 'Wildflowers', price: 18, on: GRASS_ONLY, t: 43 },
   { id: 'fl_pur', sec: 'Flowers', name: 'Purple flowers', price: 20, on: GRASS_ONLY, t: 44 },
   { id: 'fl_red', sec: 'Flowers', name: 'Red blooms', price: 20, on: GRASS_ONLY, t: 46 },
-  { id: 'rk1', sec: 'Rocks', name: 'Mossy rocks', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_MOSSY_1.png', w: 62, h: 34 },
-  { id: 'rk2', sec: 'Rocks', name: 'Mossy pile', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_MOSSY_5.png', w: 52, h: 30 },
-  { id: 'rk3', sec: 'Rocks', name: 'Mossy stones', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_MOSSY_9.png', w: 50, h: 29 },
-  { id: 'rk4', sec: 'Rocks', name: 'Grey rocks', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_SILVER_1.png', w: 62, h: 34 },
-  { id: 'rk5', sec: 'Rocks', name: 'Grey pile', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_SILVER_5.png', w: 52, h: 30 },
-  { id: 'rk6', sec: 'Rocks', name: 'Grey stones', price: 6, on: ROCKABLE, pack: 1, cat: 'rock', file: 'rock_SILVER_9.png', w: 50, h: 29 },
+  {
+    id: 'rk1',
+    sec: 'Rocks',
+    name: 'Mossy rocks',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_MOSSY_1.png',
+    w: 62,
+    h: 34,
+  },
+  {
+    id: 'rk2',
+    sec: 'Rocks',
+    name: 'Mossy pile',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_MOSSY_5.png',
+    w: 52,
+    h: 30,
+  },
+  {
+    id: 'rk3',
+    sec: 'Rocks',
+    name: 'Mossy stones',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_MOSSY_9.png',
+    w: 50,
+    h: 29,
+  },
+  {
+    id: 'rk4',
+    sec: 'Rocks',
+    name: 'Grey rocks',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_SILVER_1.png',
+    w: 62,
+    h: 34,
+  },
+  {
+    id: 'rk5',
+    sec: 'Rocks',
+    name: 'Grey pile',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_SILVER_5.png',
+    w: 52,
+    h: 30,
+  },
+  {
+    id: 'rk6',
+    sec: 'Rocks',
+    name: 'Grey stones',
+    price: 6,
+    on: ROCKABLE,
+    pack: 1,
+    cat: 'rock',
+    file: 'rock_SILVER_9.png',
+    w: 50,
+    h: 29,
+  },
   { id: 'crag', sec: 'Rocks', name: 'Crag', price: 6, on: ROCKABLE, t: 60 },
   { id: 'log', sec: 'Wood', name: 'Log', price: 4, on: GROUNDY, t: 48 },
   { id: 'log_m', sec: 'Wood', name: 'Mossy log', price: 4, on: GROUNDY, t: 50 },
@@ -100,16 +175,21 @@ const TREE_TYPES = [
 // 6 colours (per the tree pack). The shop shows one button per colour; placing a tree picks a
 // random tree TYPE of that colour (see interact.ts).
 export const TREE_COLORS: [string, string][] = [
-  ['GREEN', 'green'], ['GREEN_TEAL', 'teal-green'], ['TEAL', 'teal'], ['COLD', 'frost'], ['YELLOW', 'autumn'], ['NIGHT', 'night'],
+  ['GREEN', 'green'],
+  ['GREEN_TEAL', 'teal-green'],
+  ['TEAL', 'teal'],
+  ['COLD', 'frost'],
+  ['YELLOW', 'autumn'],
+  ['NIGHT', 'night'],
 ];
 export const TREE_TYPE_IDS = ['pine', 'spruce']; // available tree types to randomize over
 export const TREE_PRICE = 32;
 TREE_COLORS.forEach((cc) =>
   TREE_TYPES.forEach((tt) =>
     FEATURES.push({
-      id: 'tr_' + tt.t + '_' + cc[0],
+      id: `tr_${tt.t}_${cc[0]}`,
       sec: 'Trees',
-      name: tt.name + ' (' + cc[1] + ')',
+      name: `${tt.name} (${cc[1]})`,
       price: tt.price,
       on: GROUNDY,
       tree: 1,
@@ -153,19 +233,19 @@ export const ANIMALS: Animal[] = [
 
 // Tool sprite icons (pixel art), used for the palette icon AND the hover cursor at the same size.
 export const TOOL_IMG: Record<string, string> = {
-  water: ASSET + 'tools/watering_can.png',
-  dig: ASSET + 'tools/shovel.png',
-  rotate: ASSET + 'tools/wrench.png',
+  water: `${ASSET}tools/watering_can.png`,
+  dig: `${ASSET}tools/shovel.png`,
+  rotate: `${ASSET}tools/wrench.png`,
 };
 
 // Backgrounds & effects: a one-time unlock (owned across all gardens), then a small cost each time
 // you apply one — which also raises the achievement score (see economy.DECOR_VALUE).
 export const BG_PRICE = 1000; // one-time unlock
 export const APPLY_COST = 200; // cost to apply an owned background/effect
-export const BG_URL = (id: string): string => ASSET + 'backgrounds/' + id + '.png';
+export const BG_URL = (id: string): string => `${ASSET}backgrounds/${id}.png`;
 
 // Purchasable falling-particle effects (same price as a background). Sweep NE → SW.
-export const FX_URL = (id: string): string => ASSET + 'fx/' + id + '.png';
+export const FX_URL = (id: string): string => `${ASSET}fx/${id}.png`;
 export interface Effect {
   id: string;
   name: string;
@@ -244,8 +324,8 @@ export function isLand(cell: GardenCell | null): boolean {
  * That is the one thing an overlay exists not to do.
  */
 export function waterMask(cells: (GardenCell | null)[], i: number): number {
-  const r = (i / 10) | 0,
-    c = i % 10;
+  const r = (i / 10) | 0;
+  const c = i % 10;
   let m = 0;
   if (r > 0 && isLand(cells[(r - 1) * 10 + c])) m |= 1; // NE
   if (c > 0 && isLand(cells[r * 10 + c - 1])) m |= 2; // NW

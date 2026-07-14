@@ -1,8 +1,8 @@
+import { setup } from '../pages/home.js';
 // Pause (freeze both timers + the timeout) and the diagram zoom overlay. Ported verbatim.
 import { S } from '../runtime/state.js';
 import { setKey } from '../runtime/util.js';
-import { setup } from '../pages/home.js';
-import { stopTicker, resumeTicking } from './timer.js';
+import { resumeTicking, stopTicker } from './timer.js';
 
 export function pauseGame(): void {
   if (!S.running || S.pausedAt) return;

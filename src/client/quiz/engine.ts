@@ -1,21 +1,19 @@
-// Quiz engine: the HUD, the per-card dispatcher (renderQ), fav/flag + notes decoration, arrow-key
-// navigation with peek-back, and the results screen. Ported verbatim.
-import { app, byId, CATS, CATCOL } from '../runtime/data.js';
-import { DB, saveDB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import { esc, shuffle, setKey, fmtClock } from '../runtime/util.js';
+import type { GameCard } from '../../shared/card-schema.js';
 import { audioInit, sndFlip } from '../audio/sound.js';
 import { comboMult } from '../garden/economy.js';
-import { baseSeconds, startTicker, stopTicker } from './timer.js';
-import { hidePause, closeZoom } from './pause.js';
-import { advance, finalize, begin, persist } from './session.js';
-import {
-  renderFB, renderBF, renderCZ, renderMA, renderMS, renderIV, renderDM,
-} from './modes.js';
-import { setup } from '../pages/home.js';
-import { setPath } from '../runtime/router.js';
 import { setScreenBg } from '../garden/screenbg.js';
-import type { GameCard } from '../../shared/card-schema.js';
+import { setup } from '../pages/home.js';
+// Quiz engine: the HUD, the per-card dispatcher (renderQ), fav/flag + notes decoration, arrow-key
+// navigation with peek-back, and the results screen. Ported verbatim.
+import { CATCOL, CATS, app, byId } from '../runtime/data.js';
+import { DB, saveDB } from '../runtime/db.js';
+import { setPath } from '../runtime/router.js';
+import { S } from '../runtime/state.js';
+import { esc, fmtClock, setKey, shuffle } from '../runtime/util.js';
+import { renderBF, renderCZ, renderDM, renderFB, renderIV, renderMA, renderMS } from './modes.js';
+import { closeZoom, hidePause } from './pause.js';
+import { advance, begin, finalize, persist } from './session.js';
+import { baseSeconds, startTicker, stopTicker } from './timer.js';
 
 export function hud(): string {
   const ses = S.ses!;
@@ -71,7 +69,7 @@ export function addFav(c: GameCard): void {
   const fav = document.createElement('button');
   const set = (): void => {
     const on = !!DB.favorites[c.id];
-    fav.className = 'favbtn' + (on ? ' on' : '');
+    fav.className = `favbtn${on ? ' on' : ''}`;
     fav.innerHTML = on ? '★' : '☆';
     fav.title = on ? 'unfavorite' : 'favorite';
   };
@@ -86,7 +84,7 @@ export function addFav(c: GameCard): void {
   const flag = document.createElement('button');
   const setF = (): void => {
     const on = !!DB.flags[c.id];
-    flag.className = 'flagbtn' + (on ? ' on' : '');
+    flag.className = `flagbtn${on ? ' on' : ''}`;
     flag.innerHTML = on ? '⚑' : '⚐';
     flag.title = on ? 'flagged for review — click to clear' : 'flag this card for review';
   };
@@ -120,7 +118,7 @@ export function decorateCard(c: GameCard): void {
   aside.innerHTML = `<div class="coinbar" id="coinbar"><span class="cb-ico">\u{1FA99}</span> <span class="cb-coins">${DB.infinite ? '∞' : DB.coins}</span><span class="cb-combo${DB.combo >= 2 ? ' hot' : ''}">\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}</span></div><div class="col-h">Notes</div><textarea class="noteta" placeholder="Notes on this card…"></textarea>`;
   row.appendChild(aside);
   const nta = aside.querySelector('.noteta') as HTMLTextAreaElement;
-  nta.value = (ses.notes && ses.notes[c.id]) || '';
+  nta.value = ses.notes?.[c.id] || '';
   nta.addEventListener('input', () => {
     const v = nta.value;
     if (v.trim()) ses.notes[c.id] = v;
@@ -159,10 +157,9 @@ export function peekBack(): void {
   const ov = document.createElement('div');
   ov.id = 'peekov';
   ov.className = 'pauseov';
-  const note =
-    ses.notes && ses.notes[c.id]
-      ? `<div class="col mine" style="margin-top:12px"><div class="col-h">Your note</div><div class="mine-body">${esc(ses.notes[c.id])}</div></div>`
-      : '';
+  const note = ses.notes?.[c.id]
+    ? `<div class="col mine" style="margin-top:12px"><div class="col-h">Your note</div><div class="mine-body">${esc(ses.notes[c.id])}</div></div>`
+    : '';
   ov.innerHTML = `<div class="pausebox" style="max-width:660px;text-align:left;max-height:88vh;overflow:auto">
     <div class="lab" style="margin-bottom:8px">← Previous card</div>
     <span class="catchip" style="--cat:${CATCOL[c.cat] || '#5a67f2'}">${esc(CATS[c.cat])}</span>
@@ -191,14 +188,14 @@ export function results(): void {
       setup();
     }
   });
-  const total = ses.q.length,
-    correct = ses.correct,
-    pct = total ? Math.round((correct / total) * 100) : 0;
+  const total = ses.q.length;
+  const correct = ses.correct;
+  const pct = total ? Math.round((correct / total) * 100) : 0;
   const missed = ses.missed.map((id) => byId[id]).filter(Boolean);
   const allCards = ses.q.map((it) => byId[it.id]).filter(Boolean);
-  const label = ses.label,
-    retryMissed = ses.retryMissed || [],
-    speed = ses.timeSpeed;
+  const label = ses.label;
+  const retryMissed = ses.retryMissed || [];
+  const speed = ses.timeSpeed;
   const revs = missed
     .map(
       (c) =>
@@ -216,10 +213,15 @@ export function results(): void {
     ${missed.length ? `<div class="review"><div class="lab" style="margin:24px 0 10px">Missed this session</div>${revs}</div>` : ''}
   </div></div>`;
   app.querySelector('#home')!.addEventListener('click', setup);
-  app.querySelector('#redo')!.addEventListener('click', () => begin(shuffle(allCards.slice()), { label, timeSpeed: speed }));
+  app
+    .querySelector('#redo')!
+    .addEventListener('click', () => begin(shuffle(allCards.slice()), { label, timeSpeed: speed }));
   const r = app.querySelector('#retry');
   if (r)
     r.addEventListener('click', () =>
-      begin(shuffle(retryMissed.map((id) => byId[id]).filter(Boolean)), { label: 'Retry · ' + label, timeSpeed: speed }),
+      begin(shuffle(retryMissed.map((id) => byId[id]).filter(Boolean)), {
+        label: `Retry · ${label}`,
+        timeSpeed: speed,
+      }),
     );
 }

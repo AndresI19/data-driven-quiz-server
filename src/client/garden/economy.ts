@@ -1,9 +1,17 @@
 // Shared coin wallet + garden value, multi-garden purchase/switching, and background purchase.
 // Wallet (coins/combo/infinite/spent) lives on DB (shared across gardens); DB.garden is the
 // active board.
-import { DB, saveDB, newGarden } from '../runtime/db.js';
+import { DB, newGarden, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
-import { REWARD_BASE, BLOCK_VALUE, FEAT_BY_ID, ANIM_BY_ID, newBoard, BG_PRICE, APPLY_COST } from './catalog.js';
+import {
+  ANIM_BY_ID,
+  APPLY_COST,
+  BG_PRICE,
+  BLOCK_VALUE,
+  FEAT_BY_ID,
+  REWARD_BASE,
+  newBoard,
+} from './catalog.js';
 
 export function comboMult(): number {
   return Math.min(1 + Math.max(0, DB.combo - 1) * 0.5, 5);
@@ -29,7 +37,7 @@ export function grantReward(mode: string): void {
   let coins = base;
   if (S.curLimit > 0) {
     const usedSec = ((S.answeredAt || Date.now()) - S.cardStart) / 1000;
-    const speed = S.ses && S.ses.timeSpeed ? S.ses.timeSpeed : 1;
+    const speed = S.ses?.timeSpeed ? S.ses.timeSpeed : 1;
     coins += Math.round(base * Math.max(0, (S.curLimit - usedSec) / S.curLimit) * speed);
   }
   coins = Math.round(coins * comboMult());
@@ -44,7 +52,7 @@ export function updateCoinBar(): void {
   if (!cp) return;
   cp.querySelector('.cb-coins')!.textContent = DB.infinite ? '∞' : String(DB.coins);
   const cm = cp.querySelector('.cb-combo') as HTMLElement;
-  cm.textContent = '\u{1F525} ' + DB.combo + ' ×' + comboMult().toFixed(1);
+  cm.textContent = `\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}`;
   cm.classList.toggle('hot', DB.combo >= 2);
   cm.classList.add('pulse');
   setTimeout(() => cm.classList.remove('pulse'), 350);
@@ -54,7 +62,7 @@ export function updateCoinBar(): void {
 export function coinToast(n: number): void {
   const t = document.createElement('div');
   t.className = 'cointoast';
-  t.textContent = '+' + n + ' \u{1FA99}';
+  t.textContent = `+${n} \u{1FA99}`;
   document.body.appendChild(t);
   setTimeout(() => t.classList.add('go'), 20);
   setTimeout(() => t.remove(), 1400);

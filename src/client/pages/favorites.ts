@@ -1,12 +1,12 @@
+import { setScreenBg } from '../garden/screenbg.js';
+import { hidePause } from '../quiz/pause.js';
+import { start } from '../quiz/session.js';
+import { stopTicker } from '../quiz/timer.js';
 // Favorites list page. Ported verbatim.
 import { app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { esc, setKey } from '../runtime/util.js';
-import { stopTicker } from '../quiz/timer.js';
-import { hidePause } from '../quiz/pause.js';
-import { start } from '../quiz/session.js';
-import { setScreenBg } from '../garden/screenbg.js';
 import { setup } from './home.js';
 
 export function favoritesPage(): void {
@@ -19,7 +19,7 @@ export function favoritesPage(): void {
     <div class="rvbar">
       <button class="btn ghost sm" id="favback">← Home</button>
       <div class="lab" style="margin:0">★ Favorites (${ids.length})</div>
-      ${ids.length ? `<button class="btn primary sm" id="favquiz">Quiz all</button>` : `<span></span>`}
+      ${ids.length ? `<button class="btn primary sm" id="favquiz">Quiz all</button>` : '<span></span>'}
     </div>
     <div class="panel">
       ${

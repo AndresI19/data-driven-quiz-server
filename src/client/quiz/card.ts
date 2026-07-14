@@ -1,3 +1,5 @@
+import type { GameCard } from '../../shared/card-schema.js';
+import { breakCombo, grantReward } from '../garden/economy.js';
 // The frame every quiz card is drawn in.
 //
 // All seven modes open the same way (wrap → hud → qcard → direction label → category chip), score
@@ -8,14 +10,12 @@
 // That shell used to be hand-written seven times, which is how the modes drifted apart: `iv` quietly
 // stopped paying out, and `dm` borrowed `ma`'s payout key. Stating the frame once means a new mode
 // gets it right by construction rather than by careful copy-paste.
-import { app, CATS } from '../runtime/data.js';
+import { CATS, app } from '../runtime/data.js';
 import { S, type Session } from '../runtime/state.js';
 import { esc, setKey } from '../runtime/util.js';
-import { record, dispute } from './grading.js';
-import { grantReward, breakCombo } from '../garden/economy.js';
 import { hud, navKey } from './engine.js';
+import { dispute, record } from './grading.js';
 import { advance } from './session.js';
-import type { GameCard } from '../../shared/card-schema.js';
 
 /**
  * Draw a card: the shell, with `body` as its question. Returns the session, which every mode aliases
