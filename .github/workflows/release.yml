@@ -24,23 +24,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 } # all tags, to compute the next version exactly as version-tag does
+        with: { fetch-depth: 0 }
 
       - id: version
-        name: The version this merge becomes
+        name: The tag version-tag put on this commit
         run: |
           set -euo pipefail
-          # Identical logic to version-tag.yml: latest X.X.X (legacy leading v tolerated), bump patch.
-          latest="$(git tag --list | sed -E 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
-          if [ -z "$latest" ]; then next="0.1.0"; else
-            IFS=. read -r ma mi pa <<< "$latest"; next="${ma}.${mi}.$((pa + 1))"
-          fi
-          while git rev-parse -q --verify "refs/tags/$next" >/dev/null 2>&1 \
-             || git rev-parse -q --verify "refs/tags/v$next" >/dev/null 2>&1; do
-            IFS=. read -r ma mi pa <<< "$next"; next="${ma}.${mi}.$((pa + 1))"
+          # READ the tag, do NOT recompute it. version-tag.yml cuts the tag for this same merge, and
+          # two independent "latest + 1" computations cannot agree: whichever runs second sees the
+          # other's new tag and lands one higher (this workflow computed 0.1.14 while version-tag cut
+          # 0.1.13, then waited forever for a tag that would never exist). The only version that is
+          # correct by construction is the one actually sitting on this commit — so wait for it to
+          # appear and use exactly that. No prediction, no race.
+          for i in $(seq 1 40); do
+            git fetch -q --tags origin
+            V="$(git tag --points-at "$GITHUB_SHA" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+            [ -n "$V" ] && break
+            echo "waiting for version-tag to tag this commit ($i)"; sleep 4
           done
-          echo "version=$next" >> "$GITHUB_OUTPUT"
-          echo "this merge → $next"
+          [ -n "${V:-}" ] || { echo "no version tag on $GITHUB_SHA — did version-tag.yml fail?" >&2; exit 1; }
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "this merge is tagged $V"
 
       - name: Ask the platform to build and deploy it
         env:
@@ -49,19 +53,7 @@ jobs:
           set -euo pipefail
           # GITHUB_TOKEN is scoped to this repo and cannot dispatch to another, so a dedicated
           # fine-grained token is the one credential the design needs — scoped to platform-cicd only.
-          #
-          # The runner checks the component out at this exact tag, so the deploy must not START until
-          # version-tag has actually pushed it. version-tag and this workflow run on the same event
-          # with no ordering guarantee, so poll for the tag rather than assume it is there.
           V="${{ steps.version.outputs.version }}"
-          for i in $(seq 1 30); do
-            git fetch -q --tags origin
-            git rev-parse -q --verify "refs/tags/$V" >/dev/null && break
-            echo "waiting for version-tag to push $V ($i)"; sleep 4
-          done
-          git rev-parse -q --verify "refs/tags/$V" >/dev/null \
-            || { echo "tag $V never appeared — did version-tag.yml fail?" >&2; exit 1; }
-
           curl -fsS -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.github+json" \
