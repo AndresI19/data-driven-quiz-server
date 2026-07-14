@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serveClient } from '@platform/ui/server';
@@ -69,6 +69,20 @@ app.get(`${B}/api/cards.json`, (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.send(cardsJson);
 });
+
+// The version this image was built from. Baked into /app/VERSION by the Dockerfile, which
+// k8s/deploy.sh stamps from the repo's latest git tag (suffixed -snapshot when the source differs
+// from main). Read ONCE at startup, like the cards: it cannot change without a new image, so
+// re-reading it per request would be a syscall to learn a constant. Absent in a dev checkout, which
+// is why the fallback is "snapshot" rather than "unknown" — an untagged build is not a release.
+const VERSION = ((): string => {
+  try {
+    return readFileSync(resolve(ROOT, 'VERSION'), 'utf8').trim() || 'snapshot';
+  } catch {
+    return 'snapshot';
+  }
+})();
+app.get(`${B}/version`, (_req, res) => res.json({ version: VERSION }));
 
 // The printable 8-per-page duplex card sheet (standalone document with its own print CSS).
 app.get(`${B}/print.html`, (_req, res) => {
