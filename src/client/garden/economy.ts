@@ -1,7 +1,7 @@
 // Shared coin wallet + garden value, multi-garden purchase/switching, and background purchase.
 // Wallet (coins/combo/infinite/spent) lives on DB (shared across gardens); DB.garden is the
 // active board.
-import { DB, newGarden, saveDB } from '../runtime/db.js';
+import { DB, emptyLayer, newGarden, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import {
   ANIM_BY_ID,
@@ -70,6 +70,7 @@ export function coinToast(n: number): void {
 /** Reset the ACTIVE garden's board (keeps the shared wallet); money defaults back to on. */
 export function resetGarden(): void {
   DB.garden.cells = newBoard();
+  DB.garden.upper = emptyLayer();
   DB.garden.hideFg = false;
   DB.garden.bg = null;
   // No longer forces free money on. Resetting a garden is not a reason to hand out unlimited
@@ -80,21 +81,25 @@ export function resetGarden(): void {
 /** A selected background or effect each add this to a garden's value (applying improves the score). */
 export const DECOR_VALUE = 200;
 function gardenValueOf(g: import('../runtime/db.js').Garden): number {
-  let v = 0;
-  for (let i = 0; i < 100; i++) {
-    const c = g.cells[i];
-    if (!c) continue;
-    v += BLOCK_VALUE[c.block] || 0;
-    if (c.feature) {
-      const f = FEAT_BY_ID[c.feature];
-      if (f) v += f.price;
+  const layerValue = (cells: (import('./catalog.js').GardenCell | null)[]): number => {
+    let v = 0;
+    for (let i = 0; i < 100; i++) {
+      const c = cells[i];
+      if (!c) continue;
+      v += BLOCK_VALUE[c.block] || 0;
+      if (c.feature) {
+        const f = FEAT_BY_ID[c.feature];
+        if (f) v += f.price;
+      }
+      if (c.animal) {
+        const a = ANIM_BY_ID[c.animal];
+        if (a) v += a.price;
+      }
     }
-    if (c.animal) {
-      const a = ANIM_BY_ID[c.animal];
-      if (a) v += a.price;
-    }
-  }
-  v = Math.max(0, v - 25 * BLOCK_VALUE.dirt); // subtract the free 5x5 dirt starter
+    return v;
+  };
+  // The ground carries a free 5x5 dirt starter that shouldn't count; the elevation layer is all paid.
+  let v = Math.max(0, layerValue(g.cells) - 25 * BLOCK_VALUE.dirt) + layerValue(g.upper);
   if (g.bg) v += DECOR_VALUE;
   if (g.fx) v += DECOR_VALUE;
   return v;
@@ -129,6 +134,7 @@ export function buyGarden(): boolean {
   DB.gardens.push(newGarden());
   DB.gardenIdx = DB.gardens.length - 1;
   DB.garden = DB.gardens[DB.gardenIdx];
+  S.layer = 0; // a fresh garden has no elevation yet
   saveDB();
   return true;
 }
@@ -136,6 +142,7 @@ export function switchGarden(idx: number): void {
   if (idx < 0 || idx >= DB.gardens.length) return;
   DB.gardenIdx = idx;
   DB.garden = DB.gardens[idx];
+  S.layer = 0; // a different garden has its own elevation content — start on the ground
   saveDB();
 }
 /** Track the best TOTAL garden value reached across all gardens (gates new-garden purchases). */

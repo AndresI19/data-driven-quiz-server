@@ -12,9 +12,12 @@ import {
   type GardenCell,
   ISO_HX,
   ISO_HY,
+  ISO_LIFT,
   ISO_OX,
   ISO_W,
   TIMG,
+  Z_STEP,
+  supportsUpper,
   waterMask,
 } from './catalog.js';
 
@@ -74,10 +77,15 @@ export function animThumb(a: Animal): string {
   // Shift the strip so frame 0's content lands at the box's top-left, then scale about that corner.
   return `<span class="ganim" style="position:static;left:auto;bottom:auto;transform:none;width:${w}px;height:${h}px;overflow:visible"><span class="ganimf anim-${a.id}" style="width:${a.fw}px;height:${a.fh}px;background-image:url(${ASSET}critters/${a.id}_d0.png);transform-origin:top left;transform:scale(${s.toFixed(3)}) translate(${-a.cx}px,${-a.cy}px)"></span></span>`;
 }
-export function cellPos(i: number): { x: number; y: number; z: number } {
+export function cellPos(i: number, layer = 0): { x: number; y: number; z: number } {
   const r = (i / 10) | 0;
   const c = i % 10;
-  return { x: (c - r) * ISO_HX + ISO_OX, y: (c + r) * ISO_HY, z: c + r };
+  // Lift the elevation layer one cube; sort by footprint first, layer only as a tiebreak.
+  return {
+    x: (c - r) * ISO_HX + ISO_OX,
+    y: (c + r) * ISO_HY - layer * ISO_LIFT,
+    z: Z_STEP * (c + r) + layer,
+  };
 }
 // A pack decor sprite (free-standing PNG) sized to the tile and bottom-anchored on its surface.
 function packSprite(f: Feature): string {
@@ -94,12 +102,23 @@ function featSprite(f: Feature, i: number): string {
   if (f.cover) return `<img class="gfeat cover" src="${TIMG(f.t!)}" alt="" draggable="false">`;
   return `<img class="gfeat obj" src="${TIMG(f.t!)}" alt="" draggable="false">`; // bottom-anchored
 }
+/** How to paint a cell relative to the active layer: full colour, greyed (inactive), or greyed with a
+    red "cannot build here" wash on the tile's top face. */
+export type Tint = 'live' | 'dim' | 'no';
 // Art layer: the visual tile (+feature +animal), pointer-events off, painted back-to-front.
-export function cellArt(cell: GardenCell | null, i: number, forceFg?: boolean): string {
+export function cellArt(
+  cell: GardenCell | null,
+  i: number,
+  layer = 0,
+  forceFg?: boolean,
+  tint: Tint = 'live',
+): string {
   if (!cell) return '';
-  const p = cellPos(i);
+  const p = cellPos(i, layer);
   const fg = forceFg || !DB.garden.hideFg;
   let inner = `<img class="gtile-img" src="${TIMG(cell.v)}" alt="" draggable="false">`;
+  // The red wash sits ON the tile top, UNDER any feature — it flags the ground, not what stands on it.
+  if (tint === 'no') inner += '<span class="gtint no"></span>';
   if (fg && cell.feature) {
     const f = FEAT_BY_ID[cell.feature];
     if (f) inner += featSprite(f, i);
@@ -108,12 +127,16 @@ export function cellArt(cell: GardenCell | null, i: number, forceFg?: boolean): 
     const a = ANIM_BY_ID[cell.animal];
     if (a) inner += animSprite(a, cell.adir || 0, i);
   }
-  return `<div class="gart" data-i="${i}" style="left:${p.x}px;top:${p.y}px;z-index:${p.z}">${inner}</div>`;
+  const cls = tint === 'live' ? '' : ' dim';
+  return `<div class="gart${cls}" data-i="${i}" data-l="${layer}" style="left:${p.x}px;top:${p.y}px;z-index:${p.z}">${inner}</div>`;
 }
 // Hit layer: a diamond-clipped button per tile — tessellates exactly, so a click maps to one tile.
-export function hitCell(cell: GardenCell | null, i: number): string {
-  const p = cellPos(i);
-  return `<button class="gcell${cell ? '' : ' empty'}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${i % 10},${(i / 10) | 0}"></button>`;
+// `open` marks an empty tile the current brush could fill (faint fill); a mid-air elevation slot with
+// no supporting ground below is NOT open, so it shows no "place here" affordance.
+export function hitCell(cell: GardenCell | null, i: number, layer = 0, open = true): string {
+  const p = cellPos(i, layer);
+  const empty = !cell ? (open ? ' empty' : ' void') : '';
+  return `<button class="gcell${empty}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${i % 10},${(i / 10) | 0}"></button>`;
 }
 function gGuides(): string {
   let h = '';
@@ -146,21 +169,42 @@ function tileIdOverlay(): string {
 
 export function gardenBoardInner(): string {
   const G = DB.garden;
-  return (
-    gGuides() +
-    G.cells.map((c, i) => cellArt(c, i)).join('') +
-    G.cells.map((c, i) => hitCell(c, i)).join('') +
-    (S.showTileIds ? tileIdOverlay() : '')
-  );
+  const L = S.layer; // the layer being edited; the other renders greyed and non-interactive
+  let art = '';
+  for (let i = 0; i < 100; i++) {
+    // Ground: live when editing it; when editing elevation, greyed — and red where nothing can be
+    // built on top of it (water, a spire, or an occupied tile).
+    const groundTint: Tint = L === 0 ? 'live' : supportsUpper(G.cells[i]) ? 'dim' : 'no';
+    art += cellArt(G.cells[i], i, 0, false, groundTint);
+    // Elevation: live when editing it, greyed otherwise. Drawn after ground at the same i, but its
+    // z-index (footprint + layer) is what actually orders it — DOM order is irrelevant.
+    art += cellArt(G.upper[i], i, 1, false, L === 1 ? 'live' : 'dim');
+  }
+  const active = L === 0 ? G.cells : G.upper;
+  const hit = active
+    .map((c, i) => hitCell(c, i, L, L === 0 || supportsUpper(G.cells[i])))
+    .join('');
+  return gGuides() + art + hit + (S.showTileIds ? tileIdOverlay() : '');
 }
 export function gardenArt(): string {
-  return DB.garden.cells.map((c, i) => cellArt(c, i, true)).join('');
-} // display only; always shows foreground
-// Plain-english description of everything on a tile, for the hover readout.
+  // Display only (home mini-board): both layers, always foreground, full colour.
+  const G = DB.garden;
+  let out = '';
+  for (let i = 0; i < 100; i++) {
+    out += cellArt(G.cells[i], i, 0, true);
+    out += cellArt(G.upper[i], i, 1, true);
+  }
+  return out;
+}
+// Plain-english description of everything on a tile of the ACTIVE layer, for the hover readout.
 export function tileDesc(i: number): string {
-  const cell = DB.garden.cells[i];
-  const loc = `col ${i % 10} · row ${(i / 10) | 0}`;
-  if (!cell) return `${loc} — empty`;
+  const L = S.layer;
+  const cell = (L === 0 ? DB.garden.cells : DB.garden.upper)[i];
+  const loc = `col ${i % 10} · row ${(i / 10) | 0}${L ? ' · elevation' : ''}`;
+  if (!cell) {
+    if (L === 1 && !supportsUpper(DB.garden.cells[i])) return `${loc} — no ground below to build on`;
+    return `${loc} — empty`;
+  }
   // The block's name comes from the block table — this was a third copy of it, and the only reason
   // it existed is that `grass` used to be missing from BLOCKS.
   const bn = BLOCKS[cell.block]?.name || cell.block;

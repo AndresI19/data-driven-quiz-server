@@ -34,7 +34,10 @@ export function autotile(cells: (GardenCell | null)[]): void {
   }
 }
 
-/** The board-in-play. A thin shim so callers do not have to know where the garden lives. */
+/** The board-in-play. A thin shim so callers do not have to know where the garden lives. Both layers
+    are retiled: the elevation layer never holds water, but a spire placed up there still needs its
+    base recomputed against its own layer's neighbours. */
 export function recomputeAutotile(): void {
   autotile(DB.garden.cells);
+  autotile(DB.garden.upper);
 }

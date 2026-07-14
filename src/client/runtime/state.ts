@@ -51,6 +51,7 @@ export const S = {
   running: false,
   pausedFocus: null as Element | null,
   selBrush: null as Brush | null,
+  layer: 0, // active editing layer: 0 = ground, 1 = elevation. Reset to ground on entering the garden.
   warnTimer: null as ReturnType<typeof setTimeout> | null,
   splashTimer: null as ReturnType<typeof setInterval> | null,
   showTileIds: false, // debug: overlay each garden tile's sprite index + water autotile bitmask

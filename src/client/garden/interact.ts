@@ -17,6 +17,7 @@ import {
   TREE_TYPE_IDS,
   WATER_COST,
   WATER_OPEN,
+  supportsUpper,
 } from './catalog.js';
 import { afford, refund, spend } from './economy.js';
 import { gardenPage } from './page.js';
@@ -39,7 +40,9 @@ export function warn(msg: string): void {
   sndWrong();
 }
 export function applyBrush(i: number): void {
-  const C = DB.garden.cells;
+  const L = S.layer; // active editing layer
+  const ground = DB.garden.cells; // layer 0, the support for the elevation layer above
+  const C = L === 0 ? ground : DB.garden.upper; // the cells the brush actually edits
   const cell = C[i];
   const b = S.selBrush;
   if (!b) {
@@ -100,12 +103,23 @@ export function applyBrush(i: number): void {
   }
   if (b.type === 'block') {
     if (cell) return warn('That tile is full — dig it back to empty first.');
+    // Elevation rules: no water up here, and a tile needs solid ground directly beneath it.
+    if (L === 1) {
+      if (b.id === 'water') return warn("Water can't go on the elevation layer.");
+      if (!supportsUpper(ground[i]))
+        return warn('Nothing to build on — the ground below is empty, water, a spire, or occupied.');
+    }
     const spec = BLOCKS[b.id];
     if (!afford(spec.price)) return warn('Not enough \u{1FA99} coins — answer cards to earn more.');
     spend(spec.price);
     if (b.id === 'water') {
       C[i] = { block: 'water', v: WATER_OPEN };
     } else C[i] = { block: b.id, v: pick(spec.pool!) };
+    // Grass shaded under a new elevated tile loses its light and reverts to dirt.
+    if (L === 1 && ground[i]!.block === 'grass') {
+      ground[i]!.block = 'dirt';
+      ground[i]!.v = pick(BLOCKS.dirt.pool!);
+    }
     sndPlant();
     done();
     return;
