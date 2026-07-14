@@ -49,6 +49,9 @@ const limiter = rateLimit({
   limit: 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip reads: behind Cloudflare's shared edge IPs a per-IP limiter cannot separate clients, so
+  // rate-limiting GETs would 429 the liveness polling. Only mutating requests are capped.
+  skip: (req) => req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS',
   validate: { trustProxy: false },
 });
 app.use(limiter);
