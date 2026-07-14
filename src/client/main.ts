@@ -6,7 +6,7 @@ import '@platform/ui/base.css';
 import '@platform/ui/gate.css';
 import './styles/game.css';
 import { isAdmin, isSignedIn } from '@platform/ui/auth';
-import { mountAccountFab, mountGate, needsGate } from '@platform/ui/gate';
+import { mountAccountFab, mountGate } from '@platform/ui/gate';
 import type { CardsPayload } from '../shared/card-schema.js';
 import { recomputeAutotile } from './garden/autotile.js';
 import { mountParticles } from './garden/particles.js';
@@ -68,25 +68,20 @@ async function boot(): Promise<void> {
   // promise the gate makes, and schedulePush is where it is kept.
   onSaved(() => schedulePush());
 
-  // The gate: shown once, on the first visit, and never again once a choice has been made. It renders
-  // over the app rather than instead of it — this is a decision about where your progress lives, not
-  // a paywall, and it should not look like one.
-  if (needsGate()) {
-    // No greetUrl here: the greeting belongs to the home page, and asking twice would be rude.
-    mountGate({
-      onDone: () => {
-        mountAccountFab();
-        void pull().finally(() => route());
-      },
-    });
-  } else if (isSignedIn()) {
-    mountAccountFab();
-    // A returning player: pick up whatever another browser did since last time. A conflict is handled
-    // inside pull() by keeping BOTH copies — never by overwriting one in silence.
-    void pull().then(() => route());
-  } else {
-    mountAccountFab(); // a guest still gets the chip: it is how they upgrade, or see what they chose
-  }
+  // The account FAB replaces the old blocking gate — the same behaviour as the home page. That gate
+  // was a decision about where your progress lives, but a wall over the game on arrival scares more
+  // players off than it converts: a first visitor is now defaulted to guest (silently, inside
+  // mountAccountFab) and the FAB wears a one-time red nudge to create a real account. Creating or
+  // signing in opens the original three-option chooser; its onDone syncs and re-routes. No greetUrl:
+  // the greeting belongs to the home page, and account creation stays two pages.
+  mountAccountFab({
+    nudgeGuest: true,
+    onUpgrade: () => mountGate({ onDone: () => void pull().finally(() => route()) }),
+  });
+  // A returning signed-in player picks up whatever another browser did since last time. A conflict is
+  // handled inside pull() by keeping BOTH copies — never by overwriting one in silence. A guest has
+  // nothing to pull; route() at the end of boot renders either way.
+  if (isSignedIn()) void pull().then(() => route());
 
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
