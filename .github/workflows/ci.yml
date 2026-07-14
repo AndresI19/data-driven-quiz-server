@@ -37,3 +37,21 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1" # blocking: image is hardened to 0 HIGH/CRITICAL
           ignore-unfixed: true
+
+  dep-scan:
+    runs-on: ubuntu-latest
+    steps:
+      # No submodules: the vendored @platform/ui carries platform-auth's lockfiles, whose dependencies
+      # are project-platform's concern (and scanned in its CI), not this app's — and none of them ship
+      # here (.dockerignore keeps only the platform-ui package). skip-dirs is belt-and-suspenders.
+      - uses: actions/checkout@v4
+      - name: Trivy dependency scan (this app's lockfile)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          skip-dirs: vendor
