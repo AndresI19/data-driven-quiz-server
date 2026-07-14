@@ -34,6 +34,19 @@ WORKDIR /app
 ARG BASE_PATH=/
 ENV NODE_ENV=production
 ENV PORT=80
+
+# Version, stamped by k8s/deploy.sh — an OCI label so the image is identifiable without running it,
+# and a VERSION file so the server can serve it from <base>/version. Unset (a bare `docker build`)
+# writes an empty file and the server reports "snapshot"; a dev build must not claim to be a release.
+ARG VERSION
+ARG GIT_SHA
+ARG BUILD_DATE
+LABEL org.opencontainers.image.title="data-driven-quiz-server" \
+      org.opencontainers.image.description="The flashcards quiz" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
+RUN printf '%s' "${VERSION}" > /app/VERSION
 # Must match the base baked into the client build, so the server mounts its routes at the same prefix.
 ENV BASE_PATH=$BASE_PATH
 # Patch the OS, then strip npm (the runtime only runs `node`): both are pure CVE surface here.

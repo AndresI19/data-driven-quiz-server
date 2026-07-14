@@ -82,8 +82,15 @@ npm test            # vitest run  (5 files)
 
 ## Routes
 
-`GET {BASE}/api/cards.json` · `GET {BASE}/print.html` · then `serveClient()` (which adds
-`{BASE}/api/health`, static assets, and the SPA fallback).
+`GET {BASE}/api/cards.json` · `GET {BASE}/version` · `GET {BASE}/print.html` · then `serveClient()`
+(which adds `{BASE}/api/health`, static assets, and the SPA fallback).
+
+`{BASE}/version` reports what the running image is: a `VERSION` file baked in by the Dockerfile, which
+`platform-orchestration/k8s/deploy.sh` stamps from this repo's latest git tag (suffixed `-snapshot`
+when the source differs from `main`). It is read once at startup, like the cards. A dev checkout has
+no such file and reports `"snapshot"`. The home page's version badges read it via that repo's
+`/api/versions`. Note it hangs beneath `BASE` like everything else here, so in the cluster it is
+`/cloud-developer-quiz/version`, not `/version`.
 
 ## In the cluster
 
