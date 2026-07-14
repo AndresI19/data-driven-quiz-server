@@ -550,6 +550,18 @@ h1 {
 .gtint.no {
   background: color-mix(in srgb, #ff3b3b 46%, transparent);
 }
+/* "View all" hold: while previewing, drop the greying and the red build-mask so every layer reads in
+   full colour. A pure class toggle on the board — no re-render — so the hold feels instant. */
+.gboard.peekall .gart.dim .gtile-img,
+.gboard.peekall .gart.dim .gfeat,
+.gboard.peekall .gart.dim .gpack,
+.gboard.peekall .gart.dim .gtree,
+.gboard.peekall .gart.dim .ganimf {
+  filter: none;
+}
+.gboard.peekall .gtint {
+  display: none;
+}
 /* An elevation hit-cell floating over no ground: still present so hovering reads out "no ground
    below", but it carries no place-here fill and shows a blocked cursor. */
 .gcell.void {
@@ -566,37 +578,75 @@ h1 {
   gap: 8px;
   z-index: 5;
 }
+/* Each layer carries its own vibrant identity hue (F1 ground = emerald, F2 elevation = orange), so the
+   two tabs contrast with each other and with the page — a dark chip reads on both light and dark
+   grounds, where the old near-white pill blended in. The active tab fills with its hue; the inactive
+   one keeps a coloured outline so you can still tell which layer it is. */
 .ltab {
-  width: 92px;
+  width: 96px;
   padding: 9px 8px;
   border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: var(--ink);
-  font: 700 12px / 1.15 inherit;
+  border: 1.5px solid transparent;
+  background: rgba(20, 22, 30, 0.82);
+  color: #fff;
+  font: 800 14px / 1.1 inherit;
+  letter-spacing: 0.03em;
   text-align: center;
   cursor: pointer;
-  opacity: 0.66;
-  transition: opacity 0.12s ease, border-color 0.12s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  transition: transform 0.1s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 .ltab:hover {
-  opacity: 1;
-  border-color: var(--accent);
+  transform: translateX(-2px);
 }
 .ltab .ltn {
   display: block;
   margin-top: 3px;
   font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.68;
+  opacity: 0.9;
 }
-.ltab.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  opacity: 1;
+/* identity hues */
+.ltab.l1 {
+  border-color: #10b981;
+}
+.ltab.l1 .ltn {
+  color: #6ee7b7;
+}
+.ltab.l2 {
+  border-color: #f97316;
+}
+.ltab.l2 .ltn {
+  color: #fdba74;
+}
+.ltab.viewall {
+  border-color: #38bdf8;
+  font-size: 12px;
+}
+.ltab.viewall .ltn {
+  color: #7dd3fc;
+}
+/* active / held: fill with the hue, glow */
+.ltab.l1.on {
+  background: linear-gradient(180deg, #10b981, #059669);
+  border-color: #6ee7b7;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35), 0 4px 14px rgba(5, 150, 105, 0.5);
+}
+.ltab.l2.on {
+  background: linear-gradient(180deg, #fb923c, #ea580c);
+  border-color: #fdba74;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35), 0 4px 14px rgba(234, 88, 12, 0.5);
+}
+.ltab.viewall.held {
+  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+  border-color: #bae6fd;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 4px 14px rgba(14, 165, 233, 0.5);
+}
+.ltab.on .ltn,
+.ltab.viewall.held .ltn {
+  color: rgba(255, 255, 255, 0.92);
 }
 .gfeat {
   image-rendering: pixelated;

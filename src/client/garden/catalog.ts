@@ -307,12 +307,19 @@ export const Z_STEP = LAYERS;
 /**
  * Can an elevated tile stand on this ground cell? Only over solid, unoccupied ground: there must BE a
  * tile beneath it, and it cannot bridge water or a spire (both would leave the platform floating on a
- * surface nothing can key into). An occupied ground cell (a tree/bush under it) is refused too — the
- * one adjacency the footprint depth-sort genuinely cannot draw, since the object would spear up
- * through the platform. `dig it first` is the fix, not a render trick.
+ * surface nothing can key into). Anything STANDING on the ground — a feature (tree/bush/flower) or an
+ * animal — refuses it too: the object would be buried, the one adjacency the footprint depth-sort
+ * cannot draw. `dig it first` is the fix, not a render trick. (Animals were missed here, which let a
+ * deer get buried while trees and flowers were correctly blocked.)
  */
 export function supportsUpper(ground: GardenCell | null): boolean {
-  return !!ground && ground.block !== 'water' && ground.block !== 'spire' && !ground.feature;
+  return (
+    !!ground &&
+    ground.block !== 'water' &&
+    ground.block !== 'spire' &&
+    !ground.feature &&
+    !ground.animal
+  );
 }
 
 export interface GardenCell {
