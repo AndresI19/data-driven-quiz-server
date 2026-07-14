@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serveClient } from '@platform/ui/server';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { buildPrintHtml } from '../print/build-print.js';
 import { loadCardsPayload } from '../shared/load-cards.js';
 import { migrate, mountProgress, progressEnabled } from './progress.js';
@@ -37,7 +38,21 @@ buildCards();
 // Progress is OPTIONAL and mounted BEFORE serveClient, which ends in a catch-all that would shadow
 // it. With no DATABASE_URL the quiz runs exactly as it always has — entirely in the browser — which
 // is what keeps a plain `npm run dev` a single command with no infrastructure.
+app.set('trust proxy', true); // behind nginx (and Cloudflare in public), so req.ip needs the header
 app.use(express.json({ limit: '1mb' }));
+
+// A coarse global cap as defence-in-depth. Generous because this process also serves the SPA's static
+// assets and one page load fans out to many requests; real abuse trips it long before a human
+// browsing does. Per-process (single replica) — resets on restart, acceptable at this rate.
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { trustProxy: false },
+});
+app.use(limiter);
+
 if (progressEnabled) {
   void migrate();
   mountProgress(app, B);

@@ -21,6 +21,7 @@
     "@types/pg": "^8.20.0",
     "cross-env": "^7.0.3",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
     "gifenc": "^1.0.3",
     "jose": "^6.2.3",
     "js-yaml": "^4.1.0",
