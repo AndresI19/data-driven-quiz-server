@@ -21,7 +21,9 @@ export function startSplashes(): void {
     }
     if (!water.length) return;
     if (Math.random() > Math.min(0.88, (water.length * 2.75) / 20)) return; // ~1 splash per tile / 18s (10% more than before)
-    const gart = app.querySelector(`.gart[data-i="${water[Math.floor(Math.random() * water.length)]}"]`);
+    const gart = app.querySelector(
+      `.gart[data-l="0"][data-i="${water[Math.floor(Math.random() * water.length)]}"]`,
+    );
     if (gart && !gart.querySelector('.gsplash')) {
       const s = document.createElement('img');
       s.className = 'gsplash';

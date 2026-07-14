@@ -1,6 +1,6 @@
-# Merge to main → cut a version → hand it to the platform to deploy.
+# Merge to main → the existing version-tag job cuts the tag → we hand that version to the platform.
 #
-# NOTHING here runs on the platform's machine. Both jobs run on GitHub's own VMs; the second one only
+# NOTHING here runs on the platform's machine. Both jobs run on GitHub's own VMs; the second only
 # POSTs. The self-hosted runner is registered to platform-cicd and to nothing else, so no workflow in
 # this repo — including one in a stranger's fork — can reach it.
 name: release
@@ -9,59 +9,65 @@ on:
   push:
     branches: [main] # a merge. main is protected, so the checks are already green.
 
-# Not `on: push: tags`. A tag pushed by a workflow using GITHUB_TOKEN does NOT trigger another
-# workflow — GitHub's recursion guard. The tag would appear and nothing would happen: no build, no
-# deploy, no error. So the tag and the dispatch are two jobs in ONE run, chained by `needs:`.
+# This does NOT re-tag. version-tag.yml already turns every merge into a tag, and it is the source of
+# truth for the version scheme (it tolerates the legacy vX.X.X tags, guards against collisions, and is
+# what rs-mcp's version.py has always referred to). Duplicating it here produced two taggers racing on
+# the same commit. Instead this job DERIVES the version the same way and, crucially, only DISPATCHES —
+# the deploy itself is a job on platform-cicd's runner.
 #
-# It also removes the race with the tagger entirely: we do not READ the version afterwards and hope it
-# is the new one, we CREATED it and pass it forward.
+# Why not trigger on `push: tags` and consume version-tag's tag directly? Because version-tag pushes
+# with the default GITHUB_TOKEN, and a tag pushed that way does NOT trigger another workflow (GitHub's
+# recursion guard). So this rides the same `push: main` event version-tag does, computes the identical
+# version, and hands it on.
 jobs:
-  tag:
+  dispatch:
     runs-on: ubuntu-latest
-    permissions: { contents: write } # to push the tag
-    outputs:
-      version: ${{ steps.cut.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 } # tags are needed to work out what the last one was
+        with: { fetch-depth: 0 } # all tags, to compute the next version exactly as version-tag does
 
-      - id: cut
-        name: Cut the next patch version
+      - id: version
+        name: The version this merge becomes
         run: |
           set -euo pipefail
-          LAST="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
-          # Idempotent, and it has to be: if a later step in this job ever dies after the tag was
-          # pushed, a re-run must ADOPT the existing tag rather than fail with "already exists" and
-          # need a human to delete it. Assert the desired state; never assume a clean slate.
-          if git rev-parse -q --verify "refs/tags/${LAST}" >/dev/null \
-             && [ "$(git rev-list -n1 "$LAST")" = "$GITHUB_SHA" ]; then
-            echo "this commit is already tagged $LAST — adopting it"
-            echo "version=$LAST" >> "$GITHUB_OUTPUT"; exit 0
+          # Identical logic to version-tag.yml: latest X.X.X (legacy leading v tolerated), bump patch.
+          latest="$(git tag --list | sed -E 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+          if [ -z "$latest" ]; then next="0.1.0"; else
+            IFS=. read -r ma mi pa <<< "$latest"; next="${ma}.${mi}.$((pa + 1))"
           fi
-          IFS=. read -r MA MI PA <<< "$LAST"
-          NEXT="${MA}.${MI}.$((PA + 1))"
-          git tag -a "$NEXT" -m "$NEXT"
-          git push origin "$NEXT"
-          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
-          echo "cut $NEXT"
+          while git rev-parse -q --verify "refs/tags/$next" >/dev/null 2>&1 \
+             || git rev-parse -q --verify "refs/tags/v$next" >/dev/null 2>&1; do
+            IFS=. read -r ma mi pa <<< "$next"; next="${ma}.${mi}.$((pa + 1))"
+          done
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "this merge → $next"
 
-  dispatch:
-    needs: tag # if the tag job fails, this is SKIPPED. Fail-closed: no deploy beats a wrong deploy.
-    runs-on: ubuntu-latest
-    steps:
-      # GITHUB_TOKEN is scoped to this repository and cannot dispatch to another one, so this is the
-      # one credential the design needs: a fine-grained token that can do exactly this, on exactly
-      # platform-cicd, and nothing else.
-      - name: Ask the platform to deploy it
+      - name: Ask the platform to build and deploy it
         env:
           TOKEN: ${{ secrets.CICD_DISPATCH_TOKEN }}
         run: |
+          set -euo pipefail
+          # GITHUB_TOKEN is scoped to this repo and cannot dispatch to another, so a dedicated
+          # fine-grained token is the one credential the design needs — scoped to platform-cicd only.
+          #
+          # The runner checks the component out at this exact tag, so the deploy must not START until
+          # version-tag has actually pushed it. version-tag and this workflow run on the same event
+          # with no ordering guarantee, so poll for the tag rather than assume it is there.
+          V="${{ steps.version.outputs.version }}"
+          for i in $(seq 1 30); do
+            git fetch -q --tags origin
+            git rev-parse -q --verify "refs/tags/$V" >/dev/null && break
+            echo "waiting for version-tag to push $V ($i)"; sleep 4
+          done
+          git rev-parse -q --verify "refs/tags/$V" >/dev/null \
+            || { echo "tag $V never appeared — did version-tag.yml fail?" >&2; exit 1; }
+
           curl -fsS -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/AndresI19/platform-cicd/dispatches \
-            -d '{"event_type":"release","client_payload":{
-                   "component":"quiz",
-                   "repo":"${{ github.repository }}",
-                   "version":"${{ needs.tag.outputs.version }}"}}'
-          echo "dispatched quiz ${{ needs.tag.outputs.version }}"
+            -d "{\"event_type\":\"release\",\"client_payload\":{
+                   \"component\":\"quiz\",
+                   \"repo\":\"${{ github.repository }}\",
+                   \"version\":\"$V\"}}"
+          echo "dispatched quiz $V"

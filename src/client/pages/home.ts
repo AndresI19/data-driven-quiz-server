@@ -1,7 +1,7 @@
 import { current, isGuest, isSignedIn } from '@platform/ui/auth';
 import { audioInit, setVolume, sndFlip } from '../audio/sound.js';
 import { gardenValue, switchGarden, totalGardenValue } from '../garden/economy.js';
-import { gardenPage } from '../garden/page.js';
+import { enterGarden } from '../garden/page.js';
 import { setScreenBg } from '../garden/screenbg.js';
 import { startSplashes } from '../garden/splash.js';
 import { gardenArt } from '../garden/sprites.js';
@@ -338,7 +338,7 @@ export function setup(): void {
   const eb = app.querySelector('#exportbtn');
   if (eb) eb.addEventListener('click', exportPage);
   const hg = app.querySelector('#homegarden');
-  if (hg) hg.addEventListener('click', gardenPage);
+  if (hg) hg.addEventListener('click', enterGarden);
   const hgp = app.querySelector('#hgprev');
   if (hgp)
     hgp.addEventListener('click', () => {

@@ -79,6 +79,16 @@ function brushCursor(): string {
   return 'crosshair';
 }
 
+/**
+ * Enter the garden editor from elsewhere (router, home button). Distinct from gardenPage(), which is
+ * also the in-place re-render after every edit: entering drops you on the ground layer, but a
+ * re-render must preserve whichever layer you had tabbed into.
+ */
+export function enterGarden(): void {
+  S.layer = 0;
+  gardenPage();
+}
+
 export function gardenPage(): void {
   stopTicker();
   S.running = false;
@@ -165,7 +175,14 @@ export function gardenPage(): void {
       <button class="btn ghost sm" id="gnext" ${DB.gardenIdx >= DB.gardens.length - 1 ? 'disabled' : ''} title="next garden">→</button>
       ${buyBtn}
     </div>
-    <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div></div>
+    <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
+      <!-- Layer tabs: elevation on top, ground beneath, mirroring the physical stack. Only the
+           tabbed-into layer is editable; the other renders greyed. -->
+      <div class="ltabs" role="tablist" aria-label="editing layer">
+        <button class="ltab${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">Elevation<span class="ltn">layer 2</span></button>
+        <button class="ltab${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">Base<span class="ltn">layer 1</span></button>
+      </div>
+    </div>
     <div class="palhint" id="palhint">${brushHint()}</div>
     <div class="palette">
       <div class="palgroup"><div class="palh">Tools</div><div class="palrow">${palTool('water', 'Water → grass', WATER_COST)}${palTool('dig', 'Shovel', null)}${palTool('rotate', 'Wrench', null)}</div></div>
@@ -207,6 +224,14 @@ export function gardenPage(): void {
     gbuy.addEventListener('click', () => {
       if (buyGarden()) gardenPage();
     });
+  app.querySelectorAll<HTMLElement>('.ltab').forEach((t) =>
+    t.addEventListener('click', () => {
+      const next = +t.dataset.layer!;
+      if (next === S.layer) return;
+      S.layer = next;
+      gardenPage();
+    }),
+  );
   app.querySelectorAll('.palbtn:not(.bgbtn):not(.fxbtn)').forEach((b) =>
     b.addEventListener('click', () => {
       const el = b as HTMLElement;

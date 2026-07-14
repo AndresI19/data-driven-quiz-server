@@ -292,6 +292,29 @@ export const ISO_W = 80,
   ISO_HY = 20,
   ISO_OX = 9 * ISO_HX;
 
+// ---- Elevation layers ----
+// The board has stacked editing layers. Layer 0 is the ground; layer 1 is an elevation plane lifted
+// exactly one cube body (ISO_LIFT === the cube's 20px front face), so an elevated tile stacks flush
+// on the ground tile with no floating gap — see catalog tiles, whose body is 8px of a 32px sprite.
+export const ISO_LIFT = ISO_HY;
+export const LAYERS = 2; // ground + one elevation layer (this pass)
+// Depth is sorted by grid footprint first, layer only as a tiebreak: z = Z_STEP*(col+row) + layer.
+// Sorting by footprint (not by layer) is what lets a tall tree correctly sit BEHIND an elevated tile
+// in front of it and IN FRONT OF one behind it, with no per-object hoisting. Z_STEP just leaves room
+// for the layer to slot between two footprint steps.
+export const Z_STEP = LAYERS;
+
+/**
+ * Can an elevated tile stand on this ground cell? Only over solid, unoccupied ground: there must BE a
+ * tile beneath it, and it cannot bridge water or a spire (both would leave the platform floating on a
+ * surface nothing can key into). An occupied ground cell (a tree/bush under it) is refused too — the
+ * one adjacency the footprint depth-sort genuinely cannot draw, since the object would spear up
+ * through the platform. `dig it first` is the fix, not a render trick.
+ */
+export function supportsUpper(ground: GardenCell | null): boolean {
+  return !!ground && ground.block !== 'water' && ground.block !== 'spire' && !ground.feature;
+}
+
 export interface GardenCell {
   block: string;
   v: number;

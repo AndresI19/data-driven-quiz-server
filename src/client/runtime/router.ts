@@ -1,4 +1,4 @@
-import { gardenPage } from '../garden/page.js';
+import { enterGarden } from '../garden/page.js';
 import { setup } from '../pages/home.js';
 import { renderQ } from '../quiz/engine.js';
 import { resumeSnap, start } from '../quiz/session.js';
@@ -53,7 +53,7 @@ export function route(): void {
       history.replaceState({}, '', toUrl('/home'));
       p = '/home';
     }
-    if (p === '/garden') gardenPage();
+    if (p === '/garden') enterGarden();
     else if (p === '/quiz') quizRoute();
     else setup(); // /home and anything unrecognized
   } finally {

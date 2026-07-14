@@ -8,7 +8,8 @@ import type { QItem } from './state.js';
 // A garden board. Wallet/unlocks are shared (on DBShape), so a Garden only holds its own tiles,
 // its foreground-hidden view flag, and its selected background.
 export interface Garden {
-  cells: (GardenCell | null)[];
+  cells: (GardenCell | null)[]; // ground layer (layer 0)
+  upper: (GardenCell | null)[]; // elevation layer (layer 1) — sparse; mostly null
   hideFg: boolean;
   bg: string | null; // selected background id, or null
   fx: string | null; // selected particle effect id, or null
@@ -16,7 +17,11 @@ export interface Garden {
 /** A fresh garden. Lives here rather than in the catalog because the catalog cannot see this type —
     db.ts imports the catalog, not the other way round. Was an object literal written out twice. */
 export function newGarden(): Garden {
-  return { cells: newBoard(), hideFg: false, bg: null, fx: null };
+  return { cells: newBoard(), upper: emptyLayer(), hideFg: false, bg: null, fx: null };
+}
+/** A blank 10x10 elevation layer. The elevation plane starts empty — you build up onto it. */
+export function emptyLayer(): (GardenCell | null)[] {
+  return Array(100).fill(null);
 }
 export interface SessionRec {
   id: string;
@@ -107,13 +112,20 @@ if (!DB.flags) DB.flags = {};
         ? DB.garden.cells
         : newBoard();
     DB.gardens = [
-      { cells, hideFg: (legacy.hideFg as boolean) ?? false, bg: (legacy.bg as string) ?? null, fx: null },
+      {
+        cells,
+        upper: emptyLayer(),
+        hideFg: (legacy.hideFg as boolean) ?? false,
+        bg: (legacy.bg as string) ?? null,
+        fx: null,
+      },
     ];
     DB.gardenIdx = 0;
   }
   if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;
   DB.gardens.forEach((g) => {
     if (!Array.isArray(g.cells)) g.cells = newBoard();
+    if (!Array.isArray(g.upper)) g.upper = emptyLayer(); // gardens saved before elevation existed
     if (g.hideFg == null) g.hideFg = false;
     if (g.bg === undefined) g.bg = null;
     if (g.fx === undefined) g.fx = null;
