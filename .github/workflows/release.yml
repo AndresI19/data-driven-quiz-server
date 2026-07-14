@@ -1,0 +1,67 @@
+# Merge to main → cut a version → hand it to the platform to deploy.
+#
+# NOTHING here runs on the platform's machine. Both jobs run on GitHub's own VMs; the second one only
+# POSTs. The self-hosted runner is registered to platform-cicd and to nothing else, so no workflow in
+# this repo — including one in a stranger's fork — can reach it.
+name: release
+
+on:
+  push:
+    branches: [main] # a merge. main is protected, so the checks are already green.
+
+# Not `on: push: tags`. A tag pushed by a workflow using GITHUB_TOKEN does NOT trigger another
+# workflow — GitHub's recursion guard. The tag would appear and nothing would happen: no build, no
+# deploy, no error. So the tag and the dispatch are two jobs in ONE run, chained by `needs:`.
+#
+# It also removes the race with the tagger entirely: we do not READ the version afterwards and hope it
+# is the new one, we CREATED it and pass it forward.
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions: { contents: write } # to push the tag
+    outputs:
+      version: ${{ steps.cut.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 } # tags are needed to work out what the last one was
+
+      - id: cut
+        name: Cut the next patch version
+        run: |
+          set -euo pipefail
+          LAST="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
+          # Idempotent, and it has to be: if a later step in this job ever dies after the tag was
+          # pushed, a re-run must ADOPT the existing tag rather than fail with "already exists" and
+          # need a human to delete it. Assert the desired state; never assume a clean slate.
+          if git rev-parse -q --verify "refs/tags/${LAST}" >/dev/null \
+             && [ "$(git rev-list -n1 "$LAST")" = "$GITHUB_SHA" ]; then
+            echo "this commit is already tagged $LAST — adopting it"
+            echo "version=$LAST" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          IFS=. read -r MA MI PA <<< "$LAST"
+          NEXT="${MA}.${MI}.$((PA + 1))"
+          git tag -a "$NEXT" -m "$NEXT"
+          git push origin "$NEXT"
+          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "cut $NEXT"
+
+  dispatch:
+    needs: tag # if the tag job fails, this is SKIPPED. Fail-closed: no deploy beats a wrong deploy.
+    runs-on: ubuntu-latest
+    steps:
+      # GITHUB_TOKEN is scoped to this repository and cannot dispatch to another one, so this is the
+      # one credential the design needs: a fine-grained token that can do exactly this, on exactly
+      # platform-cicd, and nothing else.
+      - name: Ask the platform to deploy it
+        env:
+          TOKEN: ${{ secrets.CICD_DISPATCH_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/AndresI19/platform-cicd/dispatches \
+            -d '{"event_type":"release","client_payload":{
+                   "component":"quiz",
+                   "repo":"${{ github.repository }}",
+                   "version":"${{ needs.tag.outputs.version }}"}}'
+          echo "dispatched quiz ${{ needs.tag.outputs.version }}"
