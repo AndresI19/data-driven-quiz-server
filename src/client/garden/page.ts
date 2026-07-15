@@ -99,6 +99,13 @@ export function gardenPage(): void {
   const G = DB.garden;
   const palTool = (id: string, label: string, cost: number | null): string =>
     `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : `\u{1FA99}${cost}`}</span></button>`;
+  // The "View" tool: the first item in the shop. It selects nothing — clicking it clears the brush,
+  // which drops the board into view-all (every layer in full colour, no layer tabs). It reads as
+  // selected whenever no brush is held. Placeholder eyeball SVG for now; swap for a PNG icon later.
+  const EYE_SVG =
+    '<svg class="palico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+  const palView = (): string =>
+    `<button class="palbtn tool viewtool${S.selBrush ? '' : ' sel'}" id="toolview" title="deselect — just view the garden"><span class="palico-wrap">${EYE_SVG}</span><span class="pallab">View</span><span class="palcost">free</span></button>`;
   const palBlock = (id: string): string => {
     const s = BLOCKS[id];
     const spr = id === 'water' ? WATER_OPEN : s.pool![0];
@@ -176,18 +183,24 @@ export function gardenPage(): void {
       ${buyBtn}
     </div>
     <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
-      <!-- Layer tabs: F2 (elevation) on top, F1 (ground) beneath, mirroring the physical stack. Only
-           the tabbed-into layer is editable; the other renders greyed. "View all" is hold-to-preview:
-           while held, every layer shows in full colour so you can read the whole scene. -->
-      <div class="ltabs" role="tablist" aria-label="editing layer">
-        <button class="ltab l2${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">F2<span class="ltn">elevation</span></button>
-        <button class="ltab l1${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">F1<span class="ltn">ground</span></button>
-        <button class="ltab viewall" id="lviewall" type="button" title="hold to preview every layer in colour">View all<span class="ltn">hold</span></button>
-      </div>
+      <!-- Layer tabs — shown only while a brush is selected (editing). F2 (elevation) on top, F1
+           (ground) beneath, mirroring the physical stack; only the tabbed-into layer is editable, the
+           other renders greyed. With no brush selected the board is already in view-all, so the tabs
+           are hidden. "View all" here is hold-to-preview: while held, every layer shows in full colour
+           without leaving the layer you are editing. -->
+      ${
+        S.selBrush
+          ? `<div class="ltabs" role="tablist" aria-label="editing layer">
+        <button class="ltab l2${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">F2</button>
+        <button class="ltab l1${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">F1</button>
+        <button class="ltab viewall" id="lviewall" type="button" title="hold to preview every layer in colour">View all</button>
+      </div>`
+          : ''
+      }
     </div>
     <div class="palhint" id="palhint">${brushHint()}</div>
     <div class="palette">
-      <div class="palgroup"><div class="palh">Tools</div><div class="palrow">${palTool('water', 'Water → grass', WATER_COST)}${palTool('dig', 'Shovel', null)}${palTool('rotate', 'Wrench', null)}</div></div>
+      <div class="palgroup"><div class="palh">Tools</div><div class="palrow">${palView()}${palTool('water', 'Water → grass', WATER_COST)}${palTool('dig', 'Shovel', null)}${palTool('rotate', 'Wrench', null)}</div></div>
       <div class="palgroup"><div class="palh">Blocks — fill an empty tile</div><div class="palrow">${palBlock('dirt')}${palBlock('rock')}${palBlock('spire')}${palBlock('water')}</div></div>
       <div class="palgroup"><div class="palh">Plants &amp; wood — on grass / dirt</div><div class="palrow">${plants.map(palFeat).join('')}</div></div>
       <div class="palgroup"><div class="palh">Trees — 6 colours · a random tree type is planted</div><div class="palrow">${TREE_COLORS.map(palTree).join('')}</div></div>
@@ -264,7 +277,12 @@ export function gardenPage(): void {
     viewAll.addEventListener('keyup', end);
     viewAll.addEventListener('blur', end);
   }
-  app.querySelectorAll('.palbtn:not(.bgbtn):not(.fxbtn)').forEach((b) =>
+  // The "View" tool selects nothing — it clears the brush, which drops the board into view-all.
+  app.querySelector('#toolview')?.addEventListener('click', () => {
+    S.selBrush = null;
+    gardenPage();
+  });
+  app.querySelectorAll('.palbtn:not(.bgbtn):not(.fxbtn):not(.viewtool)').forEach((b) =>
     b.addEventListener('click', () => {
       const el = b as HTMLElement;
       S.selBrush = { type: el.dataset.bt!, id: el.dataset.bi! };

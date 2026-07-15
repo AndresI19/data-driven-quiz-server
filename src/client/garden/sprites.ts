@@ -131,12 +131,14 @@ export function cellArt(
   return `<div class="gart${cls}" data-i="${i}" data-l="${layer}" style="left:${p.x}px;top:${p.y}px;z-index:${p.z}">${inner}</div>`;
 }
 // Hit layer: a diamond-clipped button per tile — tessellates exactly, so a click maps to one tile.
-// `open` marks an empty tile the current brush could fill (faint fill); a mid-air elevation slot with
-// no supporting ground below is NOT open, so it shows no "place here" affordance.
-export function hitCell(cell: GardenCell | null, i: number, layer = 0, open = true): string {
+// An empty tile's fill signals whether the current brush could go there: 'open' = faint place-here
+// fill, 'blocked' = a mid-air elevation slot over no ground (not-allowed), 'none' = view mode, where
+// nothing is being placed so empties show no affordance at all.
+export type HitFill = 'open' | 'blocked' | 'none';
+export function hitCell(cell: GardenCell | null, i: number, layer = 0, fill: HitFill = 'open'): string {
   const p = cellPos(i, layer);
-  const empty = !cell ? (open ? ' empty' : ' void') : '';
-  return `<button class="gcell${empty}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${i % 10},${(i / 10) | 0}"></button>`;
+  const cls = cell ? '' : fill === 'open' ? ' empty' : fill === 'blocked' ? ' void' : '';
+  return `<button class="gcell${cls}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${i % 10},${(i / 10) | 0}"></button>`;
 }
 function gGuides(): string {
   let h = '';
@@ -169,19 +171,31 @@ function tileIdOverlay(): string {
 
 export function gardenBoardInner(): string {
   const G = DB.garden;
-  const L = S.layer; // the layer being edited; the other renders greyed and non-interactive
+  // The active layer is greyed/masked against only while EDITING (a brush is held). With nothing
+  // selected the board is in view-all: every layer full colour, no dim, no red — see the "View" tool.
+  const editing = !!S.selBrush;
+  const L = S.layer;
   let art = '';
   for (let i = 0; i < 100; i++) {
-    // Ground: live when editing it; when editing elevation, greyed — and red where nothing can be
-    // built on top of it (water, a spire, or an occupied tile).
-    const groundTint: Tint = L === 0 ? 'live' : supportsUpper(G.cells[i]) ? 'dim' : 'no';
+    // Ground: live in view-all or when editing it; when editing elevation, greyed — and red where
+    // nothing can be built on top of it (water, a spire, or an occupied tile).
+    const groundTint: Tint = !editing || L === 0 ? 'live' : supportsUpper(G.cells[i]) ? 'dim' : 'no';
     art += cellArt(G.cells[i], i, 0, false, groundTint);
-    // Elevation: live when editing it, greyed otherwise. Drawn after ground at the same i, but its
-    // z-index (footprint + layer) is what actually orders it — DOM order is irrelevant.
-    art += cellArt(G.upper[i], i, 1, false, L === 1 ? 'live' : 'dim');
+    // Elevation: live in view-all or when editing it, greyed otherwise. Drawn after ground at the
+    // same i, but its z-index (footprint + layer) is what actually orders it — DOM order is irrelevant.
+    art += cellArt(G.upper[i], i, 1, false, !editing || L === 1 ? 'live' : 'dim');
   }
   const active = L === 0 ? G.cells : G.upper;
-  const hit = active.map((c, i) => hitCell(c, i, L, L === 0 || supportsUpper(G.cells[i]))).join('');
+  const hit = active
+    .map((c, i) => {
+      const fill: HitFill = !editing
+        ? 'none' // view mode: no place-here affordance
+        : L === 0 || supportsUpper(G.cells[i])
+          ? 'open'
+          : 'blocked';
+      return hitCell(c, i, L, fill);
+    })
+    .join('');
   return gGuides() + art + hit + (S.showTileIds ? tileIdOverlay() : '');
 }
 export function gardenArt(): string {

@@ -314,11 +314,7 @@ export const Z_STEP = LAYERS;
  */
 export function supportsUpper(ground: GardenCell | null): boolean {
   return (
-    !!ground &&
-    ground.block !== 'water' &&
-    ground.block !== 'spire' &&
-    !ground.feature &&
-    !ground.animal
+    !!ground && ground.block !== 'water' && ground.block !== 'spire' && !ground.feature && !ground.animal
   );
 }
 
