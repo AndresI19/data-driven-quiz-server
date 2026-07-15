@@ -2583,3 +2583,78 @@ body.ambient .saved-note {
   border-color: color-mix(in srgb, var(--good) 40%, var(--line));
   background: color-mix(in srgb, var(--good) 8%, var(--panel));
 }
+
+/* ── Code-example modes (cw: read the code · cs: select the lines) ─────────── */
+.codeblock {
+  margin: 10px 0;
+  padding: 11px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  text-align: left;
+  font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.codeblock .cl {
+  white-space: pre;
+}
+.codeselect {
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  text-align: left;
+}
+.cl-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.cl-btn:last-child {
+  border-bottom: 0;
+}
+.cl-btn:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.cl-btn .k {
+  flex: none;
+  width: 1.1em;
+  opacity: 0.55;
+}
+.cl-btn .cl-code {
+  flex: 1;
+  white-space: pre;
+}
+.cl-btn.picked {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.cl-btn.picked .k {
+  color: var(--accent);
+  opacity: 1;
+}
+.cl-btn.correct {
+  background: color-mix(in srgb, var(--good) 20%, transparent);
+}
+.cl-btn.correct .k {
+  color: var(--good);
+  opacity: 1;
+}
+.cl-btn.wrong {
+  background: color-mix(in srgb, var(--bad) 20%, transparent);
+}
+.cl-btn.missed-opt {
+  box-shadow: inset 3px 0 0 var(--good);
+}
+.cl-btn:disabled {
+  cursor: default;
+}

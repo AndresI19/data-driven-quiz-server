@@ -10,7 +10,17 @@ import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { esc, fmtClock, setKey, shuffle } from '../runtime/util.js';
-import { renderBF, renderCZ, renderDM, renderFB, renderIV, renderMA, renderMS } from './modes.js';
+import {
+  renderBF,
+  renderCS,
+  renderCW,
+  renderCZ,
+  renderDM,
+  renderFB,
+  renderIV,
+  renderMA,
+  renderMS,
+} from './modes.js';
 import { closeZoom, hidePause } from './pause.js';
 import { advance, begin, finalize, persist } from './session.js';
 import { baseSeconds, startTicker, stopTicker } from './timer.js';
@@ -50,6 +60,8 @@ export function renderQ(): void {
   if (mode === 'ms' && !c.multi) mode = 'bf';
   if (mode === 'iv' && !c.inverse) mode = 'fb';
   if (mode === 'dm' && !c.manifest) mode = c.match ? 'ma' : 'bf';
+  if (mode === 'cw' && !c.code) mode = 'bf';
+  if (mode === 'cs' && !(c.code && c.codeselect)) mode = c.code ? 'cw' : 'bf';
   S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
   startTicker();
   S.running = true;
@@ -59,6 +71,8 @@ export function renderQ(): void {
   else if (mode === 'ma') renderMA(c);
   else if (mode === 'iv') renderIV(c);
   else if (mode === 'dm') renderDM(c);
+  else if (mode === 'cw') renderCW(c);
+  else if (mode === 'cs') renderCS(c);
   else renderMS(c);
   decorateCard(c);
 }

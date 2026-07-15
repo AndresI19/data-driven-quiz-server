@@ -16,7 +16,7 @@ import { applyDecor, breakCombo, clearDecor, grantReward, unlockDecor } from './
 
 // Every mode whose answer the machine grades. 'fb' is excluded on purpose — it is self-graded, so
 // paying for it would pay the honour system rather than the answer.
-const MACHINE_GRADED_MODES = ['bf', 'cz', 'iv', 'ma', 'ms', 'dm'];
+const MACHINE_GRADED_MODES = ['bf', 'cz', 'iv', 'ma', 'ms', 'dm', 'cw', 'cs'];
 
 beforeEach(() => {
   DB.coins = 0;

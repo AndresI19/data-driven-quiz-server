@@ -39,6 +39,18 @@ export function ivOK(val: string, topic: string): boolean {
   const hits = significant.filter((w) => given.has(w)).length;
   return hits >= Math.ceil(significant.length * 0.6);
 }
+/**
+ * Grade a "select the lines" answer: the picked line indices must be EXACTLY the correct set — every
+ * correct line chosen, and no incorrect line chosen. Order-independent. Extracted (like czOK/ivOK) so
+ * the all-correct-and-nothing-extra rule can be unit-tested apart from the DOM.
+ */
+export function codeSelectOK(picked: number[], answer: number[]): boolean {
+  const want = new Set(answer);
+  const got = new Set(picked);
+  if (got.size !== want.size) return false;
+  for (const i of got) if (!want.has(i)) return false;
+  return true;
+}
 export function rate(c: GameCard): number {
   const s = DB.stats[c.id];
   return s?.seen ? s.missed / s.seen : 0.9;

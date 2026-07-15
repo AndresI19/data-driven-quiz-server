@@ -3,7 +3,17 @@ import type { CardsPayload, GameCard } from '../../shared/card-schema.js';
 import { app, initData } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
-import { renderBF, renderCZ, renderDM, renderFB, renderIV, renderMA, renderMS } from './modes.js';
+import {
+  renderBF,
+  renderCS,
+  renderCW,
+  renderCZ,
+  renderDM,
+  renderFB,
+  renderIV,
+  renderMA,
+  renderMS,
+} from './modes.js';
 
 /**
  * Characterization tests for the seven mode renderers.
@@ -33,6 +43,8 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   recall: true,
   inverse: true,
   manifest: null,
+  code: null,
+  codeselect: null,
   ...over,
 });
 
@@ -57,6 +69,33 @@ const MANIFEST = card({
   id: 'A5',
   manifest: { lines: ['kind: {0}', 'replicas: {1}'], blanks: ['Deployment', '3'], distractors: ['Service'] },
 });
+const CODE = card({
+  id: 'A6',
+  topic: 'Put a binary on PATH',
+  mc: ['Delete a directory', 'Set the working directory'],
+  code: {
+    lang: 'dockerfile',
+    lines: [
+      'COPY bin/tool /usr/local/bin/tool',
+      'RUN chmod +x /usr/local/bin/tool',
+      'ENV PATH="/usr/local/bin:$PATH"',
+    ],
+  },
+});
+const CODESELECT = card({
+  id: 'A7',
+  topic: 'Put a binary on PATH',
+  code: {
+    lang: 'dockerfile',
+    lines: [
+      'FROM node:20-slim',
+      'COPY bin/tool /usr/local/bin/tool',
+      'RUN chmod +x /usr/local/bin/tool',
+      'CMD ["node", "app.js"]',
+    ],
+  },
+  codeselect: { prompt: 'Select the lines that install the binary', answer: [1, 2] },
+});
 
 const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
@@ -73,6 +112,8 @@ const PAYLOAD: CardsPayload = {
     card({ id: 'B3', topic: 'Consistent hashing' }),
     card({ id: 'B4', topic: 'Rate limiter' }),
     card({ id: 'B5', topic: 'Bloom filter' }),
+    CODE,
+    CODESELECT,
   ],
   diagrams: {},
   multiPool: { A4: ['availability', 'partition tolerance', 'consistency', 'durability'] },
@@ -110,6 +151,8 @@ const MODES: [string, (c: GameCard) => void, GameCard, string][] = [
   ['ms', renderMS, MULTI, 'select all'],
   ['iv', renderIV, card(), 'name it'],
   ['dm', renderDM, MANIFEST, 'label the YAML'],
+  ['cw', renderCW, CODE, 'read the code'],
+  ['cs', renderCS, CODESELECT, 'select lines'],
 ];
 
 describe('every mode draws the same card scaffolding', () => {
@@ -207,6 +250,49 @@ describe('grading and payout', () => {
     expect(DB.coins).toBeGreaterThan(0);
     expect(app.querySelector('#bfans')?.innerHTML).toBe(c.back);
     expect([...app.querySelectorAll('.choice')].every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
+  });
+
+  test('cw: picking the right goal scores and pays', () => {
+    startSession(CODE, 'cw');
+    renderCW(CODE);
+
+    const correct = [...app.querySelectorAll('.choice')].find(
+      (b) => (b as HTMLElement).dataset.topic === CODE.topic,
+    ) as HTMLButtonElement;
+    expect(correct, 'the right goal is among the choices').toBeTruthy();
+    correct.click();
+
+    expect(S.ses!.correct).toBe(1);
+    expect(DB.coins).toBeGreaterThan(0);
+    expect(app.querySelector('#next'), 'a Next button appears').not.toBeNull();
+  });
+
+  test('cs: selecting exactly the right lines scores and pays', () => {
+    startSession(CODESELECT, 'cs');
+    renderCS(CODESELECT);
+
+    (app.querySelector('.cl-btn[data-i="1"]') as HTMLButtonElement).click();
+    (app.querySelector('.cl-btn[data-i="2"]') as HTMLButtonElement).click();
+    (app.querySelector('#mscheck') as HTMLButtonElement).click();
+
+    expect(S.ses!.correct).toBe(1);
+    expect(DB.coins).toBeGreaterThan(0);
+  });
+
+  test('cs: one extra wrong line fails the whole card', () => {
+    startSession(CODESELECT, 'cs');
+    DB.combo = 3;
+    renderCS(CODESELECT);
+
+    (app.querySelector('.cl-btn[data-i="1"]') as HTMLButtonElement).click();
+    (app.querySelector('.cl-btn[data-i="2"]') as HTMLButtonElement).click();
+    (app.querySelector('.cl-btn[data-i="0"]') as HTMLButtonElement).click(); // wrong extra
+    (app.querySelector('#mscheck') as HTMLButtonElement).click();
+
+    expect(S.ses!.correct).toBe(0);
+    expect(S.ses!.missed).toEqual([CODESELECT.id]);
+    expect(DB.coins).toBe(0);
+    expect(DB.combo).toBe(0);
   });
 
   test('fb: self-graded recall records the answer but never pays', () => {

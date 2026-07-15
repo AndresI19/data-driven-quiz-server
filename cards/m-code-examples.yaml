@@ -1,0 +1,405 @@
+# Code Examples — read a real block of config/code and know what it does.
+# Two question types per card: "what is this code doing?" (cw) and "select the lines that…" (cs).
+# A staging deck: subjects live here to drill together, then move into their topic decks later.
+section:
+  key: M
+  name: Code Examples
+  color: "#0891b2"
+
+cards:
+  - topic: "Vendor a binary and put it on PATH"
+    desc: "Copies a prebuilt binary into a directory, makes it executable, and adds that directory to PATH so it can be run by name."
+    mc:
+      - "Compile the application from source"
+      - "Install OS packages with apt"
+      - "Set the container's entrypoint"
+    code:
+      lang: dockerfile
+      text: |
+        FROM node:20-slim
+        WORKDIR /app
+        COPY --chown=node:node bin/mytool /usr/local/bin/mytool
+        RUN chmod +x /usr/local/bin/mytool
+        ENV PATH="/usr/local/bin:${PATH}"
+        USER node
+    codeselect:
+      prompt: "Select the lines that put the vendored binary on PATH"
+      answer: [2, 3, 4]
+
+  - topic: "Build in one stage, ship a slim runtime from another"
+    desc: "A multi-stage Dockerfile: the builder installs dev deps and compiles; the final image copies only the built artifact, so build tooling never ships."
+    mc:
+      - "Run the app as root for speed"
+      - "Add a container HEALTHCHECK"
+      - "Mount the source as a volume"
+    code:
+      lang: dockerfile
+      text: |
+        FROM node:20 AS build
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci
+        COPY . .
+        RUN npm run build
+        FROM node:20-slim
+        COPY --from=build /app/dist ./dist
+        CMD ["node", "dist/index.js"]
+    codeselect:
+      prompt: "Select the RUN steps that execute only in the builder stage"
+      answer: [3, 5]
+
+  - topic: "Bake the build's version into the image"
+    desc: "A build arg is written to a VERSION file inside the image, so the running app can report exactly which build it is — the basis of content-addressed deploys."
+    mc:
+      - "Pass a runtime secret into the container"
+      - "Pin the base image to a digest"
+      - "Expose the service port"
+    code:
+      lang: dockerfile
+      text: |
+        FROM node:20-slim
+        ARG VERSION
+        WORKDIR /app
+        COPY . .
+        RUN npm ci --omit=dev
+        RUN echo "$VERSION" > VERSION
+        CMD ["node", "server.js"]
+    codeselect:
+      prompt: "Select the lines that record the build's version inside the image"
+      answer: [1, 5]
+
+  - topic: "Declare a Helm chart's tunable values"
+    desc: "A values.yaml: the defaults a chart's templates interpolate. Overriding these at install time changes the rendered manifests without editing templates."
+    mc:
+      - "A rendered Kubernetes Deployment"
+      - "A Helm named-template helper"
+      - "A Kustomize overlay patch"
+    code:
+      lang: yaml
+      text: |
+        image:
+          repository: registry.example.com/app
+          tag: "1.4.2"
+        replicaCount: 3
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+    codeselect:
+      prompt: "Select the lines that control the rolling-update surge behaviour"
+      answer: [7, 8]
+
+  - topic: "A Deployment template filled in from values"
+    desc: "A Helm template: the {{ }} expressions are interpolated at render time from values.yaml and release metadata, producing a concrete manifest."
+    mc:
+      - "A static, non-templated manifest"
+      - "A values.yaml file"
+      - "A _helpers.tpl definition"
+    code:
+      lang: yaml
+      text: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: {{ include "app.fullname" . }}
+        spec:
+          replicas: {{ .Values.replicaCount }}
+          template:
+            spec:
+              containers:
+                - name: app
+                  image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+    codeselect:
+      prompt: "Select the lines that are filled in from values at render time"
+      answer: [3, 5, 10]
+
+  - topic: "Define a reusable Helm named template"
+    desc: "A _helpers.tpl entry: define wraps a snippet that templates call with include. Here it builds a DNS-safe fullname, truncated to 63 chars."
+    mc:
+      - "Call (include) a named template"
+      - "Set default values for the chart"
+      - "Loop over a list of values"
+    code:
+      lang: yaml
+      text: |
+        {{- define "app.fullname" -}}
+        {{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" -}}
+        {{- end -}}
+    codeselect:
+      prompt: "Select the lines that open and close the named-template definition"
+      answer: [0, 2]
+
+  - topic: "Harden a container: drop root and privileges"
+    desc: "A pod/container securityContext that runs unprivileged, on a read-only root filesystem, unable to escalate, with all Linux capabilities dropped."
+    mc:
+      - "Set the container's CPU and memory limits"
+      - "Configure liveness and readiness probes"
+      - "Mount a Secret as environment variables"
+    code:
+      lang: yaml
+      text: |
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+    codeselect:
+      prompt: "Select the lines that drop root and its privileges"
+      answer: [1, 4, 6]
+
+  - topic: "Verify a bearer token, else 401"
+    desc: "Auth middleware: extract the Bearer token, verify it against the JWKS, attach the identity to req.user and continue — otherwise reject with 401."
+    mc:
+      - "Issue (mint) a new signed token"
+      - "Rate-limit the incoming request"
+      - "Log the request body for audit"
+    code:
+      lang: js
+      text: |
+        export async function auth(req, res, next) {
+          const m = /^Bearer (.+)$/.exec(req.get('authorization') || '');
+          if (!m) return res.status(401).json({ error: 'no token' });
+          try {
+            const { payload } = await jwtVerify(m[1], JWKS, { issuer, audience });
+            req.user = { sub: payload.sub };
+            next();
+          } catch {
+            res.status(401).json({ error: 'invalid token' });
+          }
+        }
+    codeselect:
+      prompt: "Select the lines that reject the request (the 401 paths)"
+      answer: [2, 8]
+
+  - topic: "Hash a password with a slow, salted KDF"
+    desc: "Generates a random per-user salt and runs scrypt with a work factor, so an offline attacker gets only a few thousand guesses per second instead of billions."
+    mc:
+      - "Encrypt the password with AES-GCM"
+      - "Sign a JSON Web Token"
+      - "Compute a fast SHA-256 checksum"
+    code:
+      lang: js
+      text: |
+        const salt = randomBytes(16);
+        const hash = scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 });
+        return `${salt.toString('base64')}:${hash.toString('base64')}`;
+    codeselect:
+      prompt: "Select the lines that make the hash slow and per-user unique"
+      answer: [0, 1]
+
+  - topic: "Add a pepper held outside the database"
+    desc: "A secret pepper read from the environment is folded into the hash input, so a stolen database dump (salts and all) is useless without a secret the dump doesn't contain."
+    mc:
+      - "Store the password in plaintext"
+      - "Use a fresh salt on every login"
+      - "Encrypt the whole row at rest"
+    code:
+      lang: js
+      text: |
+        const salt = randomBytes(16);
+        const pepper = process.env.AUTH_PEPPER;
+        const hash = scryptSync(pepper + password, salt, 64);
+        await db.insert({ user, salt, hash });
+    codeselect:
+      prompt: "Select the line that reads the secret kept OUTSIDE the database"
+      answer: [1]
+
+  - topic: "Verify without leaking whether the user exists"
+    desc: "On a missing user it still runs the hash against a dummy value and uses a constant-time compare, so 'no such user' and 'wrong password' take the same time and return the same error."
+    mc:
+      - "Return a distinct error for each failure"
+      - "Skip the hash when the user is missing"
+      - "Cache the previous login attempt"
+    code:
+      lang: js
+      text: |
+        const row = await db.findByName(name);
+        const stored = row ? row.hash : DUMMY_HASH;
+        const ok = timingSafeEqual(hashOf(password), stored);
+        if (!row || !ok) return res.status(401).json({ error: 'invalid' });
+    codeselect:
+      prompt: "Select the lines that make a missing user cost the same as a wrong password"
+      answer: [1, 2]
+
+  - topic: "Verify a JWT against a remote public key set"
+    desc: "Fetches the issuer's public keys (JWKS) and verifies the token's RS256 signature, issuer, and audience — checking identity without holding the power to mint tokens."
+    mc:
+      - "Mint a new signed token"
+      - "Decode the token without verifying it"
+      - "Encrypt the token payload"
+    code:
+      lang: ts
+      text: |
+        const JWKS = createRemoteJWKSet(new URL('https://issuer/.well-known/jwks.json'));
+        const { payload } = await jwtVerify(token, JWKS, {
+          issuer: 'https://issuer',
+          audience: 'my-api',
+          algorithms: ['RS256'],
+        });
+    codeselect:
+      prompt: "Select the lines that pin the algorithm and validate issuer + audience"
+      answer: [2, 3, 4]
+
+  - topic: "Rate-limit that stays correct across replicas"
+    desc: "An express-rate-limit on the login route backed by a shared Redis store, so the limit is enforced globally instead of per-process (which multiplies the real ceiling by the replica count)."
+    mc:
+      - "An in-memory counter per process"
+      - "A per-user quota stored in the DB"
+      - "A circuit breaker on the route"
+    code:
+      lang: js
+      text: |
+        app.use('/auth/token', rateLimit({
+          windowMs: 5 * 60 * 1000,
+          max: 10,
+          standardHeaders: true,
+          store: new RedisStore({ client }),
+        }));
+    codeselect:
+      prompt: "Select the line that keeps the limit correct across multiple replicas"
+      answer: [4]
+
+  - topic: "Ship an encrypted secret that is safe to commit"
+    desc: "A SealedSecret: encryptedData is ciphertext only the cluster's controller can decrypt into a real Secret, so it can live in git unlike a plain Secret (which is only base64)."
+    mc:
+      - "A plaintext Kubernetes Secret"
+      - "A ConfigMap of non-secret values"
+      - "An RBAC Role granting access"
+    code:
+      lang: yaml
+      text: |
+        apiVersion: bitnami.com/v1alpha1
+        kind: SealedSecret
+        metadata:
+          name: auth-pepper
+          namespace: platform
+        spec:
+          encryptedData:
+            AUTH_PEPPER: AgBv1x...ciphertext...
+    codeselect:
+      prompt: "Select the line that is safe to commit to git (the ciphertext)"
+      answer: [7]
+
+  - topic: "Scan every pull request before merge"
+    desc: "A CI workflow running three complementary security scans on each PR: SAST on your source, secret scanning on the diff, and a dependency audit for known CVEs."
+    mc:
+      - "Deploy the app on merge to main"
+      - "Cut and push a release tag"
+      - "Cache node_modules between runs"
+    code:
+      lang: yaml
+      text: |
+        on: pull_request
+        jobs:
+          codeql:
+            steps: [{ uses: github/codeql-action/analyze@v3 }]
+          gitleaks:
+            steps: [{ uses: gitleaks/gitleaks-action@v2 }]
+          deps:
+            steps: [{ run: npm audit --audit-level=high }]
+    codeselect:
+      prompt: "Select the line that scans YOUR source for vulnerabilities (SAST)"
+      answer: [3]
+
+  - topic: "Serialize deploys and least-privilege the token"
+    desc: "A workflow header that fires on push to main, restricts the GITHUB_TOKEN to read-only, and uses a concurrency group so a newer deploy cancels an in-flight one."
+    mc:
+      - "Trigger the workflow on a schedule"
+      - "Declare a reusable workflow"
+      - "Attach an environment secret"
+    code:
+      lang: yaml
+      text: |
+        on:
+          push:
+            branches: [main]
+        permissions:
+          contents: read
+        concurrency:
+          group: deploy-${{ github.ref }}
+          cancel-in-progress: true
+    codeselect:
+      prompt: "Select the lines that ensure only one deploy runs at a time"
+      answer: [5, 6, 7]
+
+  - topic: "Trigger a workflow in another repository"
+    desc: "A repository_dispatch POST: an authenticated call that fires an event in a DIFFERENT repo, carrying a payload — how one repo hands a deploy off to the repo that owns the runner."
+    mc:
+      - "Push a git tag to trigger a build"
+      - "Open a pull request via the API"
+      - "Re-run the current failed job"
+    code:
+      lang: bash
+      text: |
+        curl -X POST \
+          -H "Authorization: Bearer $DISPATCH_TOKEN" \
+          -H "Accept: application/vnd.github+json" \
+          https://api.github.com/repos/me/platform-cicd/dispatches \
+          -d '{"event_type":"release","client_payload":{"version":"1.4.2"}}'
+    codeselect:
+      prompt: "Select the line that carries the version across to the other repo"
+      answer: [4]
+
+  - topic: "Reject a conflicting write instead of clobbering"
+    desc: "Optimistic concurrency: the update only lands if the row's version still matches the one the client read. Zero rows updated means someone wrote first — return 409, don't overwrite."
+    mc:
+      - "Lock the row for the whole transaction"
+      - "Insert or update on primary-key conflict"
+      - "Retry the write automatically forever"
+    code:
+      lang: sql
+      text: |
+        UPDATE progress
+           SET data = $1, version = version + 1
+         WHERE sub = $2
+           AND version = $3;
+        -- 0 rows updated -> someone else wrote first -> return 409
+    codeselect:
+      prompt: "Select the line that detects a conflicting concurrent write"
+      answer: [3]
+
+  - topic: "Retry with exponential backoff and jitter"
+    desc: "Retries a flaky call a bounded number of times, doubling the wait each attempt and adding random jitter so many clients don't retry in lockstep (a thundering herd)."
+    mc:
+      - "Retry instantly with no limit"
+      - "Cache and return the failed response"
+      - "Give up on the very first error"
+    code:
+      lang: js
+      text: |
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try { return await call(); }
+          catch (e) {
+            if (attempt === 4) throw e;
+            const backoff = 2 ** attempt * 100;
+            const jitter = Math.random() * 100;
+            await sleep(backoff + jitter);
+          }
+        }
+    codeselect:
+      prompt: "Select the lines that implement exponential backoff with jitter"
+      answer: [4, 5, 6]
+
+  - topic: "Keep a service running and start it at boot"
+    desc: "A systemd unit: Restart=always brings the process back if it crashes, and WantedBy=multi-user.target enables it to start on boot — how a self-hosted runner survives reboots."
+    mc:
+      - "Run the service once and exit"
+      - "Schedule the service on a timer"
+      - "Run it only inside a container"
+    code:
+      lang: ini
+      text: |
+        [Unit]
+        After=network-online.target
+        [Service]
+        ExecStart=/opt/runner/run.sh
+        Restart=always
+        User=runner
+        [Install]
+        WantedBy=multi-user.target
+    codeselect:
+      prompt: "Select the lines that make it restart on crash and start at boot"
+      answer: [4, 7]

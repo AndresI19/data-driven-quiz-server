@@ -59,6 +59,8 @@ export function pickDir(dir: string, c: GameCard): string {
     if (c.multi) m.push('ms');
     if (c.inverse) m.push('iv');
     if (c.manifest) m.push('dm');
+    if (c.code) m.push('cw');
+    if (c.code && c.codeselect) m.push('cs');
     return m[Math.floor(Math.random() * m.length)];
   }
   return dir;
@@ -170,6 +172,8 @@ export function start(): void {
   else if (S.cfg.direction === 'ms') cards = cards.filter((c) => c.multi);
   else if (S.cfg.direction === 'iv') cards = cards.filter((c) => c.inverse);
   else if (S.cfg.direction === 'dm') cards = cards.filter((c) => c.manifest);
+  else if (S.cfg.direction === 'cw') cards = cards.filter((c) => c.code);
+  else if (S.cfg.direction === 'cs') cards = cards.filter((c) => c.code && c.codeselect);
   cards = S.cfg.weak ? cards.slice().sort((a, b) => rate(b) - rate(a)) : shuffle(cards);
   if (S.cfg.count) cards = cards.slice(0, S.cfg.count);
   if (!cards.length) {
@@ -185,6 +189,8 @@ export function start(): void {
     ms: 'multi',
     iv: 'inverse',
     dm: 'label the YAML',
+    cw: 'read the code',
+    cs: 'select lines',
     mixed: 'mixed',
   };
   const label = `${
