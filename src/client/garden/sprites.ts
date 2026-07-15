@@ -1,6 +1,6 @@
 // Isometric sprite rendering: tiles, features, trees, animals, the home mini-scene, the board
 // inner (art + hit layer + guides), and the hover readout. Ported verbatim.
-import { DB } from '../runtime/db.js';
+import { DB, layerCells } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import {
   ANIM_BY_ID,
@@ -15,6 +15,7 @@ import {
   ISO_LIFT,
   ISO_OX,
   ISO_W,
+  LAYERS,
   TIMG,
   Z_STEP,
   supportsUpper,
@@ -177,20 +178,24 @@ export function gardenBoardInner(): string {
   const L = S.layer;
   let art = '';
   for (let i = 0; i < 100; i++) {
-    // Ground: live in view-all or when editing it; when editing elevation, greyed — and red where
-    // nothing can be built on top of it (water, a spire, or an occupied tile).
-    const groundTint: Tint = !editing || L === 0 ? 'live' : supportsUpper(G.cells[i]) ? 'dim' : 'no';
-    art += cellArt(G.cells[i], i, 0, false, groundTint);
-    // Elevation: live in view-all or when editing it, greyed otherwise. Drawn after ground at the
-    // same i, but its z-index (footprint + layer) is what actually orders it — DOM order is irrelevant.
-    art += cellArt(G.upper[i], i, 1, false, !editing || L === 1 ? 'live' : 'dim');
+    for (let layer = 0; layer < LAYERS; layer++) {
+      // In view-all, or on the active layer, paint live. The layer directly BELOW the active one is
+      // the support layer: it greys out, and turns red where nothing can be built on it. Every other
+      // layer just greys. Drawn in layer order at the same i, but z-index (footprint + layer) is what
+      // actually orders the stack — DOM order is irrelevant.
+      let tint: Tint;
+      if (!editing || layer === L) tint = 'live';
+      else if (layer === L - 1) tint = supportsUpper(layerCells(G, layer)[i]) ? 'dim' : 'no';
+      else tint = 'dim';
+      art += cellArt(layerCells(G, layer)[i], i, layer, false, tint);
+    }
   }
-  const active = L === 0 ? G.cells : G.upper;
+  const active = layerCells(G, L);
   const hit = active
     .map((c, i) => {
       const fill: HitFill = !editing
         ? 'none' // view mode: no place-here affordance
-        : L === 0 || supportsUpper(G.cells[i])
+        : L === 0 || supportsUpper(layerCells(G, L - 1)[i])
           ? 'open'
           : 'blocked';
       return hitCell(c, i, L, fill);
@@ -199,22 +204,20 @@ export function gardenBoardInner(): string {
   return gGuides() + art + hit + (S.showTileIds ? tileIdOverlay() : '');
 }
 export function gardenArt(): string {
-  // Display only (home mini-board): both layers, always foreground, full colour.
+  // Display only (home mini-board): every layer, always foreground, full colour.
   const G = DB.garden;
   let out = '';
-  for (let i = 0; i < 100; i++) {
-    out += cellArt(G.cells[i], i, 0, true);
-    out += cellArt(G.upper[i], i, 1, true);
-  }
+  for (let i = 0; i < 100; i++)
+    for (let layer = 0; layer < LAYERS; layer++) out += cellArt(layerCells(G, layer)[i], i, layer, true);
   return out;
 }
 // Plain-english description of everything on a tile of the ACTIVE layer, for the hover readout.
 export function tileDesc(i: number): string {
   const L = S.layer;
-  const cell = (L === 0 ? DB.garden.cells : DB.garden.upper)[i];
-  const loc = `col ${i % 10} · row ${(i / 10) | 0}${L ? ' · elevation' : ''}`;
+  const cell = layerCells(DB.garden, L)[i];
+  const loc = `col ${i % 10} · row ${(i / 10) | 0}${L ? ` · layer ${L + 1}` : ''}`;
   if (!cell) {
-    if (L === 1 && !supportsUpper(DB.garden.cells[i])) return `${loc} — no ground below to build on`;
+    if (L > 0 && !supportsUpper(layerCells(DB.garden, L - 1)[i])) return `${loc} — nothing below to build on`;
     return `${loc} — empty`;
   }
   // The block's name comes from the block table — this was a third copy of it, and the only reason

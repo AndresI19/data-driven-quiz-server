@@ -2,7 +2,7 @@ import { sndDig, sndPlant, sndWater, sndWrong } from '../audio/sound.js';
 // Garden interaction: the brush model (tools/blocks/features/animals), placement rules, refunds,
 // and the palette hint/warn strings. Ported verbatim.
 import { app } from '../runtime/data.js';
-import { DB, saveDB } from '../runtime/db.js';
+import { DB, layerCells, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { pick } from '../runtime/util.js';
 import { recomputeAutotile } from './autotile.js';
@@ -41,8 +41,8 @@ export function warn(msg: string): void {
 }
 export function applyBrush(i: number): void {
   const L = S.layer; // active editing layer
-  const ground = DB.garden.cells; // layer 0, the support for the elevation layer above
-  const C = L === 0 ? ground : DB.garden.upper; // the cells the brush actually edits
+  const C = layerCells(DB.garden, L); // the cells the brush actually edits
+  const below = L > 0 ? layerCells(DB.garden, L - 1) : null; // the layer this one keys onto (support)
   const cell = C[i];
   const b = S.selBrush;
   if (!b) {
@@ -103,11 +103,12 @@ export function applyBrush(i: number): void {
   }
   if (b.type === 'block') {
     if (cell) return warn('That tile is full — dig it back to empty first.');
-    // Elevation rules: no water up here, and a tile needs solid ground directly beneath it.
-    if (L === 1) {
-      if (b.id === 'water') return warn("Water can't go on the elevation layer.");
-      if (!supportsUpper(ground[i]))
-        return warn('Nothing to build on — the ground below is empty, water, a spire, or occupied.');
+    // Elevation rules (same on every layer above the ground): no water up here, and a tile needs
+    // solid support directly beneath it on the layer below.
+    if (below) {
+      if (b.id === 'water') return warn("Water can't go on an elevation layer.");
+      if (!supportsUpper(below[i]))
+        return warn('Nothing to build on — the tile below is empty, water, a spire, or occupied.');
     }
     const spec = BLOCKS[b.id];
     if (!afford(spec.price)) return warn('Not enough \u{1FA99} coins — answer cards to earn more.');
@@ -116,9 +117,9 @@ export function applyBrush(i: number): void {
       C[i] = { block: 'water', v: WATER_OPEN };
     } else C[i] = { block: b.id, v: pick(spec.pool!) };
     // Grass shaded under a new elevated tile loses its light and reverts to dirt.
-    if (L === 1 && ground[i]!.block === 'grass') {
-      ground[i]!.block = 'dirt';
-      ground[i]!.v = pick(BLOCKS.dirt.pool!);
+    if (below && below[i]!.block === 'grass') {
+      below[i]!.block = 'dirt';
+      below[i]!.v = pick(BLOCKS.dirt.pool!);
     }
     sndPlant();
     done();

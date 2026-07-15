@@ -24,6 +24,7 @@ import {
   FEAT_BY_ID,
   FX_URL,
   type Feature,
+  LAYERS,
   TIMG,
   TOOL_IMG,
   TREE_COLORS,
@@ -77,6 +78,17 @@ function brushCursor(): string {
     if (f && f.t != null && !f.tree && !f.pack) return `url("${TIMG(f.t)}") 16 24, crosshair`;
   }
   return 'crosshair';
+}
+
+/** One tab per layer, highest on top down to the ground (F1), mirroring the physical stack. Scales
+    with LAYERS — adding a layer adds its tab automatically. */
+function layerTabs(): string {
+  let h = '';
+  for (let L = LAYERS - 1; L >= 0; L--) {
+    const on = S.layer === L;
+    h += `<button class="ltab l${L + 1}${on ? ' on' : ''}" role="tab" aria-selected="${on}" data-layer="${L}">F${L + 1}</button>`;
+  }
+  return h;
 }
 
 /**
@@ -183,16 +195,15 @@ export function gardenPage(): void {
       ${buyBtn}
     </div>
     <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
-      <!-- Layer tabs — shown only while a brush is selected (editing). F2 (elevation) on top, F1
-           (ground) beneath, mirroring the physical stack; only the tabbed-into layer is editable, the
-           other renders greyed. With no brush selected the board is already in view-all, so the tabs
-           are hidden. "View all" here is hold-to-preview: while held, every layer shows in full colour
-           without leaving the layer you are editing. -->
+      <!-- Layer tabs — shown only while a brush is selected (editing). Highest layer on top, ground
+           (F1) at the bottom, mirroring the physical stack; only the tabbed-into layer is editable,
+           the others render greyed. With no brush selected the board is already in view-all, so the
+           tabs are hidden. "View all" here is hold-to-preview: while held, every layer shows in full
+           colour without leaving the layer you are editing. -->
       ${
         S.selBrush
           ? `<div class="ltabs" role="tablist" aria-label="editing layer">
-        <button class="ltab l2${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">F2</button>
-        <button class="ltab l1${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">F1</button>
+        ${layerTabs()}
         <button class="ltab viewall" id="lviewall" type="button" title="hold to preview every layer in colour">View all</button>
       </div>`
           : ''

@@ -39,5 +39,5 @@ export function autotile(cells: (GardenCell | null)[]): void {
     base recomputed against its own layer's neighbours. */
 export function recomputeAutotile(): void {
   autotile(DB.garden.cells);
-  autotile(DB.garden.upper);
+  for (const up of DB.garden.upper) autotile(up);
 }
