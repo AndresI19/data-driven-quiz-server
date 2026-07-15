@@ -12,6 +12,7 @@ import {
   BLOCK_VALUE,
   FEAT_BY_ID,
   GRASS_V,
+  LAYERS,
   TREE_COLORS,
   TREE_PRICE,
   TREE_TYPE_IDS,
@@ -76,6 +77,12 @@ export function applyBrush(i: number): void {
       if (f) refund(f.price);
       cell.feature = null;
     } else {
+      // A block can't be dug out from under a tile that is standing on it — that would leave the
+      // upper tile floating. Placement already requires solid support directly beneath (see the block
+      // branch below); removal has to protect that same support, or the two rules disagree and the
+      // garden can reach a state placement would never have allowed.
+      const above = L < LAYERS - 1 ? layerCells(DB.garden, L + 1) : null;
+      if (above?.[i]) return warn('Something is built on top — dig the tile above first.');
       refund(BLOCK_VALUE[cell.block] || 0);
       C[i] = null;
     }
