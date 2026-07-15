@@ -35,6 +35,9 @@ cards:
 
   - topic: "Why a random token can use a fast hash but a password cannot"
     desc: "A high-entropy, server-generated token (e.g. 34 billion possibilities) can be stored as a fast KEYED hash — HMAC(pepper, token) — because it is deterministic (so login is a single INDEXED lookup) and un-guessable even at billions of tries/sec. A user-CHOSEN password is low-entropy, so it needs a slow, per-row-SALTED hash, which cannot be indexed."
+    cloze:
+      text: "A high-entropy random token can be stored with a fast keyed hash such as {} because it is deterministic (indexed lookup) and un-guessable — a low-entropy password cannot."
+      answer: "HMAC"
     extras:
       - label: Trap
         text: "A salted hash is non-deterministic (a random salt per row), so you can't look a user up BY it — you find the row by username first, THEN verify. HMAC is deterministic, so it can be the index."
@@ -76,6 +79,9 @@ cards:
 
   - topic: "Access token vs refresh token"
     desc: "An ACCESS token is short-lived (minutes to a day) and sent on every request. A REFRESH token is long-lived and used only to mint new access tokens without re-authenticating. Splitting them limits the blast radius: a leaked access token expires soon; the refresh token is exposed rarely."
+    cloze:
+      text: "A {} token is long-lived and used only to mint new short-lived access tokens without re-authenticating."
+      answer: "refresh"
     extras:
       - label: Trap
         text: "If the client already stores the raw credential to re-authenticate silently, a separate refresh token buys little — it's a second long-lived secret guarding a credential you already hold."
@@ -84,6 +90,9 @@ cards:
 
   - topic: "Rate limiting: what it can and cannot protect"
     desc: "Per-IP and global request limits are the ONLY defence a credential has against ONLINE guessing — walking the keyspace through the live login endpoint. It protects the SERVICE from being walked quickly; it does NOT protect an individual weak password from a patient, distributed attacker."
+    cloze:
+      text: "Rate limiting protects the service from being walked quickly through the login endpoint, but it does NOT protect an individual {} password from a patient, distributed attacker."
+      answer: "weak"
     extras:
       - label: Online vs offline
         text: "Rate limiting stops ONLINE attacks (through your endpoint). It does nothing about OFFLINE attacks (a stolen hash cracked on the attacker's own hardware) — that's what a slow hash + pepper are for."

@@ -62,3 +62,15 @@ export function hidePause(): void {
   if (ov) ov.remove();
   S.pausedAt = 0;
 }
+/**
+ * Remove EVERY transient full-screen overlay — pause, peek-back and diagram zoom — and clear the
+ * paused flag. Each of these is `position:fixed; inset:0` and clickable, and each used to rely
+ * entirely on its own close button / Escape to go away. A navigation that bypassed that path (a
+ * browser Back firing popstate, or any re-render) left the overlay orphaned on top of the next page,
+ * where it silently swallowed every click — no handler, no error, no network. Every navigation entry
+ * (route, setup, gardenPage) now calls this first, so no overlay can outlive the page that spawned it.
+ */
+export function dismissTransients(): void {
+  for (const id of ['pauseov', 'peekov', 'zoomov']) document.getElementById(id)?.remove();
+  S.pausedAt = 0;
+}

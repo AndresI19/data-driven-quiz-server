@@ -21,7 +21,7 @@ import {
   renderMA,
   renderMS,
 } from './modes.js';
-import { closeZoom, hidePause } from './pause.js';
+import { closeZoom, dismissTransients } from './pause.js';
 import { advance, begin, finalize, persist } from './session.js';
 import { baseSeconds, startTicker, stopTicker } from './timer.js';
 
@@ -195,7 +195,7 @@ export function results(): void {
   const ses = S.ses!;
   stopTicker();
   S.running = false;
-  hidePause();
+  dismissTransients();
   setKey((e) => {
     if (e.code === 'Space' || e.code === 'Enter') {
       e.preventDefault();

@@ -1,5 +1,5 @@
 import { setScreenBg } from '../garden/screenbg.js';
-import { hidePause } from '../quiz/pause.js';
+import { dismissTransients } from '../quiz/pause.js';
 import { start } from '../quiz/session.js';
 import { stopTicker } from '../quiz/timer.js';
 // Favorites list page. Ported verbatim.
@@ -12,7 +12,7 @@ import { setup } from './home.js';
 export function favoritesPage(): void {
   stopTicker();
   S.running = false;
-  hidePause();
+  dismissTransients();
   setScreenBg(false);
   const ids = Object.keys(DB.favorites).filter((id) => byId[id]);
   app.innerHTML = `<div class="wrap">

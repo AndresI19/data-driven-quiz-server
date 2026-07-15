@@ -1,0 +1,213 @@
+# Debugging & Diagnosis — three shapes of question, no open-ended recall.
+#   1. SCENARIO → what could be the problem?   (identify: masked symptom, pick the cause)
+#   2. CODE / PIPELINE with a bug → what is wrong?  (read-the-code + select-the-buggy-line)
+#   3. DIAGNOSIS given → what is the fix?       (pick the correct remedy over plausible-wrong ones)
+#
+# Every card carries a machine-graded mode (mc/cloze/match/manifest/code+codeselect). None use
+# `recall: true` on purpose — this deck is deliberately recognition- and selection-based.
+section:
+  key: N
+  name: Debugging & Diagnosis
+  color: "#dc2626"
+
+cards:
+  # ── 1. Scenario → what could be the problem? ──────────────────────────────────────────────────
+  - topic: "Connection-pool exhaustion"
+    desc: "A web service is fine at low traffic, but under load requests hang for seconds and then time out — while the database CPU sits near idle the whole time. Every reusable database connection is checked out and new requests block waiting for one to be returned."
+    mc:
+      - "A slow query plan on the database"
+      - "A memory leak in the application"
+      - "DNS resolution latency to the database"
+      - "An undersized CPU limit on the pod"
+    cloze:
+      text: "Requests hang under load while the database sits idle — the classic cause is {} exhaustion."
+      answer: "connection-pool"
+      alts:
+        - "connection pool"
+        - "pool"
+
+  - topic: "Cache stampede (thundering herd)"
+    desc: "A single popular cache key expires and thousands of concurrent requests all miss at once, hammering the origin with identical queries until one request repopulates the key. Latency spikes and the database briefly saturates every time that key expires."
+    mc:
+      - "A cache eviction bug"
+      - "Insufficient cache memory"
+      - "A hot-key hash collision"
+      - "Replication lag on the cache"
+    cloze:
+      text: "When one expiring key sends every concurrent request to the origin at once, it is called a cache {}."
+      answer: "stampede"
+      alts:
+        - "stampede (thundering herd)"
+        - "thundering herd"
+
+  - topic: "Liveness probe killing a slow-starting pod"
+    desc: "A Kubernetes pod keeps entering CrashLoopBackOff. The logs show the process was still starting up — loading a large model into memory — when it received SIGTERM. The liveness probe's delay is shorter than the app's real startup time, so the kubelet restarts it before it is ever ready."
+    mc:
+      - "An OOMKill from too low a memory limit"
+      - "An ImagePullBackOff on a bad tag"
+      - "A failing readiness probe alone"
+      - "A missing ServiceAccount token"
+    match:
+      - ["liveness probe", "restarts the container when it keeps failing"]
+      - ["readiness probe", "drops the pod from Service endpoints while it fails"]
+      - ["startup probe", "guards a slow start before liveness begins to apply"]
+
+  - topic: "Retry storm (no exponential backoff)"
+    desc: "A downstream service has a two-second blip. Every client immediately retries in a tight loop, and the synchronized wave of retries keeps the recovering service pinned down — turning a brief blip into a ten-minute outage. The retries have neither jitter nor exponential backoff."
+    mc:
+      - "A circuit breaker stuck open"
+      - "A DNS TTL that is far too long"
+      - "A thread-pool deadlock in the client"
+      - "A load-balancer health-check flap"
+    cloze:
+      text: "Synchronized client retries that keep a recovering service down are tamed with exponential backoff plus {}."
+      answer: "jitter"
+      alts:
+        - "random jitter"
+
+  - topic: "OOMKilled: memory limit set below real usage"
+    desc: "A pod is repeatedly killed with reason OOMKilled and its restart count climbs, even though the node has plenty of free memory. The container's memory limit is set below the app's steady-state heap, so the cgroup out-of-memory killer terminates it whenever it crosses the cap."
+    mc:
+      - "The node is under memory pressure and evicting the pod"
+      - "A liveness-probe timeout"
+      - "A failing init container"
+      - "A PersistentVolumeClaim that will not mount"
+    cloze:
+      text: "A container terminated with reason OOMKilled has exceeded its configured memory {}."
+      answer: "limit"
+
+  - topic: "Signs pointing to an in-process memory leak"
+    desc: "Symptoms that distinguish a genuine leak inside the process from external memory pressure on the node."
+    multi:
+      - "Resident memory grows monotonically and never plateaus"
+      - "Restart count climbs with reason OOMKilled"
+      - "Garbage-collection pauses lengthen over time"
+      - "A heap dump shows one retained set growing without bound"
+
+  # ── 2. Code / pipeline with a bug → what is wrong? ────────────────────────────────────────────
+  - topic: "Copying source before installing deps busts the layer cache"
+    desc: "This Dockerfile copies the whole source tree before it installs dependencies, so any source change invalidates the install layer and every build reinstalls from scratch — slow CI on every commit."
+    mc:
+      - "It runs the application as root"
+      - "It never sets a working directory"
+      - "It bakes a build secret into a layer"
+      - "It pulls an unpinned, mutable base image"
+    code:
+      lang: dockerfile
+      text: |
+        FROM node:20-slim
+        WORKDIR /app
+        COPY . .
+        RUN npm ci
+        RUN npm run build
+        CMD ["node", "dist/index.js"]
+    codeselect:
+      prompt: "Select the line whose position forces a full dependency reinstall on every source change"
+      answer: [2]
+
+  - topic: "N+1 queries: one database round-trip per row"
+    desc: "The code fetches a list and then issues a separate query inside the loop for each row's children. For N rows that is N+1 round-trips; latency grows linearly with the result set and the connection pool drains under load."
+    mc:
+      - "A SQL injection vulnerability"
+      - "A missing index on the orders table"
+      - "An unclosed database transaction"
+      - "An accidental cartesian-product join"
+    code:
+      lang: python
+      text: |
+        users = db.query("SELECT id FROM users")
+        for u in users:
+            u.orders = db.query("SELECT * FROM orders WHERE user_id = ?", u.id)
+        return users
+    codeselect:
+      prompt: "Select the line that fires one query per user"
+      answer: [2]
+
+  - topic: "The deploy job runs before build because it declares no dependency"
+    desc: "In this workflow the deploy job has no `needs:` on build, so the two jobs start in parallel. Deploy can try to push an image that build has not produced yet, causing intermittent image-not-found failures that pass on a re-run."
+    mc:
+      - "It checks out the wrong git ref"
+      - "It is missing a permissions block"
+      - "It uses a deprecated action version"
+      - "It hard-codes a secret in plaintext"
+    code:
+      lang: yaml
+      text: |
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: make image
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - run: make deploy
+    codeselect:
+      prompt: "Select the job header that is missing a `needs: build` dependency"
+      answer: [5]
+
+  # ── 3. Diagnosis given → what is the fix? ─────────────────────────────────────────────────────
+  - topic: "Guarantee every borrowed connection is released, and set an acquire timeout"
+    desc: "Diagnosis: requests hang under load because database connections are checked out and never returned — a leak drains the pool. Given that leak, the correct fix is to release every borrowed connection on all code paths (a request-scoped session, or with/finally) and add an acquisition timeout so a leak fails fast instead of hanging."
+    mc:
+      - "Raise the pool size to a very large number"
+      - "Add more application replicas behind the load balancer"
+      - "Move reads to a database read replica"
+      - "Increase the client request timeout"
+
+  - topic: "Exponential backoff with jitter, capped attempts, and a circuit breaker"
+    desc: "Diagnosis: a downstream blip triggers synchronized tight-loop retries that keep it from recovering. The fix is to space retries with exponentially increasing delays plus random jitter, cap the number of attempts, and add a breaker that stops calling a failing dependency so it can heal."
+    mc:
+      - "Retry immediately, but on a background thread"
+      - "Increase the client timeout so retries are rarer"
+      - "Add more replicas of the calling service"
+      - "Disable retries entirely"
+    cloze:
+      text: "To stop a failing dependency from being hammered, wrap calls in a {} that opens after repeated failures."
+      answer: "circuit breaker"
+      alts:
+        - "circuit-breaker"
+        - "breaker"
+
+  - topic: "A startupProbe that must pass before liveness begins"
+    desc: "Diagnosis: the liveness probe kills the pod before its slow startup finishes. The fix is a startupProbe with a generous budget that gates liveness — startup gets a long runway without loosening the steady-state liveness check."
+    mc:
+      - "Just delete the liveness probe entirely"
+      - "Lower initialDelaySeconds on the liveness probe"
+      - "Raise the pod's CPU limit"
+      - "Add a preStop lifecycle hook"
+    manifest:
+      lines:
+        - "startupProbe:"
+        - "  httpGet:"
+        - "    path: {0}"
+        - "  failureThreshold: {1}"
+        - "  periodSeconds: 10"
+      blanks:
+        - "/healthz"
+        - "30"
+      distractors:
+        - "/metrics"
+        - "3"
+
+  - topic: "Copy the lockfile and install before copying the source"
+    desc: "Diagnosis: COPY . . before the install invalidates the dependency layer on every source change. The fix is to copy only the package manifest and lockfile first, install, then copy the rest — so the dependency layer stays cached until dependencies actually change."
+    mc:
+      - "Add a .dockerignore that excludes only node_modules"
+      - "Pin the base image to a content digest"
+      - "Switch to a smaller base image"
+      - "Squash all layers at the end of the build"
+    cloze:
+      text: "To keep Docker's dependency layer cached, copy the {} before the application source."
+      answer: "lockfile"
+      alts:
+        - "package.json and lockfile"
+        - "package files"
+
+  - topic: "Match the production symptom to its usual root cause"
+    desc: "Common failure signatures and what they most often point to — the first guess a good on-call makes."
+    match:
+      - ["Memory climbs steadily until OOMKilled", "an unbounded cache or a leak, not node pressure"]
+      - ["p99 latency spikes under load, database idle", "connection-pool exhaustion"]
+      - ["A bug that clears on refresh but recurs at random", "stale in-memory state or an orphaned singleton"]
+      - ["CrashLoopBackOff during a long startup", "the liveness probe firing before startup finishes"]

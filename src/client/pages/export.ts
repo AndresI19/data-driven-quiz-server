@@ -1,5 +1,5 @@
 import { setScreenBg } from '../garden/screenbg.js';
-import { hidePause } from '../quiz/pause.js';
+import { dismissTransients } from '../quiz/pause.js';
 import { stopTicker } from '../quiz/timer.js';
 // Export page: a shareable digest of flagged + noted cards, plus a full-save JSON download. Verbatim.
 import { app, byId } from '../runtime/data.js';
@@ -11,7 +11,7 @@ import { setup } from './home.js';
 export function exportPage(): void {
   stopTicker();
   S.running = false;
-  hidePause();
+  dismissTransients();
   setScreenBg(false);
   // latest note per card across every session (+ any in-progress one)
   const notes: Record<string, string> = {};
