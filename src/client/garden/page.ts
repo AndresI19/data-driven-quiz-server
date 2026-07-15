@@ -176,11 +176,13 @@ export function gardenPage(): void {
       ${buyBtn}
     </div>
     <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
-      <!-- Layer tabs: elevation on top, ground beneath, mirroring the physical stack. Only the
-           tabbed-into layer is editable; the other renders greyed. -->
+      <!-- Layer tabs: F2 (elevation) on top, F1 (ground) beneath, mirroring the physical stack. Only
+           the tabbed-into layer is editable; the other renders greyed. "View all" is hold-to-preview:
+           while held, every layer shows in full colour so you can read the whole scene. -->
       <div class="ltabs" role="tablist" aria-label="editing layer">
-        <button class="ltab${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">Elevation<span class="ltn">layer 2</span></button>
-        <button class="ltab${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">Base<span class="ltn">layer 1</span></button>
+        <button class="ltab l2${S.layer === 1 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 1}" data-layer="1">F2<span class="ltn">elevation</span></button>
+        <button class="ltab l1${S.layer === 0 ? ' on' : ''}" role="tab" aria-selected="${S.layer === 0}" data-layer="0">F1<span class="ltn">ground</span></button>
+        <button class="ltab viewall" id="lviewall" type="button" title="hold to preview every layer in colour">View all<span class="ltn">hold</span></button>
       </div>
     </div>
     <div class="palhint" id="palhint">${brushHint()}</div>
@@ -224,7 +226,7 @@ export function gardenPage(): void {
     gbuy.addEventListener('click', () => {
       if (buyGarden()) gardenPage();
     });
-  app.querySelectorAll<HTMLElement>('.ltab').forEach((t) =>
+  app.querySelectorAll<HTMLElement>('.ltab[data-layer]').forEach((t) =>
     t.addEventListener('click', () => {
       const next = +t.dataset.layer!;
       if (next === S.layer) return;
@@ -232,6 +234,36 @@ export function gardenPage(): void {
       gardenPage();
     }),
   );
+  // "View all" is hold-to-preview: while the pointer is down, the board drops its layer greying/red
+  // mask (a pure CSS class, no re-render) so every layer reads in full colour. Release restores the
+  // active-layer view. Pointer capture routes the release back to the button even if the pointer
+  // wanders off it — so all listeners stay on this element and are GC'd with it on the next render
+  // (no window-level listeners accumulating across re-renders).
+  const viewAll = app.querySelector<HTMLElement>('#lviewall');
+  const board = app.querySelector<HTMLElement>('.gboard');
+  if (viewAll && board) {
+    const peek = (on: boolean): void => {
+      board.classList.toggle('peekall', on);
+      viewAll.classList.toggle('held', on);
+    };
+    viewAll.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); // don't start a text selection / focus drag
+      try {
+        viewAll.setPointerCapture(e.pointerId); // enhancement only — ignore if this pointer can't be captured
+      } catch {}
+      peek(true);
+    });
+    const end = (): void => peek(false);
+    viewAll.addEventListener('pointerup', end);
+    viewAll.addEventListener('pointercancel', end);
+    viewAll.addEventListener('lostpointercapture', end);
+    // Keyboard parity: hold Space/Enter while the button is focused.
+    viewAll.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') peek(true);
+    });
+    viewAll.addEventListener('keyup', end);
+    viewAll.addEventListener('blur', end);
+  }
   app.querySelectorAll('.palbtn:not(.bgbtn):not(.fxbtn)').forEach((b) =>
     b.addEventListener('click', () => {
       const el = b as HTMLElement;
