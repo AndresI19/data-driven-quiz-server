@@ -42,6 +42,9 @@ cards:
 
   - topic: "The 'read the value, don't recompute it' race"
     desc: "When two independent jobs each compute 'latest + 1' for the same commit, they RACE and disagree — one sees the other's new value and lands one higher. The fix: one job is the source of truth (it creates the value); everyone else READS what it created, never recomputes it."
+    cloze:
+      text: "When two jobs each compute 'latest + 1' they race and disagree; the fix is to make one job the single {} of truth that everyone else reads from, never recomputes."
+      answer: "source"
     extras:
       - label: "e.g."
         text: "A release job that recomputed the next version got 0.1.14 while the tagger cut 0.1.13, then waited forever for a tag that would never exist. It should have waited for, and read, the tag on the commit."
@@ -64,6 +67,9 @@ cards:
 
   - topic: "Concurrency groups (and dropped runs)"
     desc: "A `concurrency:` group serialises or cancels overlapping workflow runs that share a key — e.g. only one deploy to an environment at a time. The side effect: a run can be CANCELLED or dropped when a newer one supersedes it, so a merge's deploy may silently not happen."
+    cloze:
+      text: "A {} group serialises or cancels overlapping workflow runs that share a key, so a newer run can drop an in-flight one."
+      answer: "concurrency"
     extras:
       - label: Recovery
         text: "Re-trigger by pushing again — even an empty commit re-fires the `push` event and the deploy runs."
@@ -72,6 +78,9 @@ cards:
 
   - topic: "Self-hosted runner scoping"
     desc: "A self-hosted CI runner executes jobs on YOUR hardware. On a personal account a runner is registered to ONE repository, so no other repo — including a stranger's fork opening a PR — can reach it. Its labels (e.g. self-hosted) decide which jobs it accepts."
+    cloze:
+      text: "A self-hosted runner registered to a single repository means a stranger's {} opening a PR cannot reach your hardware."
+      answer: "fork"
     extras:
       - label: Risk
         text: "A runner that untrusted code can reach is a foothold on your machine. Scope it tightly; never let fork PRs run privileged jobs on it."
@@ -80,6 +89,9 @@ cards:
 
   - topic: "Branch protection & required status checks"
     desc: "Rules on a protected branch (main) that block direct pushes and require a pull request whose CI checks are GREEN — and often an approving review — before merge. It makes 'tests pass' a precondition of landing code, not an afterthought."
+    cloze:
+      text: "A protected branch blocks direct pushes and requires a pull request whose CI checks are green — and often an approving {} — before merge."
+      answer: "review"
     extras:
       - label: Admin merge
         text: "A repo admin can override (merge despite an unmet REVIEW requirement) with `gh pr merge --admin` — used for solo projects, but it should never bypass FAILING CI, only a missing human reviewer."
@@ -88,6 +100,9 @@ cards:
 
   - topic: "Deploy on merge: version-tag then release"
     desc: "A common continuous-deployment shape: merging to main fires TWO workflows on the same push event. One (version-tag) cuts the release tag; the other (release) reads that tag and dispatches the actual build-and-deploy to a runner. Merge → tag → deploy, with no manual step."
+    cloze:
+      text: "On merge to main, one workflow cuts the release {} and a second reads it to dispatch the build-and-deploy — merge, tag, deploy, no manual step."
+      answer: "tag"
     extras:
       - label: Why two workflows
         text: "The recursion guard means the tag can't trigger the deploy, so both ride the push:main event; release WAITS for the tag to land, then reads it — it doesn't recompute the version."

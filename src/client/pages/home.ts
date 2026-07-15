@@ -6,7 +6,7 @@ import { setScreenBg } from '../garden/screenbg.js';
 import { startSplashes } from '../garden/splash.js';
 import { gardenArt } from '../garden/sprites.js';
 import { lifetime } from '../quiz/grading.js';
-import { hidePause } from '../quiz/pause.js';
+import { dismissTransients } from '../quiz/pause.js';
 import { discardActive, resumeActive, retrySession, reviewIds, start } from '../quiz/session.js';
 import { stopTicker } from '../quiz/timer.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
@@ -44,7 +44,7 @@ function savedNote(): string {
 export function setup(): void {
   stopTicker();
   S.running = false;
-  hidePause();
+  dismissTransients();
   setPath('/home');
   setScreenBg(true);
   setKey((e) => {

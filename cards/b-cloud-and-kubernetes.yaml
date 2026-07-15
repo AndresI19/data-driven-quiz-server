@@ -5,6 +5,9 @@ section:
 cards:
   - topic: What Kubernetes actually is
     desc: An open-source container orchestrator exposing one declarative API (YAML manifests) to deploy, scale, and self-heal containers.
+    cloze:
+      text: "Kubernetes is an open-source container {} exposing one declarative API to deploy, scale, and self-heal containers."
+      answer: "orchestrator"
     hint: A container orchestrator with one declarative API and a reconcile loop.
   - topic: kube-apiserver (the hub of Kubernetes)
     desc: The front door and hub of Kubernetes — a REST API that EVERY component (kubectl, each node's kubelet, the scheduler, controllers) talks to, and the ONLY component that reads/writes etcd. It runs authn → authz → admission control → validation on every request. Diagram shows the control plane + nodes around it.
@@ -63,6 +66,12 @@ cards:
       - IAM — who/what may call which cloud API
       - Managed data — RDS (SQL), S3 (object storage), ElastiCache (Redis)
       - Load balancer — ALB/NLB that a K8s Service of type LoadBalancer provisions for you
+    match:
+      - ['VPC', 'a private, isolated network you own inside the cloud']
+      - ['Subnet', 'a slice of a VPC IP range, pinned to one availability zone']
+      - ['IAM', 'who or what may call which cloud API']
+      - ['Managed data', 'RDS (SQL), S3 (object storage), ElastiCache (Redis)']
+      - ['Load balancer', 'an ALB/NLB a Service of type LoadBalancer provisions']
     hint: K8s YAML manages inside the cluster; what manages the cloud around it?
   - topic: Core K8s objects
     desc: "The core objects and what each is for:"
@@ -286,6 +295,12 @@ cards:
       - WAF (Web Application Firewall) — inspects HTTP requests and blocks attacks (SQLi, XSS, bad bots) by rule
       - DDoS protection — absorbs volumetric floods across its huge anycast capacity before they reach you
       - TLS termination — decrypts HTTPS at the edge, hiding your origin IP so attackers can't hit it directly
+    match:
+      - ['CDN', 'caches static assets at the edge, near the user']
+      - ['Authoritative DNS', 'answers your domain DNS over anycast']
+      - ['WAF', 'inspects HTTP requests and blocks attacks by rule']
+      - ['DDoS protection', 'absorbs volumetric floods across anycast capacity']
+      - ['TLS termination', 'decrypts HTTPS at the edge, hiding the origin IP']
     hint: A reverse proxy in front of your site — CDN, DNS, security, TLS termination.
   - topic: Cloudflare SSL modes & Tunnel
     desc: "Your ORIGIN is your real server behind Cloudflare (the box CF forwards to). There are TWO TLS legs — client↔CF and CF↔origin — and the SSL mode controls only the second leg:"
@@ -301,6 +316,11 @@ cards:
       - Full — CF↔origin encrypted, but ANY cert is accepted (even self-signed / expired) — better, still spoofable
       - Full (strict) — CF↔origin encrypted AND the origin must present a VALID cert — use this in production
       - Tunnel (cloudflared) — the origin dials OUT to CF, so you need NO inbound ports or public IP at all
+    match:
+      - ['Flexible', 'client to CF encrypted, CF to origin plaintext — a padlock but half exposed']
+      - ['Full', 'CF to origin encrypted, but any cert is accepted']
+      - ['Full (strict)', 'CF to origin encrypted AND a valid origin cert required']
+      - ['Tunnel (cloudflared)', 'the origin dials OUT to CF — no inbound ports at all']
     diagram: cf_ssl
     hint: The modes control the CF↔origin leg — which one is a plaintext trap?
   - topic: Reading an Ingress manifest
@@ -378,7 +398,12 @@ cards:
       - - git rebase -i
         - Git
         - version and rewrite source history
-    recall: true
+    match:
+      - ['kubectl get pods', 'Kubernetes — inspect / drive live cluster objects']
+      - ['helm upgrade --install', 'Helm — manage versioned app releases (charts)']
+      - ['terraform apply', 'Terraform — reconcile cloud infra to declared state']
+      - ['docker build -t', 'Docker — build / run container images']
+      - ['git rebase -i', 'Git — version and rewrite source history']
     hint: Match each command to the DevOps tool it belongs to.
   - topic: "Pod resources: requests, limits & QoS"
     desc: "The two knobs that decide placement and what happens under pressure:"
@@ -411,6 +436,12 @@ cards:
       - Private subnet — no IGW route; reaches out via a NAT Gateway, but nothing dials in (databases, app servers live here)
       - One subnet = one AZ — spread subnets across AZs so one zone failing doesn't take you down
       - "The CIDR suffix sizes it: a /24 subnet = 256 IPs (minus ~5 the cloud reserves)"
+    cloze:
+      text: "Each subnet lives in exactly one {}, so you spread subnets across several of them for high availability."
+      answer: "availability zone"
+      alts:
+        - "az"
+        - "availability-zone"
 
   - topic: "PersistentVolume (PV) and PersistentVolumeClaim (PVC)"
     desc: "Storage that OUTLIVES a pod. A PersistentVolume is a piece of storage in the cluster; a PersistentVolumeClaim is a pod's REQUEST for some (size + access mode). Kubernetes binds a claim to a volume, and the pod mounts the claim — so the data survives the pod being rescheduled, restarted, or replaced."
@@ -426,6 +457,9 @@ cards:
 
   - topic: "A mount is not network traffic"
     desc: "Attaching a volume to a pod is NOT a network call — it's a filesystem mount, local to the node. Nothing flows along it the way a request flows between services. In an architecture diagram a mount is a plain line, not an arrow; a database CONNECTION (SQL over TCP) is the traffic."
+    cloze:
+      text: "Attaching a volume to a pod is a filesystem {}, local to the node — not a network call, so in a diagram it is a plain line, not an arrow."
+      answer: "mount"
     extras:
       - label: Trap
         text: "Drawing a volume mount as traffic implies a request path that doesn't exist. The pod reads/writes files; there's no client and server."
@@ -443,6 +477,9 @@ cards:
 
   - topic: "Declarative apply vs imperative set-image"
     desc: "`kubectl apply -f` is DECLARATIVE — you describe the desired state in manifests and the cluster reconciles toward it. `kubectl set image` (or edit/patch) is IMPERATIVE — a direct one-off change. The imperative change works, but it DRIFTS from your manifests, so the next `apply` reverts it."
+    cloze:
+      text: "kubectl apply -f is {}: you describe the desired state and the cluster reconciles toward it, unlike the one-off kubectl set image."
+      answer: "declarative"
     extras:
       - label: Rule
         text: "Treat the manifests (in git) as the source of truth. An imperative hotfix is fine to unblock, but fold it back into the manifests or it will be silently undone."
@@ -451,6 +488,12 @@ cards:
 
   - topic: "initContainers"
     desc: "Containers that run to completion, IN ORDER, BEFORE the pod's main containers start. Used for one-time setup that must finish first: wait for a dependency, run a database migration, seed a volume, or fix permissions."
+    cloze:
+      text: "{} run to completion, in order, before a pod's main containers start — used for one-time setup like waiting on a dependency or running a migration."
+      answer: "initContainers"
+      alts:
+        - "init containers"
+        - "init container"
     extras:
       - label: "e.g."
         text: "A 'wait-for-db' init that blocks until Postgres answers, then a 'migrate' step, so the app container only starts against a ready, migrated database."

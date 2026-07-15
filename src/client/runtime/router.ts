@@ -1,6 +1,7 @@
 import { enterGarden } from '../garden/page.js';
 import { setup } from '../pages/home.js';
 import { renderQ } from '../quiz/engine.js';
+import { dismissTransients } from '../quiz/pause.js';
 import { resumeSnap, start } from '../quiz/session.js';
 import { DB } from './db.js';
 // Minimal history-API router. Each top-level page announces its own URL via setPath() when it
@@ -48,6 +49,9 @@ function quizRoute(): void {
 export function route(): void {
   routing = true;
   try {
+    // popstate (browser Back/Forward) reaches a page without going through any close button, so an
+    // open overlay would otherwise ride along onto the destination and trap clicks. Clear them first.
+    dismissTransients();
     let p = toRoute(location.pathname);
     if (p === '/') {
       history.replaceState({}, '', toUrl('/home'));

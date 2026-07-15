@@ -109,6 +109,9 @@ cards:
 
   - topic: "The local-Kubernetes networking gotcha (minikube on a VM)"
     desc: "When Docker isn't a native daemon but lives inside a VM (Colima/QEMU on macOS or Linux), minikube writes the cluster node's UNROUTABLE bridge IP (e.g. 192.168.49.2:8443) into your kubeconfig — so every kubectl call hangs and `minikube start` dies with 'apiserver healthz never reported healthy' while the control plane is perfectly fine, just unreachable."
+    cloze:
+      text: "With Docker inside a VM, minikube writes the node's {} bridge IP into your kubeconfig, so every kubectl call hangs even though the control plane is fine."
+      answer: "unroutable"
     extras:
       - label: Fix
         text: "Point kubeconfig at the port the VM FORWARDS out: `kubectl config set-cluster … --server=https://127.0.0.1:$(docker port minikube 8443 | sed 's/.*://')`. That forwarded port changes on every start, so re-derive it, never hard-code."

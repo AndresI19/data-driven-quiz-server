@@ -14,6 +14,12 @@ cards:
     hint: A model given tools plus a loop, so it acts over multiple steps.
   - topic: LangChain
     desc: A framework of composable building blocks — models, prompts, tools, memory, retrieval — for wiring LLM apps together.
+    multi:
+      - Models
+      - Prompts
+      - Tools
+      - Memory
+      - Retrieval
     extras:
       - label: e.g.
         text: "build a RAG chatbot: a PromptTemplate formats the question, a retriever pulls matching docs from a vector store, the LLM answers, an output parser turns it to JSON, and memory keeps chat history — each a swappable component composed with LCEL (LangChain Expression Language)."
@@ -31,12 +37,20 @@ cards:
     hint: LangChain's state-machine layer for cyclic, stateful agent flows.
   - topic: Chains vs. agent graphs (control flow)
     desc: A linear chain runs A→B→C once; an agent graph adds loops, branches, retries, checkpoints, and human-in-the-loop — the control flow real agents need. LangGraph models this as a state machine.
+    cloze:
+      text: "A linear chain runs A→B→C once; an agent {} adds the loops, branches, retries, and human-in-the-loop that real agents need."
+      answer: "graph"
     extras:
       - label: e.g.
         text: "'retry a tool up to 3× then ask a human' is a cycle + branch — natural in a graph, awkward in a linear chain."
     hint: Run-once versus loops, branches, retries, and checkpoints.
   - topic: PydanticAI
     desc: A type-safe agent framework from the Pydantic team — 'FastAPI for LLM agents'. You declare a Pydantic model as the agent's result_type and it validates the LLM's output into it; model-agnostic (OpenAI/Anthropic/Gemini), with dependency injection and built-in tracing via Pydantic Logfire.
+    cloze:
+      text: "In PydanticAI you declare a Pydantic model as the agent's {} and it validates the LLM output into that type."
+      answer: "result_type"
+      alts:
+        - "result type"
     extras:
       - label: vs LangChain/Graph
         text: LangChain/LangGraph = large ecosystem, composable, graph-based control flow, more boilerplate. PydanticAI = smaller, opinionated, TYPE-first — output validation + observability built in.
@@ -55,6 +69,9 @@ cards:
     hint: Anthropic's open standard for connecting LLMs to tools and data.
   - topic: Custom orchestrators
     desc: The orchestrator is the engine that DRIVES an agent's loop — routing tool calls, tracking state, handling retries/branching — while the 'agent' is the LLM brain deciding what to do next. LangChain/LangGraph are orchestrators; a custom one is a team's hand-rolled loop.
+    cloze:
+      text: "The {} is the engine that drives an agent's loop — routing tool calls, tracking state, handling retries — while the agent is the LLM brain deciding what to do next."
+      answer: "orchestrator"
     extras:
       - label: e.g.
         text: instead of LangGraph, a team writes their own Python loop that calls the model, parses the tool request, runs it, and feeds the result back — your control plane must integrate with these bespoke loops too.
@@ -63,6 +80,9 @@ cards:
     hint: The hand-rolled engine that drives an agent's loop.
   - topic: Tool / function calling
     desc: The mechanism by which an LLM invokes external code — the exact surface a control plane governs.
+    cloze:
+      text: "The mechanism by which an LLM invokes external code — the exact surface a control plane governs — is tool or {} calling."
+      answer: "function"
     hint: The mechanism by which an LLM invokes external code.
   - topic: RAG (retrieval-augmented generation)
     desc: Grounding an LLM in retrieved documents/embeddings at query time to reduce hallucination.
@@ -82,6 +102,11 @@ cards:
     hint: Ground the model in retrieved docs at query time — cheaper than retraining.
   - topic: Agent state & checkpointing
     desc: How an agent's progress is persisted so it can pause, resume, or be audited — ties straight back to stateful vs. stateless.
+    cloze:
+      text: "Persisting an agent's progress so it can pause, resume, or be audited is called {}."
+      answer: "checkpointing"
+      alts:
+        - "checkpoint"
     extras:
       - label: e.g.
         text: LangGraph checkpoints agent state after each node to a database; if it crashes at step 7 of 10 it resumes from 7, and every step is auditable.

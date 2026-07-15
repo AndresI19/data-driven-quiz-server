@@ -94,6 +94,13 @@ cards:
 
   - topic: "Single-replica assumptions that break when you scale out"
     desc: "State kept IN-PROCESS (a rate-limiter counter, a cache, a session) works on one replica and silently breaks on several: each replica has its own copy. An in-memory rate limit of 10/min across 3 replicas becomes an effective 30/min; an in-process cache gives inconsistent reads."
+    cloze:
+      text: "State kept {} — a counter, cache, or session — works on one replica but silently breaks across several, since each replica has its own copy."
+      answer: "in-process"
+      alts:
+        - "in process"
+        - "in-memory"
+        - "in memory"
     extras:
       - label: Fix
         text: "Move shared state to a shared store (Redis, the database). If you must stay single-replica, make that assumption EXPLICIT — because it fails quietly, not loudly, when someone scales the deployment."
@@ -113,6 +120,12 @@ cards:
 
   - topic: "Outbound-only architecture (caller vs callee)"
     desc: "A security posture where NOTHING on the internet can open a connection INTO your machine — every connection is dialled OUT from your side. A tunnel client (e.g. cloudflared) dials out to the edge; a CI runner long-POLLS its queue; the node PULLS images. With no inbound port, there's no listening surface to attack."
+    cloze:
+      text: "In an outbound-only posture, nothing on the internet can open a connection into your machine — every connection is dialled {}, so there is no listening surface to attack."
+      answer: "out"
+      alts:
+        - "outbound"
+        - "outward"
     extras:
       - label: Caller vs callee
         text: "In a diagram, draw the arrow from who OPENS the connection to who receives it — not the direction the bytes travel. The runner points at GitHub even though jobs 'come to' it, because the runner dialled out."

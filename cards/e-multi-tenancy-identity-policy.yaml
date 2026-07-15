@@ -139,6 +139,11 @@ cards:
     hint: Two halves — one decides allow/deny, one enforces it in the request path.
   - topic: Secrets management
     desc: Vaulting credentials and keys (HashiCorp Vault, cloud KMS) instead of hardcoding them.
+    cloze:
+      text: "Secrets management means vaulting credentials and keys in a tool like HashiCorp Vault or a cloud {} instead of hardcoding them."
+      answer: "KMS"
+      alts:
+        - "key management service"
     hint: Where credentials belong instead of hardcoded — a vault or a KMS.
   - topic: Real-time detection & enforcement
     desc: Inspecting agent actions in-flight and blocking or scoring risky ones — the runtime control-plane pitch.
@@ -243,6 +248,11 @@ cards:
 
   - topic: "Pseudonymous identity (deliberately holding no PII)"
     desc: "An identity that ties activity to a stable handle WITHOUT collecting personally identifiable information — no email, no real name. A user is a random id plus a credential, and nothing sensitive sits behind it. The trade: there's no account RECOVERY (recovery needs an email, and an email is PII)."
+    cloze:
+      text: "A pseudonymous identity ties activity to a stable handle without collecting any {} — no email, no real name — so there is nothing sensitive to breach."
+      answer: "PII"
+      alts:
+        - "personally identifiable information"
     extras:
       - label: Why
         text: "Holding no PII shrinks the blast radius of a breach to near nothing and sidesteps most privacy/consent obligations — a good fit when the data is low-stakes (a game profile), a bad fit for anything real."

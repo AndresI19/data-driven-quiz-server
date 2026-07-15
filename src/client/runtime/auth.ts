@@ -6,7 +6,12 @@
 import { authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
 import { DB, saveDB } from './db.js';
 
-const API = `${window.location.pathname.replace(/\/$/, '')}/api/progress`;
+// The app's mount prefix (Vite's baked-in base, always trailing-slashed; '/' at root) — NOT
+// window.location.pathname. The pathname is the live SPA route (/home, /quiz, …), so reading it here
+// baked the current route into the endpoint after a refresh on a subroute — e.g.
+// '/cloud-developer-quiz/home/api/progress', a guaranteed 404. Every other URL in the client
+// (cards.json, assets, print.html) is built from BASE_URL for exactly this reason.
+const API = `${import.meta.env.BASE_URL}api/progress`;
 
 export type PullOutcome =
   | { kind: 'adopted-server' }

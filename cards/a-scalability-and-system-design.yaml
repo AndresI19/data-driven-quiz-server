@@ -28,6 +28,9 @@ cards:
     hint: "Two directions to grow: out (more machines) or up (a bigger machine)."
   - topic: Externalizing state (session, files, identity)
     desc: Pushing session/state out of app servers into a datastore, cache, or client-held token so the app tier stays stateless.
+    cloze:
+      text: "Pushing session and state out of app servers into a datastore, cache, or client-held token keeps the app tier {}."
+      answer: "stateless"
     extras:
       - label: e.g.
         text: session in Redis, files in S3, identity in a signed JWT — the app tier holds nothing.
@@ -69,6 +72,11 @@ cards:
     hint: When one node can't hold or serve it all, you split the data by a key.
   - topic: Caching layers & invalidation
     desc: Storing computed or fetched results to cut latency and load — the hard part being knowing when they're stale.
+    cloze:
+      text: "Caching stores computed or fetched results to cut latency and load; the hard part is cache {} — knowing when a stored result has gone stale."
+      answer: "invalidation"
+      alts:
+        - "cache invalidation"
     extras:
       - label: e.g.
         text: cache a product page in Redis for 60s; bust the key on a price change.
@@ -225,6 +233,9 @@ cards:
     hint: A name becomes an IP by walking a hierarchy of servers, caching along the way.
   - topic: A lookup from your laptop, end to end
     desc: The app never speaks DNS. It calls getaddrinfo(); libc reads /etc/nsswitch.conf and works left to right — /etc/hosts, then a nameserver. Only after an IP comes back does a TCP connection open.
+    cloze:
+      text: "An app never speaks DNS directly — it calls {}(), and libc then reads /etc/nsswitch.conf to decide where to look first."
+      answer: "getaddrinfo"
     extras:
       - label: How
         text: getent hosts <name> walks the app's real path. dig/nslookup skip nsswitch and talk straight to a nameserver — so dig working while the app fails means NSS or /etc/hosts, not DNS.
@@ -424,6 +435,12 @@ cards:
     hint: Trust flows from your leaf cert up through intermediates to a root.
   - topic: The resolver path, step by step
     desc: A simpler breakdown of what happens when your app resolves a name — the ordered stages, so you can recite them without the full end-to-end card.
+    cloze:
+      text: "In the resolver path, the stub resolver at 127.0.0.53 is {}, which checks its own cache before asking the upstream recursive resolver."
+      answer: "systemd-resolved"
+      alts:
+        - "systemd resolved"
+        - "resolved"
     extras:
       - label: Why it matters
         text: “dig works but my app can't resolve” means the app path (nsswitch, /etc/hosts) differs from dig, which talks straight to a nameserver. Test the app's REAL path with `getent hosts <name>`.
@@ -451,6 +468,11 @@ cards:
 
   - topic: "Derived columns: never trust a client-supplied aggregate"
     desc: "When a value can be COMPUTED from data the server already holds (a score, a total, a count), compute it SERVER-SIDE on write — don't accept it from the client. If the client could send both a document and its 'score', it could send a document worth 10 and a score of 10,000, and any leaderboard reading that column would be forgeable."
+    cloze:
+      text: "A value that can be computed from data the server already holds should be computed {}-side on write, never trusted from the client."
+      answer: "server"
+      alts:
+        - "server-side"
     extras:
       - label: Principle
         text: "Make the two disagreeing structurally impossible, not merely unlikely: derive the projection from the source of truth so they can't drift."
@@ -459,6 +481,11 @@ cards:
 
   - topic: "Database-per-service vs shared schema"
     desc: "Each microservice OWNS its own database (schema); no other service reads or writes those tables directly — they talk through the service's API. Sharing a schema across services is the DISTRIBUTED-MONOLITH trap: a migration in one silently breaks another, and neither can deploy independently."
+    cloze:
+      text: "Sharing one database schema across microservices is the {} trap — a migration in one service silently breaks another."
+      answer: "distributed-monolith"
+      alts:
+        - "distributed monolith"
     extras:
       - label: Trap
         text: "Two services reading one schema couples them at the worst layer — you get the operational cost of microservices with the coupling of a monolith."
