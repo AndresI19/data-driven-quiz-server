@@ -1,0 +1,102 @@
+# Security & applied cryptography — the credential half of the platform.
+# Born from building platform-auth: hashing, peppers, timing oracles, and token trust.
+section:
+  key: K
+  name: Security & Applied Crypto
+  color: "#e11d48"
+
+cards:
+  - topic: "Password storage: why a SLOW hash, not SHA-256"
+    desc: "Never store passwords in plaintext or under a fast hash (SHA-256, MD5). Use a deliberately slow, memory-hard key-derivation function (KDF) — bcrypt, scrypt, or Argon2 — so an attacker who steals the database can only try a few thousand guesses per second instead of billions."
+    extras:
+      - label: Why
+        text: "A password is LOW-entropy (people pick 'hunter2'), so the only defence against offline guessing is making each guess expensive. Speed is a feature for a checksum and a bug for a password."
+      - label: "e.g."
+        text: "Node's stdlib scrypt needs no native dependency; Argon2id is the modern first choice; bcrypt caps input at 72 bytes."
+    cloze:
+      text: "A password should be stored under a slow, memory-hard {} such as bcrypt, scrypt, or Argon2 — never a fast hash like SHA-256."
+      answer: "KDF"
+      alts:
+        - key-derivation function
+        - key derivation function
+    inverse: true
+
+  - topic: "Salt vs pepper"
+    desc: "Two different secrets defending against two different attacks. A SALT is random, per-row, and stored NEXT TO the hash. A PEPPER is a single secret, shared across all rows, kept OUTSIDE the database (an environment variable or sealed secret)."
+    extras:
+      - label: Salt defeats
+        text: "rainbow tables, and stops two users who chose the same password from having identical hashes."
+      - label: Pepper defeats
+        text: "an attacker who steals ONLY the database — without the pepper (which isn't in the dump) they cannot even begin guessing."
+    match:
+      - ["salt", "random, per-row, stored beside the hash — defeats rainbow tables"]
+      - ["pepper", "one secret, held outside the DB — a stolen dump is useless without it"]
+      - ["slow KDF", "makes each guess expensive — the defence against a weak password"]
+
+  - topic: "Why a random token can use a fast hash but a password cannot"
+    desc: "A high-entropy, server-generated token (e.g. 34 billion possibilities) can be stored as a fast KEYED hash — HMAC(pepper, token) — because it is deterministic (so login is a single INDEXED lookup) and un-guessable even at billions of tries/sec. A user-CHOSEN password is low-entropy, so it needs a slow, per-row-SALTED hash, which cannot be indexed."
+    extras:
+      - label: Trap
+        text: "A salted hash is non-deterministic (a random salt per row), so you can't look a user up BY it — you find the row by username first, THEN verify. HMAC is deterministic, so it can be the index."
+      - label: Say
+        text: "\"Entropy decides the algorithm: high-entropy input → fast keyed hash you can index; low-entropy input → slow salted hash you verify.\""
+
+  - topic: "Timing attack: username enumeration"
+    desc: "If a login returns 'no such user' FASTER than 'wrong password' (because it skips the expensive hash on a missing user), an attacker can measure response time to discover which usernames exist. Defence: do the same work either way — verify the supplied password against a DUMMY hash even when the user doesn't exist — and return one generic error."
+    extras:
+      - label: Rule
+        text: "Same code path, same time, same message for every failure. Distinguishing failures is an information leak."
+      - label: Related
+        text: "Compare secrets with a CONSTANT-TIME comparison (timingSafeEqual), never ==, so the number of matching bytes can't be timed."
+    cloze:
+      text: "To stop username enumeration, verify against a {} hash even when the account doesn't exist, so a miss costs the same time as a wrong password."
+      answer: "dummy"
+      alts:
+        - decoy
+
+  - topic: "CWE-312: clear-text storage of sensitive data"
+    desc: "Storing a secret unencrypted where it can be read back — a password in a cookie, a token in localStorage, credentials in logs. The risk is anything that reads that store (XSS, a shared machine, a log aggregator) gets the secret."
+    extras:
+      - label: Trade-off
+        text: "Some client-side storage is accepted deliberately (a token in localStorage keeps you signed in), but it widens exposure from a session to indefinitely — acceptable only when nothing sensitive sits behind it."
+      - label: "e.g."
+        text: "A static analysis tool (CodeQL) flags this; you either fix it or dismiss it as an accepted risk WITH justification."
+    inverse: true
+
+  - topic: "JWT signing: HS256 vs RS256"
+    desc: "HS256 is SYMMETRIC — one shared secret both signs and verifies, so every service that can CHECK a token can also FORGE one. RS256 is ASYMMETRIC — the issuer holds the private key and signs; everyone else fetches the PUBLIC key (via a JWKS endpoint) and can only verify. Compromise a verifier and it still cannot mint tokens."
+    extras:
+      - label: Say
+        text: "\"Use RS256 across service boundaries: a verifier should be able to check identity without holding the power to issue it.\""
+      - label: JWKS
+        text: "JSON Web Key Set — the public keys published at /.well-known/jwks.json, with a key id (kid) so keys can rotate."
+    match:
+      - ["HS256", "symmetric — one shared secret signs AND verifies (verifier can forge)"]
+      - ["RS256", "asymmetric — private key signs, public key (JWKS) only verifies"]
+
+  - topic: "Access token vs refresh token"
+    desc: "An ACCESS token is short-lived (minutes to a day) and sent on every request. A REFRESH token is long-lived and used only to mint new access tokens without re-authenticating. Splitting them limits the blast radius: a leaked access token expires soon; the refresh token is exposed rarely."
+    extras:
+      - label: Trap
+        text: "If the client already stores the raw credential to re-authenticate silently, a separate refresh token buys little — it's a second long-lived secret guarding a credential you already hold."
+      - label: Storage
+        text: "httpOnly cookie resists XSS reads but needs CSRF defence; localStorage is XSS-readable but immune to CSRF. Pick per threat model."
+
+  - topic: "Rate limiting: what it can and cannot protect"
+    desc: "Per-IP and global request limits are the ONLY defence a credential has against ONLINE guessing — walking the keyspace through the live login endpoint. It protects the SERVICE from being walked quickly; it does NOT protect an individual weak password from a patient, distributed attacker."
+    extras:
+      - label: Online vs offline
+        text: "Rate limiting stops ONLINE attacks (through your endpoint). It does nothing about OFFLINE attacks (a stolen hash cracked on the attacker's own hardware) — that's what a slow hash + pepper are for."
+      - label: Trap
+        text: "An in-process limiter (a Map in memory) silently breaks when you scale to multiple replicas: each replica enforces its own limit, multiplying the real ceiling. Move it to a shared store first."
+
+  - topic: "The three layers protecting a stored password"
+    desc: "Defence in depth: each layer covers what the next cannot."
+    items:
+      - "Per-row SALT — so one cracked password doesn't crack the rest, and identical passwords don't collide."
+      - "A SLOW, memory-hard KDF — so offline guessing costs real time per attempt."
+      - "A PEPPER held outside the DB — so a database-only theft yields nothing to guess against."
+    multi:
+      - salt
+      - slow KDF
+      - pepper

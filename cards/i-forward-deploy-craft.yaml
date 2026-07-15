@@ -106,3 +106,19 @@ cards:
       - "-v / --trace — verbose: see the full request/response + TLS handshake"
       - "--resolve host:443:1.2.3.4 — force a host to a specific IP (bypass DNS)"
       - "-k — skip TLS verification (debug only — never in production)"
+
+  - topic: "The local-Kubernetes networking gotcha (minikube on a VM)"
+    desc: "When Docker isn't a native daemon but lives inside a VM (Colima/QEMU on macOS or Linux), minikube writes the cluster node's UNROUTABLE bridge IP (e.g. 192.168.49.2:8443) into your kubeconfig — so every kubectl call hangs and `minikube start` dies with 'apiserver healthz never reported healthy' while the control plane is perfectly fine, just unreachable."
+    extras:
+      - label: Fix
+        text: "Point kubeconfig at the port the VM FORWARDS out: `kubectl config set-cluster … --server=https://127.0.0.1:$(docker port minikube 8443 | sed 's/.*://')`. That forwarded port changes on every start, so re-derive it, never hard-code."
+      - label: Trap
+        text: "`minikube status`, `minikube ip`, `minikube tunnel`, and `docker-env` all assume Docker is local and will mislead you here. Gate health on `kubectl get --raw /healthz` after the repoint, not on `minikube status`."
+
+  - topic: "Read the target before you delete or overwrite it"
+    desc: "A destructive, irreversible action (wiping a database, dropping a table, force-pushing) deserves a look at what you're about to destroy FIRST — row counts, what depends on it, whether it matches the description you were given. If what you find contradicts the plan, surface that instead of proceeding."
+    extras:
+      - label: "e.g."
+        text: "Asked to 'reset the DB to make admin creds', you check and find admin is an env-var list, not a DB row — so the reset was never needed. Looking first saved real data."
+      - label: Cheap insurance
+        text: "Take a backup before an irreversible change (pg_dump), even when you're confident. 'Irreversible' becomes 'reversible' for the price of one command."
