@@ -19,6 +19,10 @@ const ManifestSchema = z
     distractors: z.array(z.string()).optional(),
   })
   .strict();
+const CodeSchema = z.object({ lang: z.string().optional(), text: z.string() }).strict();
+const CodeSelectSchema = z
+  .object({ prompt: z.string(), answer: z.array(z.number().int().nonnegative()) })
+  .strict();
 
 const AuthoredCardSchema = z
   .object({
@@ -37,6 +41,8 @@ const AuthoredCardSchema = z
     recall: z.boolean().optional(),
     inverse: z.boolean().optional(),
     manifest: ManifestSchema.optional(),
+    code: CodeSchema.optional(),
+    codeselect: CodeSelectSchema.optional(),
   })
   .strict();
 

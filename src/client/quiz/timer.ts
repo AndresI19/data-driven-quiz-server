@@ -21,6 +21,12 @@ export function baseSeconds(c: GameCard, mode: string): number {
   if (mode === 'iv') {
     return 18;
   }
+  if (mode === 'cw') {
+    return Math.max(20, (c.code?.lines.length ?? 6) * 3 + 12);
+  }
+  if (mode === 'cs') {
+    return Math.max(26, (c.code?.lines.length ?? 6) * 4 + 12);
+  }
   let chars: number;
   if (mode === 'cz' && c.cloze) {
     chars = c.cloze.pre.length + c.cloze.post.length + c.cloze.answer.length;

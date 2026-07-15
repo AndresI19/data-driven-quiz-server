@@ -18,6 +18,23 @@ export interface Manifest {
   distractors?: string[];
 }
 
+/** Authored form: the block is a single literal string (YAML `text: |`), split into lines on load. */
+export interface CodeSource {
+  lang?: string; // display hint only (dockerfile, yaml, ts, sql, bash, …)
+  text: string; // the whole block, newlines and all
+}
+
+/** Game form: the block already split into lines (what codeselect.answer indexes into). */
+export interface Code {
+  lang?: string;
+  lines: string[];
+}
+
+export interface CodeSelect {
+  prompt: string; // "select the lines that install the binary"
+  answer: number[]; // 0-based indices into Code.lines that are correct
+}
+
 /** A card exactly as authored in YAML (before transforms). */
 export interface AuthoredCard {
   topic: string;
@@ -35,6 +52,8 @@ export interface AuthoredCard {
   recall?: boolean;
   inverse?: boolean;
   manifest?: Manifest;
+  code?: CodeSource; // a code block → enables "what is this doing?" (cw)
+  codeselect?: CodeSelect; // + a block → enables "select the lines" (cs)
 }
 
 export interface Section {
@@ -65,6 +84,8 @@ export interface GameCard {
   recall: boolean;
   inverse: boolean;
   manifest: Manifest | null;
+  code: Code | null;
+  codeselect: CodeSelect | null;
 }
 
 /** Everything the client needs at boot. */

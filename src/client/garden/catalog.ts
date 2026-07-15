@@ -279,7 +279,16 @@ ANIMALS.forEach((a) => (ANIM_BY_ID[a.id] = a));
 // would pay the honour system. Every machine-graded mode must appear here: `iv` was missing, so a
 // correct inverse-recall card silently paid nothing and did not advance the combo, and `dm` used to
 // borrow `ma`'s entry (same value, but it read as a typo rather than a decision).
-export const REWARD_BASE: Record<string, number> = { bf: 20, cz: 24, iv: 24, ma: 40, ms: 34, dm: 40 };
+export const REWARD_BASE: Record<string, number> = {
+  bf: 20,
+  cz: 24,
+  iv: 24,
+  ma: 40,
+  ms: 34,
+  dm: 40,
+  cw: 22,
+  cs: 40,
+};
 /** What a placed block is worth. Derived — a block's value IS its price; it was a second hand-kept
     table that had to be edited in lockstep with BLOCKS, and nothing made you. */
 export const BLOCK_VALUE: Record<string, number> = Object.fromEntries(

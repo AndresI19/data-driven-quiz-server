@@ -10,7 +10,7 @@ import { DB } from '../runtime/db.js';
 import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, gradeNote, modeKeys, score, typedFeedback } from './card.js';
 import { navKey } from './engine.js';
-import { czOK, distractors, ivOK, record } from './grading.js';
+import { codeSelectOK, czOK, distractors, ivOK, record } from './grading.js';
 import { advance } from './session.js';
 import { answeredNow } from './timer.js';
 
@@ -651,6 +651,151 @@ export function renderDM(c: GameCard): void {
         e.preventDefault();
         check(false);
       }
+    }
+  });
+}
+
+/** A code block as static HTML (for "read the code" mode and answer reveals). */
+function codeBlock(code: NonNullable<GameCard['code']>): string {
+  const rows = code.lines.map((ln) => `<div class="cl">${esc(ln) || '&nbsp;'}</div>`).join('');
+  const lang = code.lang ? ` data-lang="${esc(code.lang)}"` : '';
+  return `<pre class="codeblock"${lang}>${rows}</pre>`;
+}
+
+/** Read the code: show a block, pick what it does. Correct = the topic; distractors = authored mc. */
+export function renderCW(c: GameCard): void {
+  const code = c.code!;
+  const extras = (c.mc || []).map((s) => ({ topic: s }));
+  const seen = new Set([c.topic]);
+  // Prefer the card's own authored distractors; top up from the global pool only if it runs short.
+  const pool = shuffle(extras.concat(distractors(c, 7) as { topic: string }[]))
+    .filter((o) => {
+      if (seen.has(o.topic)) return false;
+      seen.add(o.topic);
+      return true;
+    })
+    .slice(0, 7);
+  const opts = shuffle(pool.concat(c));
+  const L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const btns = opts
+    .map(
+      (o, i) =>
+        `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`,
+    )
+    .join('');
+
+  const ses = drawCard(
+    c,
+    'read the code',
+    `${codeBlock(code)}
+      <div style="margin-top:16px;font-weight:650">What is this code doing?</div>
+      <div class="choices" id="choices">${btns}</div>`,
+  );
+
+  function finish(picked: HTMLElement | null): void {
+    if (ses.answered) return;
+    answeredNow();
+    const ok = picked ? picked.dataset.topic === c.topic : false;
+    app.querySelectorAll('.choice').forEach((b) => {
+      (b as HTMLButtonElement).disabled = true;
+      if ((b as HTMLElement).dataset.topic === c.topic) b.classList.add('correct');
+    });
+    if (picked && !ok) picked.classList.add('wrong');
+    score(c, ok, 'cw');
+
+    const note = picked ? '' : '<div class="grade-note bad">⏱ Timed out</div>';
+    const cont = document.createElement('div');
+    cont.innerHTML = `${note}<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
+    app.querySelector('#choices')!.after(cont);
+    app.querySelector('#next')!.addEventListener('click', advance);
+  }
+
+  ses._onTimeout = () => finish(null);
+  app.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => finish(b as HTMLElement)));
+
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll('.choice')[idx];
+      if (b) finish(b as HTMLElement);
+    }
+  });
+}
+
+/** Select the lines: tick every line that does X. One wrong (or missing) line fails the card. */
+export function renderCS(c: GameCard): void {
+  const code = c.code!;
+  const cs = c.codeselect!;
+  const answer = new Set(cs.answer);
+  const picked = new Set<number>();
+  const rows = code.lines
+    .map(
+      (ln, i) =>
+        `<button class="cl-btn" data-i="${i}"><span class="k">☐</span><span class="cl-code">${esc(ln) || '&nbsp;'}</span></button>`,
+    )
+    .join('');
+
+  const ses = drawCard(
+    c,
+    'select lines',
+    `<div class="topic" style="font-size:17px">${esc(cs.prompt)}</div>
+      <div class="ptip">Tick every line that applies — a wrong or missing line fails the card.</div>
+      <div class="codeselect" id="choices"${code.lang ? ` data-lang="${esc(code.lang)}"` : ''}>${rows}</div>
+      <div class="actions" id="act"><button class="btn primary" id="mscheck">Check</button></div>`,
+  );
+
+  app.querySelectorAll('.cl-btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (ses.answered) return;
+      const i = +(b as HTMLElement).dataset.i!;
+      if (picked.has(i)) {
+        picked.delete(i);
+        b.classList.remove('picked');
+        b.querySelector('.k')!.textContent = '☐';
+      } else {
+        picked.add(i);
+        b.classList.add('picked');
+        b.querySelector('.k')!.textContent = '☑';
+      }
+    }),
+  );
+
+  function check(timedOut: boolean): void {
+    if (ses.answered) return;
+    answeredNow();
+    const allRight = !timedOut && codeSelectOK([...picked], cs.answer);
+    code.lines.forEach((_, i) => {
+      const b = app.querySelector(`.cl-btn[data-i="${i}"]`) as HTMLButtonElement;
+      b.disabled = true;
+      const sel = picked.has(i);
+      const correct = answer.has(i);
+      if (correct && sel) b.classList.add('correct');
+      else if (correct && !sel) b.classList.add('missed-opt');
+      else if (!correct && sel) b.classList.add('wrong');
+    });
+    score(c, allRight, 'cs');
+
+    const note = timedOut
+      ? '⏱ Timed out'
+      : allRight
+        ? '✓ exactly the right lines!'
+        : '✗ the correct lines are highlighted';
+    endCard(c, gradeNote(allRight, note));
+  }
+
+  ses._onTimeout = () => check(true);
+  app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
+
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll('.cl-btn')[idx];
+      if (b) (b as HTMLElement).click();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      check(false);
     }
   });
 }

@@ -1,7 +1,13 @@
 // Pure port of the Python generator's card transforms (gen_flashcards.py).
 // Each function mirrors its Python counterpart 1:1 so the produced game payload is
 // byte-identical to the original. Kept free of I/O so it can be unit-tested directly.
-import type { AuthoredCard, GameCard, Manifest } from './card-schema.js';
+import type { AuthoredCard, Code, GameCard, Manifest } from './card-schema.js';
+
+/** Split an authored code block (one literal string) into lines, dropping any single trailing newline. */
+export function codeLines(c: RawCard): Code | null {
+  if (!c.code) return null;
+  return { lang: c.code.lang, lines: c.code.text.replace(/\n$/, '').split('\n') };
+}
 
 /** An authored card plus the fields the transforms need (id, cat). */
 export interface RawCard extends AuthoredCard {
@@ -32,6 +38,12 @@ export function esc(s: string): string {
  */
 export function backBody(c: RawCard, diagrams: Record<string, string>, fold = false): string {
   const parts: string[] = [`<div class="desc">${esc(c.desc)}</div>`];
+  const codeBlock = codeLines(c);
+  if (codeBlock) {
+    const rows = codeBlock.lines.map((ln) => `<div class="cl">${esc(ln) || '&nbsp;'}</div>`).join('');
+    const lang = codeBlock.lang ? ` data-lang="${esc(codeBlock.lang)}"` : '';
+    parts.push(`<pre class="codeblock"${lang}>${rows}</pre>`);
+  }
   if (c.items?.length) {
     const lis = c.items.map((it) => `<li>${esc(it)}</li>`).join('');
     parts.push(`<ul class="items">${lis}</ul>`);
@@ -74,6 +86,7 @@ export function chars(c: RawCard): number {
   for (const it of c.items ?? []) n += it.length;
   for (const { label, text } of c.extras ?? []) n += label.length + text.length;
   for (const row of c.table ?? []) for (const cell of row) n += cell.length;
+  n += c.code?.text.length ?? 0;
   return n;
 }
 
@@ -203,6 +216,8 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
     recall,
     inverse: Boolean(c.inverse) && !recall,
     manifest: recall ? null : (c.manifest ?? null),
+    code: codeLines(c),
+    codeselect: recall ? null : (c.codeselect ?? null),
   };
 }
 
