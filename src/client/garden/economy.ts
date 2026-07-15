@@ -1,7 +1,7 @@
 // Shared coin wallet + garden value, multi-garden purchase/switching, and background purchase.
 // Wallet (coins/combo/infinite/spent) lives on DB (shared across gardens); DB.garden is the
 // active board.
-import { DB, emptyLayer, newGarden, saveDB } from '../runtime/db.js';
+import { DB, emptyElevation, newGarden, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import {
   ANIM_BY_ID,
@@ -70,7 +70,7 @@ export function coinToast(n: number): void {
 /** Reset the ACTIVE garden's board (keeps the shared wallet); money defaults back to on. */
 export function resetGarden(): void {
   DB.garden.cells = newBoard();
-  DB.garden.upper = emptyLayer();
+  DB.garden.upper = emptyElevation();
   DB.garden.hideFg = false;
   DB.garden.bg = null;
   // No longer forces free money on. Resetting a garden is not a reason to hand out unlimited
@@ -98,8 +98,9 @@ function gardenValueOf(g: import('../runtime/db.js').Garden): number {
     }
     return v;
   };
-  // The ground carries a free 5x5 dirt starter that shouldn't count; the elevation layer is all paid.
-  let v = Math.max(0, layerValue(g.cells) - 25 * BLOCK_VALUE.dirt) + layerValue(g.upper);
+  // The ground carries a free 5x5 dirt starter that shouldn't count; every elevation layer is all paid.
+  let v = Math.max(0, layerValue(g.cells) - 25 * BLOCK_VALUE.dirt);
+  for (const up of g.upper) v += layerValue(up);
   if (g.bg) v += DECOR_VALUE;
   if (g.fx) v += DECOR_VALUE;
   return v;

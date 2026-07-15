@@ -1,4 +1,4 @@
-import { type GardenCell, newBoard } from '../garden/catalog.js';
+import { type GardenCell, LAYERS, newBoard } from '../garden/catalog.js';
 // Persistent store (localStorage key 'flashcards_v2'): lifetime per-card stats, the in-progress
 // session, saved retry decks, sessions, favorites, flags, settings, and the garden. The init +
 // migration block runs once at import and matches the original defaults exactly.
@@ -9,7 +9,7 @@ import type { QItem } from './state.js';
 // its foreground-hidden view flag, and its selected background.
 export interface Garden {
   cells: (GardenCell | null)[]; // ground layer (layer 0)
-  upper: (GardenCell | null)[]; // elevation layer (layer 1) — sparse; mostly null
+  upper: (GardenCell | null)[][]; // elevation layers 1..LAYERS-1, ground-up; each sparse (mostly null)
   hideFg: boolean;
   bg: string | null; // selected background id, or null
   fx: string | null; // selected particle effect id, or null
@@ -17,11 +17,19 @@ export interface Garden {
 /** A fresh garden. Lives here rather than in the catalog because the catalog cannot see this type —
     db.ts imports the catalog, not the other way round. Was an object literal written out twice. */
 export function newGarden(): Garden {
-  return { cells: newBoard(), upper: emptyLayer(), hideFg: false, bg: null, fx: null };
+  return { cells: newBoard(), upper: emptyElevation(), hideFg: false, bg: null, fx: null };
 }
-/** A blank 10x10 elevation layer. The elevation plane starts empty — you build up onto it. */
+/** A blank 10x10 layer. Elevation layers start empty — you build up onto them. */
 export function emptyLayer(): (GardenCell | null)[] {
   return Array(100).fill(null);
+}
+/** A fresh set of empty elevation layers (one per layer above the ground). */
+export function emptyElevation(): (GardenCell | null)[][] {
+  return Array.from({ length: LAYERS - 1 }, emptyLayer);
+}
+/** The cell array for a given layer: 0 is the ground, ≥1 index into the elevation-layer list. */
+export function layerCells(g: Garden, layer: number): (GardenCell | null)[] {
+  return layer === 0 ? g.cells : g.upper[layer - 1];
 }
 export interface SessionRec {
   id: string;
@@ -114,7 +122,7 @@ if (!DB.flags) DB.flags = {};
     DB.gardens = [
       {
         cells,
-        upper: emptyLayer(),
+        upper: emptyElevation(),
         hideFg: (legacy.hideFg as boolean) ?? false,
         bg: (legacy.bg as string) ?? null,
         fx: null,
@@ -125,7 +133,13 @@ if (!DB.flags) DB.flags = {};
   if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;
   DB.gardens.forEach((g) => {
     if (!Array.isArray(g.cells)) g.cells = newBoard();
-    if (!Array.isArray(g.upper)) g.upper = emptyLayer(); // gardens saved before elevation existed
+    // Elevation layers. Three shapes reach here: absent (pre-elevation gardens), a single FLAT layer
+    // (the first elevation release stored `upper` as one 100-cell array), or the current array-of-
+    // layers. Wrap the flat one so its content stays at layer 1, then pad up to LAYERS-1 layers.
+    const up = g.upper as unknown;
+    if (!Array.isArray(up)) g.upper = [];
+    else if (up.length > 0 && !Array.isArray(up[0])) g.upper = [up as (GardenCell | null)[]]; // legacy single flat elevation layer → layer 1
+    while (g.upper.length < LAYERS - 1) g.upper.push(emptyLayer());
     if (g.hideFg == null) g.hideFg = false;
     if (g.bg === undefined) g.bg = null;
     if (g.fx === undefined) g.fx = null;

@@ -614,6 +614,9 @@ h1 {
 .ltab.l2 {
   border-color: #f97316;
 }
+.ltab.l3 {
+  border-color: #a855f7;
+}
 .ltab.viewall {
   border-color: #38bdf8;
 }
@@ -627,6 +630,11 @@ h1 {
   background: linear-gradient(180deg, #fb923c, #ea580c);
   border-color: #fdba74;
   box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35), 0 4px 14px rgba(234, 88, 12, 0.5);
+}
+.ltab.l3.on {
+  background: linear-gradient(180deg, #c084fc, #9333ea);
+  border-color: #d8b4fe;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.35), 0 4px 14px rgba(147, 51, 234, 0.5);
 }
 .ltab.viewall.held {
   background: linear-gradient(180deg, #38bdf8, #0ea5e9);

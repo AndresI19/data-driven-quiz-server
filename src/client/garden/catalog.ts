@@ -293,29 +293,29 @@ export const ISO_W = 80,
   ISO_OX = 9 * ISO_HX;
 
 // ---- Elevation layers ----
-// The board has stacked editing layers. Layer 0 is the ground; layer 1 is an elevation plane lifted
-// exactly one cube body (ISO_LIFT === the cube's 20px front face), so an elevated tile stacks flush
-// on the ground tile with no floating gap — see catalog tiles, whose body is 8px of a 32px sprite.
+// The board has stacked editing layers. Layer 0 is the ground; each layer above is an elevation plane
+// lifted one more cube body (ISO_LIFT === the cube's 20px front face), so each stacks flush on the one
+// below with no floating gap — see catalog tiles, whose body is 8px of a 32px sprite. Adding another
+// layer is just bumping LAYERS: the data model, rendering, and placement all read this constant.
 export const ISO_LIFT = ISO_HY;
-export const LAYERS = 2; // ground + one elevation layer (this pass)
+export const LAYERS = 3; // ground + two elevation layers
 // Depth is sorted by grid footprint first, layer only as a tiebreak: z = Z_STEP*(col+row) + layer.
 // Sorting by footprint (not by layer) is what lets a tall tree correctly sit BEHIND an elevated tile
-// in front of it and IN FRONT OF one behind it, with no per-object hoisting. Z_STEP just leaves room
-// for the layer to slot between two footprint steps.
+// in front of it and IN FRONT OF one behind it, with no per-object hoisting. Z_STEP leaves exactly
+// enough room for every layer to slot between two footprint steps.
 export const Z_STEP = LAYERS;
 
 /**
- * Can an elevated tile stand on this ground cell? Only over solid, unoccupied ground: there must BE a
- * tile beneath it, and it cannot bridge water or a spire (both would leave the platform floating on a
- * surface nothing can key into). Anything STANDING on the ground — a feature (tree/bush/flower) or an
- * animal — refuses it too: the object would be buried, the one adjacency the footprint depth-sort
- * cannot draw. `dig it first` is the fix, not a render trick. (Animals were missed here, which let a
- * deer get buried while trees and flowers were correctly blocked.)
+ * Can an elevated tile stand on the cell directly beneath it (the layer below)? Only over solid,
+ * unoccupied support: there must BE a tile beneath it, and it cannot bridge water or a spire (both
+ * would leave the platform floating on a surface nothing can key into). Anything STANDING on that
+ * cell — a feature (tree/bush/flower) or an animal — refuses it too: the object would be buried, the
+ * one adjacency the footprint depth-sort cannot draw. `dig it first` is the fix, not a render trick.
+ * The same predicate governs every elevation layer: layer N keys onto layer N-1. (Animals were once
+ * missed here, which let a deer get buried while trees and flowers were correctly blocked.)
  */
-export function supportsUpper(ground: GardenCell | null): boolean {
-  return (
-    !!ground && ground.block !== 'water' && ground.block !== 'spire' && !ground.feature && !ground.animal
-  );
+export function supportsUpper(below: GardenCell | null): boolean {
+  return !!below && below.block !== 'water' && below.block !== 'spire' && !below.feature && !below.animal;
 }
 
 export interface GardenCell {
