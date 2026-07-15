@@ -91,3 +91,30 @@ cards:
       text: A {} breaker trips after too many failures so calls fail fast instead of piling up.
       answer: circuit
     hint: The patterns that stop one slow dependency from cascading into an outage.
+
+  - topic: "Single-replica assumptions that break when you scale out"
+    desc: "State kept IN-PROCESS (a rate-limiter counter, a cache, a session) works on one replica and silently breaks on several: each replica has its own copy. An in-memory rate limit of 10/min across 3 replicas becomes an effective 30/min; an in-process cache gives inconsistent reads."
+    extras:
+      - label: Fix
+        text: "Move shared state to a shared store (Redis, the database). If you must stay single-replica, make that assumption EXPLICIT — because it fails quietly, not loudly, when someone scales the deployment."
+      - label: Say
+        text: "\"Anything counted or cached in process is per-replica; horizontal scaling multiplies it unless the state is shared.\""
+
+  - topic: "Idempotency and delivery semantics"
+    desc: "An IDEMPOTENT operation can be applied many times with the same result as once. It's what makes retries safe in a distributed system, where you usually get AT-LEAST-once delivery (messages can arrive twice) rather than exactly-once. Idempotency keys or version checks turn 'at-least-once + idempotent' into effectively exactly-once."
+    extras:
+      - label: "e.g."
+        text: "'Charge card, idempotency key abc123' — the payment processor dedupes on the key, so a retried request doesn't double-charge."
+      - label: Trap
+        text: "True exactly-once delivery is nearly impossible; the practical answer is at-least-once delivery made safe by idempotent handlers."
+    cloze:
+      text: "Retries are safe when the operation is {} — applying it twice is the same as applying it once."
+      answer: "idempotent"
+
+  - topic: "Outbound-only architecture (caller vs callee)"
+    desc: "A security posture where NOTHING on the internet can open a connection INTO your machine — every connection is dialled OUT from your side. A tunnel client (e.g. cloudflared) dials out to the edge; a CI runner long-POLLS its queue; the node PULLS images. With no inbound port, there's no listening surface to attack."
+    extras:
+      - label: Caller vs callee
+        text: "In a diagram, draw the arrow from who OPENS the connection to who receives it — not the direction the bytes travel. The runner points at GitHub even though jobs 'come to' it, because the runner dialled out."
+      - label: Why
+        text: "You can run public-facing services on a machine with zero open ports, because reachability comes from outbound tunnels, not inbound firewall holes."

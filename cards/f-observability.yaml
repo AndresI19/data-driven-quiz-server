@@ -75,3 +75,22 @@ cards:
       text: Tools like LangSmith and {} capture each agent step — prompt, tokens, tool calls — as a nested trace.
       answer: Langfuse
     hint: Tracing the novel agent parts — prompts, tokens, tool calls, steps.
+
+  - topic: "A check that depends on nothing"
+    desc: "The most reliable health signal doesn't trust any component to report its own success — it independently compares 'what IS running' to 'what SHOULD be'. Deploys drift silently, so a check that reads the live version (e.g. /api/versions) and diffs it against the latest release tag catches a failed deploy that every other signal reported as fine."
+    extras:
+      - label: Why
+        text: "It catches a failed tagger, a failed deploy, a runner that never came back, and a job that timed out — WITHOUT trusting any of them to tell you. Drift = a failure nobody announced."
+      - label: Principle
+        text: "Prefer end-state verification over step-success. 'Every step returned 0' can still leave you running old code."
+
+  - topic: "Pull signals vs push alerts"
+    desc: "A PULL signal waits for you to go look — a red ✗ in a CI list, a dashboard you have to open. A PUSH alert comes to you — a message to Slack/Discord, a page. Silent failure thrives on pull-only signals, so anything that must not be missed should PUSH."
+    extras:
+      - label: Balance
+        text: "Push everything and you get alert fatigue (people mute it); push nothing and failures rot unnoticed. Push the few things that mean 'a human must act now'."
+      - label: "e.g."
+        text: "A deploy pipeline posts success/failure to the same webhook the boot scripts use, so a broken deploy finds you instead of waiting in a tab."
+    match:
+      - ["pull signal", "you go look — a red ✗, a dashboard"]
+      - ["push alert", "it comes to you — Slack/Discord, a page"]

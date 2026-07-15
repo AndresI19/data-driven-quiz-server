@@ -1,0 +1,109 @@
+# CI/CD & release engineering — the pipeline half of the platform.
+# Born from building platform-cicd: triggers, races, image identity, and pipeline security.
+section:
+  key: L
+  name: CI/CD & Release Engineering
+  color: "#7c3aed"
+
+cards:
+  - topic: "Pipeline security scans (shift-left)"
+    desc: "Run automated security checks on every pull request, before merge, so problems are caught in review rather than in production. Three complementary kinds cover different attack surfaces."
+    extras:
+      - label: SAST
+        text: "Static Application Security Testing (e.g. CodeQL) — analyses your source for vulnerability patterns: injection, clear-text secrets, unsafe deserialisation."
+      - label: Secret scanning
+        text: "e.g. gitleaks — greps the diff (and history) for committed API keys, tokens, and private keys before they reach the remote."
+      - label: Dependency scanning
+        text: "audits third-party packages for known CVEs (Common Vulnerabilities and Exposures)."
+    match:
+      - ["SAST (CodeQL)", "scans YOUR source for vulnerability patterns"]
+      - ["secret scanning (gitleaks)", "catches committed keys/tokens in the diff"]
+      - ["dependency scan", "flags known CVEs in third-party packages"]
+
+  - topic: "The GITHUB_TOKEN recursion guard"
+    desc: "A workflow authenticated with the default GITHUB_TOKEN cannot trigger ANOTHER workflow. So if a CI job pushes a git tag, an `on: push: tags` workflow will NOT fire — the tag appears and nothing happens, with no error. It's a deliberate guard against infinite workflow loops."
+    extras:
+      - label: Work-arounds
+        text: "Either do both steps in ONE workflow chained by `needs:`, or ride the SAME triggering event twice (two workflows both on `push: main`), or dispatch explicitly with a separate fine-grained token."
+      - label: Trap
+        text: "The failure is SILENT — the tag is created, but the build that should follow never starts. Nothing tells you."
+    inverse: true
+
+  - topic: "repository_dispatch"
+    desc: "A GitHub Actions event that lets one repository (or an external system) trigger a workflow in ANOTHER repo via an authenticated API POST. Used for cross-repo pipelines — e.g. an app repo tells a central deploy repo 'build and ship version X'."
+    extras:
+      - label: Why
+        text: "GITHUB_TOKEN is scoped to its own repo and can't dispatch elsewhere, so cross-repo triggering needs a dedicated fine-grained token, scoped to only the target repo."
+      - label: Say
+        text: "\"repository_dispatch is how you fan a deploy out to a repo that owns the runner, keeping build and deploy privileges separate.\""
+    cloze:
+      text: "To trigger a workflow in a DIFFERENT repository, POST a {} event with a token scoped to the target repo."
+      answer: "repository_dispatch"
+
+  - topic: "The 'read the value, don't recompute it' race"
+    desc: "When two independent jobs each compute 'latest + 1' for the same commit, they RACE and disagree — one sees the other's new value and lands one higher. The fix: one job is the source of truth (it creates the value); everyone else READS what it created, never recomputes it."
+    extras:
+      - label: "e.g."
+        text: "A release job that recomputed the next version got 0.1.14 while the tagger cut 0.1.13, then waited forever for a tag that would never exist. It should have waited for, and read, the tag on the commit."
+      - label: Principle
+        text: "Idempotency + single source of truth. Two computations of 'the next number' cannot be made to agree; only reading the one that exists can."
+
+  - topic: "Mutable :latest + IfNotPresent = a silent no-op deploy"
+    desc: "With a mutable tag like `:latest` and `imagePullPolicy: IfNotPresent`, the kubelet sees the tag already present on the node and never pulls the new image. Every step — build, load, rollout — reports success, and the cluster keeps running the OLD code."
+    extras:
+      - label: Fix
+        text: "Use CONTENT-ADDRESSED tags (the git SHA, or a hash of the build) so a new build is a NEW tag. The Pod spec then changes, and `kubectl apply` performs a real rolling update — no forced restart needed."
+      - label: Trap
+        text: "`:latest` is a POINTER, not an identity — nothing downstream can tell two builds apart, so caches and pull-policies all short-circuit."
+    cloze:
+      text: "To make every build deployable, tag images by {} (the commit SHA) rather than a mutable pointer like :latest."
+      answer: "content"
+      alts:
+        - content address
+        - the commit sha
+
+  - topic: "Concurrency groups (and dropped runs)"
+    desc: "A `concurrency:` group serialises or cancels overlapping workflow runs that share a key — e.g. only one deploy to an environment at a time. The side effect: a run can be CANCELLED or dropped when a newer one supersedes it, so a merge's deploy may silently not happen."
+    extras:
+      - label: Recovery
+        text: "Re-trigger by pushing again — even an empty commit re-fires the `push` event and the deploy runs."
+      - label: Why it exists
+        text: "Two deploys racing to the same environment can interleave and leave it in a mixed state; the group forces order."
+
+  - topic: "Self-hosted runner scoping"
+    desc: "A self-hosted CI runner executes jobs on YOUR hardware. On a personal account a runner is registered to ONE repository, so no other repo — including a stranger's fork opening a PR — can reach it. Its labels (e.g. self-hosted) decide which jobs it accepts."
+    extras:
+      - label: Risk
+        text: "A runner that untrusted code can reach is a foothold on your machine. Scope it tightly; never let fork PRs run privileged jobs on it."
+      - label: Contrast
+        text: "GitHub-HOSTED runners are fresh per job and destroyed after — a fork's PR gets no secrets and no persistence."
+
+  - topic: "Branch protection & required status checks"
+    desc: "Rules on a protected branch (main) that block direct pushes and require a pull request whose CI checks are GREEN — and often an approving review — before merge. It makes 'tests pass' a precondition of landing code, not an afterthought."
+    extras:
+      - label: Admin merge
+        text: "A repo admin can override (merge despite an unmet REVIEW requirement) with `gh pr merge --admin` — used for solo projects, but it should never bypass FAILING CI, only a missing human reviewer."
+      - label: Say
+        text: "\"Required checks turn the pipeline into a gate: main only ever contains code that passed.\""
+
+  - topic: "Deploy on merge: version-tag then release"
+    desc: "A common continuous-deployment shape: merging to main fires TWO workflows on the same push event. One (version-tag) cuts the release tag; the other (release) reads that tag and dispatches the actual build-and-deploy to a runner. Merge → tag → deploy, with no manual step."
+    extras:
+      - label: Why two workflows
+        text: "The recursion guard means the tag can't trigger the deploy, so both ride the push:main event; release WAITS for the tag to land, then reads it — it doesn't recompute the version."
+      - label: The version IS the image identity
+        text: "The version is baked into the image (a VERSION file) and is half the image tag, so cutting a tag actually changes what gets built and shipped."
+
+  - topic: "Rolling update vs blue-green vs canary"
+    desc: "Strategies for shipping a new version with minimal disruption."
+    extras:
+      - label: Rolling
+        text: "Replace pods a few at a time; the default in Kubernetes. Cheap, but old and new run together briefly."
+      - label: Blue-green
+        text: "Stand up the new version fully (green) beside the old (blue), then switch traffic at once; instant rollback by switching back."
+      - label: Canary
+        text: "Route a small slice of traffic to the new version, watch metrics, then ramp up or roll back."
+    match:
+      - ["rolling", "swap pods a few at a time — old and new overlap briefly"]
+      - ["blue-green", "full new stack beside the old, flip traffic at once"]
+      - ["canary", "a small traffic slice first, ramp on good metrics"]

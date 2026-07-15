@@ -437,3 +437,30 @@ cards:
       - 5. Cache miss → it asks the upstream RECURSIVE resolver (your router / ISP / 1.1.1.1)
       - 6. That resolver walks root → TLD → authoritative, caches the answer, returns the IP
       - 7. Only NOW does the app open a TCP connection to that IP
+
+  - topic: "Optimistic concurrency control"
+    desc: "Let concurrent writers proceed WITHOUT locks, and detect conflicts at write time. Each row carries a VERSION; a client reads version N, and its update says 'set … WHERE version = N'. If someone else wrote first (version is now N+1), the update matches zero rows and you reject with a 409 instead of silently clobbering their change."
+    extras:
+      - label: vs last-write-wins
+        text: "The default (just overwrite) SILENTLY destroys the earlier write — someone plays on their phone, opens their laptop, and the stale laptop copy wipes the evening's progress with no error."
+      - label: When
+        text: "Best when conflicts are RARE (optimistic). Frequent conflicts favour pessimistic locking. The client decides what to do with a 409 — merge, prompt, or refetch."
+    cloze:
+      text: "Optimistic concurrency detects a conflicting write by checking a {} column and returning 409 instead of overwriting."
+      answer: "version"
+
+  - topic: "Derived columns: never trust a client-supplied aggregate"
+    desc: "When a value can be COMPUTED from data the server already holds (a score, a total, a count), compute it SERVER-SIDE on write — don't accept it from the client. If the client could send both a document and its 'score', it could send a document worth 10 and a score of 10,000, and any leaderboard reading that column would be forgeable."
+    extras:
+      - label: Principle
+        text: "Make the two disagreeing structurally impossible, not merely unlikely: derive the projection from the source of truth so they can't drift."
+      - label: "e.g."
+        text: "Store the full progress blob; extract coins/correct/answered server-side into promoted columns so a leaderboard query is cheap AND unforgeable."
+
+  - topic: "Database-per-service vs shared schema"
+    desc: "Each microservice OWNS its own database (schema); no other service reads or writes those tables directly — they talk through the service's API. Sharing a schema across services is the DISTRIBUTED-MONOLITH trap: a migration in one silently breaks another, and neither can deploy independently."
+    extras:
+      - label: Trap
+        text: "Two services reading one schema couples them at the worst layer — you get the operational cost of microservices with the coupling of a monolith."
+      - label: Nuance
+        text: "Sharing a database SERVER (one Postgres pod, several databases) is fine — that's resource consolidation. Sharing a SCHEMA is the coupling to avoid."

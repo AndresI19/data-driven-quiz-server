@@ -229,3 +229,22 @@ cards:
       text: The classic attack-enumeration checklist — Spoofing, Tampering, Repudiation, Info-disclosure, DoS, Elevation — is {}.
       answer: STRIDE
     hint: Enumerate the attacks before defending — a six-letter checklist.
+
+  - topic: "The role comes from the issuer, not the caller"
+    desc: "A privilege (admin, tenant, scope) must be decided by the token ISSUER and SIGNED into the token — never asserted by the client and never re-derived by each verifier. The auth service checks its private admin list at mint time and signs `admin: true`; a client cannot ask to be admin, edit the claim, or forge a token, because it doesn't hold the signing key."
+    extras:
+      - label: Why not check per-service
+        text: "If every service re-checked 'is this user an admin?', every service would need the admin list — so the list would be everywhere, which is to say not a secret. Put the answer in the signed token instead."
+      - label: Say
+        text: "\"The gateway can ENFORCE a policy it isn't allowed to READ, because the decision is already signed into the token.\""
+    cloze:
+      text: "An authorization claim like admin must be set by the {} and signed, not asserted by the client."
+      answer: "issuer"
+
+  - topic: "Pseudonymous identity (deliberately holding no PII)"
+    desc: "An identity that ties activity to a stable handle WITHOUT collecting personally identifiable information — no email, no real name. A user is a random id plus a credential, and nothing sensitive sits behind it. The trade: there's no account RECOVERY (recovery needs an email, and an email is PII)."
+    extras:
+      - label: Why
+        text: "Holding no PII shrinks the blast radius of a breach to near nothing and sidesteps most privacy/consent obligations — a good fit when the data is low-stakes (a game profile), a bad fit for anything real."
+      - label: Public vs secret
+        text: "Keep the PUBLIC identifier (a display handle, safe to show anywhere) separate from the CREDENTIAL — never print the thing that proves who you are."

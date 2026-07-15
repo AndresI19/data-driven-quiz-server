@@ -411,3 +411,57 @@ cards:
       - Private subnet — no IGW route; reaches out via a NAT Gateway, but nothing dials in (databases, app servers live here)
       - One subnet = one AZ — spread subnets across AZs so one zone failing doesn't take you down
       - "The CIDR suffix sizes it: a /24 subnet = 256 IPs (minus ~5 the cloud reserves)"
+
+  - topic: "PersistentVolume (PV) and PersistentVolumeClaim (PVC)"
+    desc: "Storage that OUTLIVES a pod. A PersistentVolume is a piece of storage in the cluster; a PersistentVolumeClaim is a pod's REQUEST for some (size + access mode). Kubernetes binds a claim to a volume, and the pod mounts the claim — so the data survives the pod being rescheduled, restarted, or replaced."
+    extras:
+      - label: Why
+        text: "A container's own filesystem is ephemeral — it dies with the pod. Anything that must persist (a database's files, uploaded content) lives on a PV."
+      - label: Access modes
+        text: "ReadWriteOnce (one node), ReadOnlyMany, ReadWriteMany. A single Postgres uses RWO; the volume is claimed by exactly one pod."
+    match:
+      - ["PersistentVolume", "the actual storage that exists in the cluster"]
+      - ["PersistentVolumeClaim", "a pod's request for storage, bound to a PV"]
+      - ["StorageClass", "a template for provisioning PVs dynamically"]
+
+  - topic: "A mount is not network traffic"
+    desc: "Attaching a volume to a pod is NOT a network call — it's a filesystem mount, local to the node. Nothing flows along it the way a request flows between services. In an architecture diagram a mount is a plain line, not an arrow; a database CONNECTION (SQL over TCP) is the traffic."
+    extras:
+      - label: Trap
+        text: "Drawing a volume mount as traffic implies a request path that doesn't exist. The pod reads/writes files; there's no client and server."
+      - label: Seed-then-mount
+        text: "A common pattern: an initContainer seeds default content onto a fresh volume once (cp -rn, which never overwrites), then the app mounts it — often READ-ONLY, so a web server can't rewrite the data it serves."
+
+  - topic: "CrashLoopBackOff — what it means and how to read it"
+    desc: "A pod's container keeps starting and immediately dying, so Kubernetes restarts it with an EXPONENTIAL back-off (hence the growing delay). It's a symptom, not a cause — the container is exiting non-zero on startup."
+    extras:
+      - label: Common causes
+        text: "A bad config/missing env var, a failed migration, an app that can't reach a dependency at boot, or an image that doesn't match the data it expects (old code against a migrated schema)."
+      - label: Diagnose
+        text: "`kubectl logs <pod> --previous` (the crashed instance's logs), then `kubectl describe pod` for the exit code and events. Restart count climbing = it never became healthy."
+    inverse: true
+
+  - topic: "Declarative apply vs imperative set-image"
+    desc: "`kubectl apply -f` is DECLARATIVE — you describe the desired state in manifests and the cluster reconciles toward it. `kubectl set image` (or edit/patch) is IMPERATIVE — a direct one-off change. The imperative change works, but it DRIFTS from your manifests, so the next `apply` reverts it."
+    extras:
+      - label: Rule
+        text: "Treat the manifests (in git) as the source of truth. An imperative hotfix is fine to unblock, but fold it back into the manifests or it will be silently undone."
+      - label: Say
+        text: "\"apply is the desired state; set-image is a hotfix that lives outside it until you commit it back.\""
+
+  - topic: "initContainers"
+    desc: "Containers that run to completion, IN ORDER, BEFORE the pod's main containers start. Used for one-time setup that must finish first: wait for a dependency, run a database migration, seed a volume, or fix permissions."
+    extras:
+      - label: "e.g."
+        text: "A 'wait-for-db' init that blocks until Postgres answers, then a 'migrate' step, so the app container only starts against a ready, migrated database."
+      - label: Contrast
+        text: "A sidecar runs ALONGSIDE the app for the pod's whole life (a proxy, a log shipper); an initContainer runs FIRST and exits."
+
+  - topic: "Readiness vs liveness probes"
+    desc: "Both are health checks Kubernetes runs against a container, answering different questions. A LIVENESS probe asks 'is it broken?' — failing it RESTARTS the pod. A READINESS probe asks 'can it serve traffic yet?' — failing it removes the pod from the Service's endpoints (no restart) until it recovers."
+    extras:
+      - label: Trap
+        text: "Use readiness for slow starts and transient overload (don't send traffic yet); use liveness only for truly wedged states. A too-aggressive liveness probe restart-loops a pod that just needed a moment."
+    match:
+      - ["liveness probe", "is it broken? — fail restarts the pod"]
+      - ["readiness probe", "can it serve yet? — fail pulls it from the Service"]
