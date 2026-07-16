@@ -93,6 +93,22 @@ export function endCard(c: GameCard, feedback: string, opts: EndCardOptions = {}
   }
 }
 
+/**
+ * Close an all-or-nothing graded card: choose the note from the outcome (timed out / all right /
+ * wrong), wrap it with gradeNote, and end the card. Shared by the four grid/select/label modes.
+ */
+export function endGraded(
+  c: GameCard,
+  allRight: boolean,
+  timedOut: boolean,
+  okMsg: string,
+  badMsg: string,
+  opts: EndCardOptions = {},
+): void {
+  const note = timedOut ? '⏱ Timed out' : allRight ? okMsg : badMsg;
+  endCard(c, gradeNote(allRight, note), opts);
+}
+
 /** The number keys that pick an option, in the order they are drawn. */
 const CHOICE_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
