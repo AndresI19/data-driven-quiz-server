@@ -8,8 +8,6 @@ vi.mock('@platform/ui/auth', () => ({
 }));
 
 import { isGuest, isSignedIn } from '@platform/ui/auth';
-import { CURRENCY } from '../runtime/currency.js';
-import { DB, repairDB } from '../runtime/db.js';
 import {
   LOGIN_GRANT,
   claimGrants,
@@ -18,7 +16,9 @@ import {
   guestWatermarkHtml,
   hasUnclaimed,
   mailButtonHtml,
-} from './grants.js';
+} from '../src/client/garden/grants.js';
+import { CURRENCY } from '../src/client/runtime/currency.js';
+import { DB, repairDB } from '../src/client/runtime/db.js';
 
 const signedIn = isSignedIn as unknown as ReturnType<typeof vi.fn>;
 const guest = isGuest as unknown as ReturnType<typeof vi.fn>;

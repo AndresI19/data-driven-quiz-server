@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { GameCard } from '../../shared/card-schema.js';
-import { baseSeconds } from './timer.js';
+import { baseSeconds } from '../src/client/quiz/timer.js';
+import type { GameCard } from '../src/shared/card-schema.js';
 
 /**
  * Characterization tests for baseSeconds() — the content-aware per-mode timer budget. It is a wall

@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { CardsPayload, GameCard } from '../../shared/card-schema.js';
-import { app, initData } from '../runtime/data.js';
-import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import { renderQ } from './engine.js';
-import { stopTicker } from './timer.js';
+import { renderQ } from '../src/client/quiz/engine.js';
+import { stopTicker } from '../src/client/quiz/timer.js';
+import { app, initData } from '../src/client/runtime/data.js';
+import { DB } from '../src/client/runtime/db.js';
+import { S } from '../src/client/runtime/state.js';
+import type { CardsPayload, GameCard } from '../src/shared/card-schema.js';
 
 // setup.ts stubs the Web Audio sound module, but its mock predates any test that drove renderQ, so it
 // omits sndFlip (which renderQ calls on every card). Re-mock the module for this file WITH sndFlip.
-vi.mock('../audio/sound.js', () => ({
+vi.mock('../src/client/audio/sound.js', () => ({
   audioInit: vi.fn(),
   setVolume: vi.fn(),
   sndFlip: vi.fn(),

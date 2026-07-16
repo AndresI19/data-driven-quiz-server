@@ -2,6 +2,10 @@
 node_modules/
 dist/
 coverage/
+
+# Tests never belong in the image; src/ is now shippable-only.
+test/
+**/*.test.ts
 .git/
 .github/
 .vite/

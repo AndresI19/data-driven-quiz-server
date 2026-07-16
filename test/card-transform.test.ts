@@ -13,7 +13,7 @@ import {
   multi,
   toGameCard,
   topicWords,
-} from './card-transform.js';
+} from '../src/shared/card-transform.js';
 
 const raw = (over: Partial<RawCard>): RawCard => ({ id: 'A1', cat: 'A', topic: '', desc: '', ...over });
 

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { GameCard } from '../../shared/card-schema.js';
-import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import type { Session } from '../runtime/state.js';
-import { finalize, pickDir } from './session.js';
+import { finalize, pickDir } from '../src/client/quiz/session.js';
+import { DB } from '../src/client/runtime/db.js';
+import { S } from '../src/client/runtime/state.js';
+import type { Session } from '../src/client/runtime/state.js';
+import type { GameCard } from '../src/shared/card-schema.js';
 
 /**
  * Characterization tests for the two pure-ish decisions in session.ts:

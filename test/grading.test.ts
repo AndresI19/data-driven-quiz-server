@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { czOK, ivOK } from './grading.js';
+import { czOK, ivOK } from '../src/client/quiz/grading.js';
 
 // The two graders decide whether a player was right, which makes them the highest-consequence pure
 // functions in the app — and until now the only completely untested ones. These are characterization

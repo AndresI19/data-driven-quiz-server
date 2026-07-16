@@ -1,8 +1,4 @@
 import { beforeEach, describe, expect, test } from 'vitest';
-import type { CardsPayload, GameCard } from '../../shared/card-schema.js';
-import { app, initData } from '../runtime/data.js';
-import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
 import {
   renderBF,
   renderCS,
@@ -13,7 +9,11 @@ import {
   renderIV,
   renderMA,
   renderMS,
-} from './modes.js';
+} from '../src/client/quiz/modes.js';
+import { app, initData } from '../src/client/runtime/data.js';
+import { DB } from '../src/client/runtime/db.js';
+import { S } from '../src/client/runtime/state.js';
+import type { CardsPayload, GameCard } from '../src/shared/card-schema.js';
 
 /**
  * Characterization tests for the seven mode renderers.

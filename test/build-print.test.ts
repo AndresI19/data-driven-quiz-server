@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { CardsPayload, GameCard } from '../shared/card-schema.js';
-import { buildPrintHtml } from './build-print.js';
+import { buildPrintHtml } from '../src/print/build-print.js';
+import type { CardsPayload, GameCard } from '../src/shared/card-schema.js';
 
 /**
  * Characterization tests for the duplex print sheet's BACK_ORDER interleave. Fronts print in reading
