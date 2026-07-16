@@ -98,6 +98,21 @@ export const DB: DBShape = (() => {
 if (!DB.stats) DB.stats = {};
 if (!DB.decks) DB.decks = [];
 if (!DB.sessions) DB.sessions = [];
+// A session can predate fields the UI reads unconditionally, or arrive malformed from a synced
+// document. One entry missing `missedIds` made setup() throw at `s.missedIds.length` — mid-render,
+// AFTER it had already pushed /home and switched on the ambient background — so "quit to menu"
+// changed the URL and the effects but left the quiz on screen, wedging navigation and leaving the
+// pause button dead. Backfill what every consumer assumes; drop entries too broken to repair.
+DB.sessions = DB.sessions.filter((s) => !!s && typeof s === 'object');
+DB.sessions.forEach((s) => {
+  if (!Array.isArray(s.missedIds)) s.missedIds = [];
+  if (!s.notes || typeof s.notes !== 'object') s.notes = {};
+  if (typeof s.noteCount !== 'number') {
+    s.noteCount = Object.keys(s.notes).filter((k) => (s.notes[k] || '').trim()).length;
+  }
+});
+// A resume snapshot with no question list would throw the same way in the home resume banner.
+if (DB.active && !Array.isArray(DB.active.q)) DB.active = null;
 if (!DB.favorites) DB.favorites = {};
 if (!DB.flags) DB.flags = {};
 // Garden(s): shared wallet lives on DB; each garden holds only cells/hideFg/bg.
