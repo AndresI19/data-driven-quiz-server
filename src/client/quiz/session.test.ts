@@ -37,7 +37,9 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
 describe('pickDir — recall short-circuit', () => {
   test('a recall card is always fb, ignoring the requested direction', () => {
     expect(pickDir('mixed', card({ recall: true }))).toBe('fb');
-    expect(pickDir('cz', card({ recall: true, cloze: { pre: '', post: '', answer: 'x', alts: [] } }))).toBe('fb');
+    expect(pickDir('cz', card({ recall: true, cloze: { pre: '', post: '', answer: 'x', alts: [] } }))).toBe(
+      'fb',
+    );
     expect(pickDir('iv', card({ recall: true, inverse: true }))).toBe('fb');
   });
 });

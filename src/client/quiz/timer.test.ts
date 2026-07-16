@@ -83,8 +83,7 @@ describe('baseSeconds — flat-rate modes', () => {
 });
 
 describe('baseSeconds — cw (read the code): max(20, lines * 3 + 12)', () => {
-  const withLines = (n: number): GameCard =>
-    card({ code: { lang: 'ts', lines: Array(n).fill('x') } });
+  const withLines = (n: number): GameCard => card({ code: { lang: 'ts', lines: Array(n).fill('x') } });
   test('1 line → 15 clamped to 20', () => {
     expect(baseSeconds(withLines(1), 'cw')).toBe(20);
   });
@@ -100,8 +99,7 @@ describe('baseSeconds — cw (read the code): max(20, lines * 3 + 12)', () => {
 });
 
 describe('baseSeconds — cs (select lines): max(26, lines * 4 + 12)', () => {
-  const withLines = (n: number): GameCard =>
-    card({ code: { lang: 'ts', lines: Array(n).fill('x') } });
+  const withLines = (n: number): GameCard => card({ code: { lang: 'ts', lines: Array(n).fill('x') } });
   test('3 lines → 24 clamped to 26', () => {
     expect(baseSeconds(withLines(3), 'cs')).toBe(26);
   });

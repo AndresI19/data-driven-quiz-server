@@ -61,7 +61,10 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
 });
 
 const CLOZE = { pre: 'Splitting a dataset across nodes is ', post: '.', answer: 'sharding', alts: ['x'] };
-const MATCH: [string, string][] = [['LB', 'spreads'], ['CDN', 'caches']];
+const MATCH: [string, string][] = [
+  ['LB', 'spreads'],
+  ['CDN', 'caches'],
+];
 const MANIFEST = { lines: ['kind: {0}'], blanks: ['Deployment'], distractors: ['Service'] };
 const CODE = { lang: 'dockerfile', lines: ['FROM node', 'RUN x', 'CMD y'] };
 const CODESELECT = { prompt: 'select', answer: [1] };

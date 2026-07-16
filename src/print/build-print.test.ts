@@ -55,9 +55,7 @@ describe('buildPrintHtml — BACK_ORDER interleave', () => {
 
   test('backs print in swapped order [1,0,3,2,5,4,7,6]', () => {
     const ids = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'];
-    expect(slots(pages(payloadOf(ids))[1])).toEqual([
-      'C1', 'C0', 'C3', 'C2', 'C5', 'C4', 'C7', 'C6',
-    ]);
+    expect(slots(pages(payloadOf(ids))[1])).toEqual(['C1', 'C0', 'C3', 'C2', 'C5', 'C4', 'C7', 'C6']);
   });
 
   test('a short final group pads with empties, and the swap still holds', () => {

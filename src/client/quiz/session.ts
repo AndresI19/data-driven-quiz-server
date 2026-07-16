@@ -1,5 +1,4 @@
 import type { GameCard } from '../../shared/card-schema.js';
-import { availableModes, supportsMode } from './capabilities.js';
 import { stopSplashes } from '../garden/splash.js';
 import { setup } from '../pages/home.js';
 // Session lifecycle + persistence: begin/resume/retry/advance/finalize and the start-from-setup
@@ -8,6 +7,7 @@ import { CARDS, app, byId } from '../runtime/data.js';
 import { type ActiveSnap, DB, saveDB, stamp } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import { shuffle } from '../runtime/util.js';
+import { availableModes, supportsMode } from './capabilities.js';
 import { renderQ } from './engine.js';
 import { rate } from './grading.js';
 import { stopTicker } from './timer.js';

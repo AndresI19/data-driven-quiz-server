@@ -1,5 +1,4 @@
 import type { GameCard } from '../../shared/card-schema.js';
-import { resolveMode } from './capabilities.js';
 import { audioInit, sndFlip } from '../audio/sound.js';
 import { comboMult } from '../garden/economy.js';
 import { setScreenBg } from '../garden/screenbg.js';
@@ -12,6 +11,7 @@ import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { esc, fmtClock, setKey, shuffle } from '../runtime/util.js';
+import { resolveMode } from './capabilities.js';
 import {
   renderBF,
   renderCS,

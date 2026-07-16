@@ -30,10 +30,12 @@ npm run build       # vite build → dist/client
 npm start           # tsx src/server/index.ts
 npm run serve       # build && start
 npm run typecheck   # tsc --noEmit
+npm run lint        # biome check src
 npm test            # vitest run  (13 files)
 ```
 
-**There is no linter.** `typecheck` is the only static gate.
+**Static gates:** `npm run lint` (Biome — import sorting + formatting) and `npm run typecheck`
+(`tsc`). Both are enforced by the `typecheck-test` CI job, so run lint before opening a PR.
 
 ## The cards/ directory — the whole point of the app
 
