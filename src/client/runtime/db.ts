@@ -94,6 +94,11 @@ export interface DBShape {
   // Welcome coin awards, claimed via the garden mail button. `login` is granted for having an account;
   // `contact` (deferred) will be granted for sharing a LinkedIn/company. See garden/grants.ts.
   grant: { login: GrantState; contact: GrantState };
+  // Which identity this document belongs to — a username, or 'guest'. localStorage is a single
+  // browser-global store, so without this tag one user's document bleeds into the next on the same
+  // browser (garden, coins, and grant state all carried over). reconcileOwner() in runtime/auth.ts
+  // reads it on load and resets the document when it belongs to a different signed-in user.
+  owner?: string;
 }
 
 export const DB: DBShape = (() => {
@@ -199,6 +204,18 @@ export function repairDB(): void {
 
 // Repair the local document once, at import — the same pass pull() re-runs on an adopted document.
 repairDB();
+
+/**
+ * Discard the current document and rebuild a fresh default in its place. Used by reconcileOwner()
+ * when the stored document belongs to a different signed-in user — clearing every key and re-running
+ * repairDB() gives exactly the default a first-time visitor starts with (empty stats/sessions, a
+ * starter garden, an unearned grant), rather than trying to enumerate what to null out by hand.
+ */
+export function resetDoc(): void {
+  const bag = DB as unknown as Record<string, unknown>;
+  for (const k of Object.keys(bag)) delete bag[k];
+  repairDB();
+}
 
 /**
  * Anything that wants to know the document changed. There is exactly ONE write point in this app —

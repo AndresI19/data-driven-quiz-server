@@ -4,7 +4,7 @@
 // What IS here is the part only the quiz has: reconciling a player's document with the server.
 
 import { authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
-import { DB, repairDB, saveDB } from './db.js';
+import { DB, repairDB, resetDoc, saveDB } from './db.js';
 
 // The app's mount prefix (Vite's baked-in base, always trailing-slashed; '/' at root) — NOT
 // window.location.pathname. The pathname is the live SPA route (/home, /quiz, …), so reading it here
@@ -24,6 +24,28 @@ function localIsEmpty(): boolean {
   return (
     (DB.sessions?.length ?? 0) === 0 && (DB.coins ?? 0) === 0 && Object.keys(DB.stats ?? {}).length === 0
   );
+}
+
+/** The identity that owns the local document: a username, 'guest', or null when unchosen. */
+function ownerId(): string | null {
+  const id = current();
+  if (!id) return null;
+  return id.mode === 'guest' ? 'guest' : (id.username ?? null);
+}
+
+/**
+ * Scope the browser-global document to the current identity. Called once at boot, BEFORE pull(): if
+ * the stored document belongs to a DIFFERENT signed-in user it is discarded and rebuilt fresh, so one
+ * account's garden, coins, and grant state can never bleed into the next on a shared browser. The real
+ * data is safe on that user's server row and is re-pulled when they sign back in. A 'guest'-owned
+ * document is exempt — it is either this guest's, or a guest's play that pull() migrates on sign-up —
+ * and a legacy document with no owner tag is grandfathered to whoever is here now (a one-time grace).
+ */
+export function reconcileOwner(): void {
+  const cur = ownerId();
+  if (DB.owner && DB.owner !== 'guest' && DB.owner !== cur) resetDoc();
+  DB.owner = cur ?? undefined;
+  saveDB();
 }
 
 /**
@@ -48,6 +70,8 @@ export async function pull(): Promise<PullOutcome> {
   if (!id) return { kind: 'offline' };
 
   if (!data) {
+    DB.owner = id.username; // this local doc is now this account's — tag it before it is uploaded
+    saveDB();
     setIdentity({ ...id, version: 0 });
     await push();
     return { kind: 'uploaded-local' };
@@ -56,6 +80,7 @@ export async function pull(): Promise<PullOutcome> {
   if (localIsEmpty()) {
     Object.assign(DB, data);
     repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
+    DB.owner = id.username; // the adopted doc belongs to this account
     if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
     saveDB();
     setIdentity({ ...id, version });
@@ -70,6 +95,7 @@ export async function pull(): Promise<PullOutcome> {
   }
   Object.assign(DB, data);
   repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
+  DB.owner = id.username; // the adopted doc belongs to this account
   if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
   saveDB();
   setIdentity({ ...id, version });
