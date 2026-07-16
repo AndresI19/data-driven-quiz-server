@@ -77,7 +77,14 @@ async function boot(): Promise<void> {
   // the greeting belongs to the home page, and account creation stays two pages.
   mountAccountFab({
     nudgeGuest: true,
-    onUpgrade: () => mountGate({ onDone: () => void pull().finally(() => route()) }),
+    onUpgrade: () =>
+      mountGate({
+        onDone: () =>
+          void pull().finally(() => {
+            ensureLoginGrant(); // in-session sign-in earns the grant NOW, without a page refresh
+            route();
+          }),
+      }),
   });
   // Identity is settled now (a first visitor was just defaulted to guest above). Scope the document to
   // it BEFORE pull(): a doc left by a different signed-in user is discarded here so it neither renders
