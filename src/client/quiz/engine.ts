@@ -3,6 +3,7 @@ import { audioInit, sndFlip } from '../audio/sound.js';
 import { comboMult } from '../garden/economy.js';
 import { setScreenBg } from '../garden/screenbg.js';
 import { setup } from '../pages/home.js';
+import { COIN } from '../runtime/currency.js';
 // Quiz engine: the HUD, the per-card dispatcher (renderQ), fav/flag + notes decoration, arrow-key
 // navigation with peek-back, and the results screen. Ported verbatim.
 import { CATCOL, CATS, app, byId } from '../runtime/data.js';
@@ -129,7 +130,7 @@ export function decorateCard(c: GameCard): void {
   row.appendChild(qc);
   const aside = document.createElement('aside');
   aside.className = 'notes';
-  aside.innerHTML = `<div class="coinbar" id="coinbar"><span class="cb-ico">\u{1FA99}</span> <span class="cb-coins">${DB.infinite ? '∞' : DB.coins}</span><span class="cb-combo${DB.combo >= 2 ? ' hot' : ''}">\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}</span></div><div class="col-h">Notes</div><textarea class="noteta" placeholder="Notes on this card…"></textarea>`;
+  aside.innerHTML = `<div class="coinbar" id="coinbar"><span class="cb-ico">${COIN}</span> <span class="cb-coins">${DB.infinite ? '∞' : DB.coins}</span><span class="cb-combo${DB.combo >= 2 ? ' hot' : ''}">\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}</span></div><div class="col-h">Notes</div><textarea class="noteta" placeholder="Notes on this card…"></textarea>`;
   row.appendChild(aside);
   const nta = aside.querySelector('.noteta') as HTMLTextAreaElement;
   nta.value = ses.notes?.[c.id] || '';
@@ -218,7 +219,7 @@ export function results(): void {
     .join('');
   app.innerHTML = `<div class="wrap"><div class="panel">
     <div class="score">${pct}<small>%</small></div>
-    <div class="scoreline">${correct} of ${total} correct · ⏱ ${fmtClock(ses.elapsedMs)}${ses.coins ? ` · \u{1FA99} ${ses.coins} earned` : ''}${ses.setBonus ? ` <span class="tiny">(+${ses.setBonus} set bonus)</span>` : ''} · saved to sessions</div>
+    <div class="scoreline">${correct} of ${total} correct · ⏱ ${fmtClock(ses.elapsedMs)}${ses.coins ? ` · ${COIN} ${ses.coins} earned` : ''}${ses.setBonus ? ` <span class="tiny">(+${ses.setBonus} set bonus)</span>` : ''} · saved to sessions</div>
     <div class="actions center">
       ${missed.length ? `<button class="btn primary" id="retry">Retry missed (${missed.length})</button>` : ''}
       <button class="btn ghost" id="redo">Redo all (${allCards.length})</button>

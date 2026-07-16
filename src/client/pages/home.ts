@@ -9,6 +9,7 @@ import { lifetime } from '../quiz/grading.js';
 import { dismissTransients } from '../quiz/pause.js';
 import { discardActive, resumeActive, retrySession, reviewIds, start } from '../quiz/session.js';
 import { stopTicker } from '../quiz/timer.js';
+import { COIN, CURRENCY } from '../runtime/currency.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
 // favorites + sessions panels, the live garden mini-render, and the debug menu. Ported verbatim.
 import { CARDS, CATCOL, CATS, app, byId } from '../runtime/data.js';
@@ -31,7 +32,7 @@ import { reviewSession } from './review.js';
 function savedNote(): string {
   if (isSignedIn()) {
     const who = current()?.username ?? '';
-    return `<div class="saved-note ok">☁️ Signed in as <b>${esc(who)}</b>. Your progress — quiz history, notes, gardens and coins — is saved to your account and follows you to any browser. Sign out from the top-right to switch users.</div>`;
+    return `<div class="saved-note ok">☁️ Signed in as <b>${esc(who)}</b>. Your progress — quiz history, notes, gardens and ${CURRENCY.many} — is saved to your account and follows you to any browser. Sign out from the top-right to switch users.</div>`;
   }
   if (isGuest()) {
     return `<div class="saved-note">💾 You are playing as a <b>guest</b>. Your progress is saved in <b>this browser only</b> — clearing site data, private browsing, or opening the app elsewhere will start you fresh. Back it up any time with <b>Download JSON</b> in the 🪲 menu (bottom-right), or create an account from the account chip (top-right) to sync it.</div>`;
@@ -179,7 +180,7 @@ export function setup(): void {
           : ''
       }
       <button class="homegarden" id="homegarden" title="Open the garden editor">
-        <div class="gd-head"><span class="lab gdtitle">\u{1F331} My Garden</span><span class="gdcur"><span class="gscore big" title="achievement — total across all gardens">\u{1F3C6} ${totalGardenValue()}</span><span class="gscore" title="this garden">\u{1F3C5} ${gardenValue()}</span><span class="fab-coins">\u{1FA99} ${DB.infinite ? '∞' : DB.coins}</span></span></div>
+        <div class="gd-head"><span class="lab gdtitle">\u{1F331} My Garden</span><span class="gdcur"><span class="gscore big" title="achievement — total across all gardens">\u{1F3C6} ${totalGardenValue()}</span><span class="gscore" title="this garden">\u{1F3C5} ${gardenValue()}</span><span class="fab-coins">${COIN} ${DB.infinite ? '∞' : DB.coins}</span></span></div>
         <div class="gdboardwrap"><div class="gboard homeboard">${gardenArt()}</div></div>
         <div class="gd-cta">Click to tend it →</div>
       </button>

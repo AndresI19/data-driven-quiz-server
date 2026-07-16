@@ -67,6 +67,11 @@ export interface Settings {
   timeSpeed: number;
   hints: boolean;
 }
+/** A one-time coin award: 'none' before it is earned, 'pending' once earned but unclaimed (the garden
+    mail marker shows), 'claimed' after the player collects it. Lives on the synced document so a claim
+    on one browser suppresses the marker on every other. */
+export type GrantState = 'none' | 'pending' | 'claimed';
+
 export interface DBShape {
   stats: Record<string, { seen: number; missed: number }>;
   active: ActiveSnap | null;
@@ -86,6 +91,9 @@ export interface DBShape {
   gardenIdx: number;
   garden: Garden; // === gardens[gardenIdx], the active board
   settings: Settings;
+  // Welcome coin awards, claimed via the garden mail button. `login` is granted for having an account;
+  // `contact` (deferred) will be granted for sharing a LinkedIn/company. See garden/grants.ts.
+  grant: { login: GrantState; contact: GrantState };
 }
 
 export const DB: DBShape = (() => {
@@ -128,6 +136,11 @@ export function repairDB(): void {
   if (DB.active && !Array.isArray(DB.active.q)) DB.active = null;
   if (!DB.favorites) DB.favorites = {};
   if (!DB.flags) DB.flags = {};
+  // Welcome-coin grant ledger. A legacy or freshly-created document has none; default every slot to
+  // 'none' so garden/grants.ts can promote 'none'→'pending' when the award is earned.
+  if (!DB.grant || typeof DB.grant !== 'object') DB.grant = { login: 'none', contact: 'none' };
+  if (DB.grant.login == null) DB.grant.login = 'none';
+  if (DB.grant.contact == null) DB.grant.contact = 'none';
   // Garden(s): shared wallet lives on DB; each garden holds only cells/hideFg/bg.
   // Migrate a legacy single garden (wallet fields on DB.garden) up to the shared level.
   {

@@ -12,8 +12,8 @@ vi.mock('@platform/ui/auth', () => ({
 }));
 
 import { authFetch } from '@platform/ui/auth';
-import { DB, repairDB } from './db.js';
 import { pull } from './auth.js';
+import { DB, repairDB } from './db.js';
 
 const fetchMock = authFetch as unknown as ReturnType<typeof vi.fn>;
 
