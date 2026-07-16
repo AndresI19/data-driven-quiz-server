@@ -26,34 +26,6 @@ import {
   waterMask,
 } from './catalog.js';
 
-// Mini isometric 4x4 all-grass render for the home button: tree N, stag S, rock E, log W.
-export function fabScene(): string {
-  const HX = 11;
-  const HY = 5.5;
-  const OX = 3 * HX;
-  const win = (img: string, fw: number, fh: number, dh: number): string => {
-    const s = dh / fh;
-    return `background-image:url(${img});width:${Math.round(fw * s)}px;height:${dh}px;background-size:auto ${dh}px`;
-  };
-  let out = '';
-  for (let r = 0; r < 4; r++)
-    for (let c = 0; c < 4; c++) {
-      const x = (c - r) * HX + OX;
-      const y = (r + c) * HY;
-      const z = r + c;
-      let deco = '';
-      if (r === 0 && c === 0)
-        deco = `<span class="fabobj" style="${win(`${ASSET}decor/tree/pine_GREEN.png`, 53, 96, 30)};bottom:46%"></span>`;
-      else if (r === 0 && c === 3)
-        deco = `<img class="fabobj2" src="${TIMG(53)}" style="width:18px;bottom:36%">`;
-      else if (r === 3 && c === 3)
-        deco = `<span class="fabobj" style="${win(`${ASSET}critters/stag_d0.png`, 32, 35, 16)};bottom:38%"></span>`;
-      else if (r === 3 && c === 0)
-        deco = `<img class="fabobj2" src="${TIMG(48)}" style="width:18px;bottom:36%">`;
-      out += `<span class="fabtile" style="left:${x}px;top:${y}px;z-index:${z};background-image:url(${TIMG(24)})">${deco}</span>`;
-    }
-  return `<span class="fabscene">${out}</span>`;
-}
 const stagger = (i: number, k: number): string => (((i * k) % 20) * 0.19).toFixed(2); // desync repeats
 export function animSprite(a: Animal, dir?: number, i?: number): string {
   dir = dir || 0;

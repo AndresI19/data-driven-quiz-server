@@ -10,6 +10,3 @@ export const CURRENCY = {
 
 /** Shorthand for the inline glyph, e.g. `${COIN}${price}`. */
 export const COIN = CURRENCY.glyph;
-
-/** The word for an amount — singular at exactly 1, plural otherwise. */
-export const coinWord = (n: number): string => (n === 1 ? CURRENCY.one : CURRENCY.many);

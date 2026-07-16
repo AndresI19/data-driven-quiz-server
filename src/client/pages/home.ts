@@ -6,9 +6,8 @@ import { setScreenBg } from '../garden/screenbg.js';
 import { startSplashes } from '../garden/splash.js';
 import { gardenArt } from '../garden/sprites.js';
 import { lifetime } from '../quiz/grading.js';
-import { dismissTransients } from '../quiz/pause.js';
+import { leavePlay } from '../quiz/pause.js';
 import { discardActive, resumeActive, retrySession, reviewIds, start } from '../quiz/session.js';
-import { stopTicker } from '../quiz/timer.js';
 import { COIN, CURRENCY } from '../runtime/currency.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
 // favorites + sessions panels, the live garden mini-render, and the debug menu. Ported verbatim.
@@ -43,9 +42,7 @@ function savedNote(): string {
 }
 
 export function setup(): void {
-  stopTicker();
-  S.running = false;
-  dismissTransients();
+  leavePlay();
   setPath('/home');
   setScreenBg(true);
   setKey((e) => {

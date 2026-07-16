@@ -310,36 +310,6 @@ h1 {
 .gardenfab:active {
   transform: scale(0.96);
 }
-.fabscene {
-  position: relative;
-  display: block;
-  width: 88px;
-  height: 58px;
-}
-.fabtile {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-}
-.fabobj {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  image-rendering: pixelated;
-  pointer-events: none;
-}
-.fabobj2 {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  image-rendering: pixelated;
-  pointer-events: none;
-}
 .fab-coins {
   background: var(--panel);
   border: 1px solid var(--line);

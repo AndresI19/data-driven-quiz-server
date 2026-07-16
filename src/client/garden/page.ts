@@ -1,6 +1,5 @@
 import { setup } from '../pages/home.js';
-import { dismissTransients } from '../quiz/pause.js';
-import { stopTicker } from '../quiz/timer.js';
+import { leavePlay } from '../quiz/pause.js';
 // The garden editor page: garden switcher, palette (tools/blocks/plants+wood/trees/rocks/animals/
 // backgrounds — each row scrolls horizontally to stay compact), the board, hover row/column
 // highlight, tool cursors, and all its wiring.
@@ -106,9 +105,7 @@ export function enterGarden(): void {
 }
 
 export function gardenPage(): void {
-  stopTicker();
-  S.running = false;
-  dismissTransients();
+  leavePlay();
   setPath('/garden');
   setScreenBg(true);
   // Total value across all gardens: summed once here and reused for both the max-score bump and the
