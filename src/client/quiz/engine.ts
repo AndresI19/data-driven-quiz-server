@@ -1,3 +1,4 @@
+import { isAdmin } from '@platform/ui/auth';
 import type { GameCard } from '../../shared/card-schema.js';
 import { audioInit, sndFlip } from '../audio/sound.js';
 import { comboMult } from '../garden/economy.js';
@@ -90,6 +91,13 @@ export function addFav(c: GameCard): void {
     set();
   });
   qc.appendChild(fav);
+  // Flagging is an ADMIN tool, unlike the star beside it. A favourite is something a player wants
+  // again; a flag says "this card is wrong, edit the deck" — an instruction only the deck's author
+  // can act on, and noise on the card chrome for everyone else. Hidden the same way the debug menu
+  // is, and "hidden" is the honest word: a client-side check stops a curious player, not a
+  // determined one. It writes to the player's own document and nothing else, so that is the right
+  // level of protection. The export page reads these back (see pages/export.ts).
+  if (!isAdmin()) return;
   const flag = document.createElement('button');
   const setF = (): void => {
     const on = !!DB.flags[c.id];
