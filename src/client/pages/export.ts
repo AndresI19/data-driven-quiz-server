@@ -1,12 +1,10 @@
 import { isAdmin } from '@platform/ui/auth';
 import { setScreenBg } from '../garden/screenbg.js';
-import { dismissTransients } from '../quiz/pause.js';
-import { stopTicker } from '../quiz/timer.js';
+import { leavePlay } from '../quiz/pause.js';
 // Export page: a shareable digest of flagged + noted cards, plus a full-save JSON download.
 // For an admin it also emits the flag audit — see buildAudit below.
 import { CATS, app, byId } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
 import { setKey } from '../runtime/util.js';
 import { setup } from './home.js';
 
@@ -45,9 +43,7 @@ export function buildAudit(flagged: string[], notes: Record<string, string>): st
 }
 
 export function exportPage(): void {
-  stopTicker();
-  S.running = false;
-  dismissTransients();
+  leavePlay();
   setScreenBg(false);
   // latest note per card across every session (+ any in-progress one)
   const notes: Record<string, string> = {};

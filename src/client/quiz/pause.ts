@@ -4,6 +4,17 @@ import { S } from '../runtime/state.js';
 import { setKey } from '../runtime/util.js';
 import { resumeTicking, stopTicker } from './timer.js';
 
+/**
+ * Tear down the active play loop before navigating away: stop the ticker, clear the running flag, and
+ * remove any transient overlay. Every page/screen that a quiz can exit into (home, garden, favorites,
+ * export, review) opens with this exact trio — factored here so it stays one thing.
+ */
+export function leavePlay(): void {
+  stopTicker();
+  S.running = false;
+  dismissTransients();
+}
+
 export function pauseGame(): void {
   if (!S.running || S.pausedAt) return;
   S.pausedAt = Date.now();

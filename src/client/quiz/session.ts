@@ -12,6 +12,9 @@ import { renderQ } from './engine.js';
 import { rate } from './grading.js';
 import { stopTicker } from './timer.js';
 
+/** How many finished sessions to retain in history before the oldest are dropped. */
+const MAX_SAVED_SESSIONS = 50;
+
 interface BeginOpts {
   label?: string;
   timeSpeed?: number;
@@ -120,7 +123,7 @@ export function finalize(): void {
     timeSpeed: ses.timeSpeed,
   };
   DB.sessions.unshift(rec);
-  if (DB.sessions.length > 50) DB.sessions.length = 50;
+  if (DB.sessions.length > MAX_SAVED_SESSIONS) DB.sessions.length = MAX_SAVED_SESSIONS;
   ses.retryMissed = rec.missedIds;
   // Set-completion bonus: base per 10-card bracket is 10,20,40,80,160... summed, then x accuracy.
   const brackets = Math.floor(ses.q.length / 10);

@@ -5,7 +5,7 @@ import type { GameCard } from '../../shared/card-schema.js';
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
 // what is left below is the part that genuinely differs between modes.
-import { MULTIPOOL, app } from '../runtime/data.js';
+import { ACCENT_FALLBACK, MULTIPOOL, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import type { Session } from '../runtime/state.js';
 import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
@@ -14,6 +14,9 @@ import { navKey } from './engine.js';
 import { codeSelectOK, czOK, distractors, ivOK, record } from './grading.js';
 import { advance } from './session.js';
 import { answeredNow } from './timer.js';
+
+/** Delay before focusing a freshly-rendered input, letting innerHTML settle first. */
+const FOCUS_DELAY = 30;
 
 /** Recall: show the topic, type from memory, then self-grade against the answer. */
 export function renderFB(c: GameCard): void {
@@ -29,7 +32,7 @@ export function renderFB(c: GameCard): void {
       <div class="actions" id="act">${DB.settings.hints && c.hint ? `<button class="btn ghost" id="hintbtn">Hint</button>` : ''}<button class="btn primary" id="reveal">Reveal answer &nbsp;<kbd>Ctrl+Enter</kbd></button></div>`,
   );
   const ta = app.querySelector('#recall') as HTMLTextAreaElement;
-  setTimeout(() => ta.focus(), 30);
+  setTimeout(() => ta.focus(), FOCUS_DELAY);
 
   const hb = app.querySelector('#hintbtn') as HTMLButtonElement | null;
   if (hb)
@@ -211,7 +214,7 @@ export function renderCZ(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
   );
   const inp = app.querySelector('#blank') as HTMLInputElement;
-  setTimeout(() => inp.focus(), 30);
+  setTimeout(() => inp.focus(), FOCUS_DELAY);
 
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
@@ -295,7 +298,7 @@ export function renderMA(c: GameCard): void {
       h += path(dot(Lb(li), 'r'), dot(Rb(assign[+li]), 'l'), PAL[i % PAL.length], false);
     });
     if (drag) {
-      h += path(dot(Lb(drag.li), 'r'), { x: drag.x, y: drag.y }, cssVar('--accent') || '#5a67f2', true);
+      h += path(dot(Lb(drag.li), 'r'), { x: drag.x, y: drag.y }, cssVar('--accent') || ACCENT_FALLBACK, true);
     }
     svg.innerHTML = h;
     app.querySelectorAll('.mitem').forEach((x) => {
@@ -521,7 +524,7 @@ export function renderIV(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
   );
   const inp = app.querySelector('#blank') as HTMLInputElement;
-  setTimeout(() => inp.focus(), 30);
+  setTimeout(() => inp.focus(), FOCUS_DELAY);
 
   function finish(timedOut: boolean): void {
     if (ses.answered) return;

@@ -1,7 +1,6 @@
 import { setScreenBg } from '../garden/screenbg.js';
-import { dismissTransients } from '../quiz/pause.js';
+import { leavePlay } from '../quiz/pause.js';
 import { start } from '../quiz/session.js';
-import { stopTicker } from '../quiz/timer.js';
 // Favorites list page. Ported verbatim.
 import { app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
@@ -10,9 +9,7 @@ import { esc, setKey } from '../runtime/util.js';
 import { setup } from './home.js';
 
 export function favoritesPage(): void {
-  stopTicker();
-  S.running = false;
-  dismissTransients();
+  leavePlay();
   setScreenBg(false);
   const ids = Object.keys(DB.favorites).filter((id) => byId[id]);
   app.innerHTML = `<div class="wrap">

@@ -24,6 +24,10 @@ import {
 export function comboMult(): number {
   return Math.min(1 + Math.max(0, DB.combo - 1) * COMBO_STEP, COMBO_CAP);
 } // caps at 5x (combo 9)
+/** The combo HUD readout — 🔥 count ×multiplier — shared by the coin bar and the engine's decoration. */
+export function comboLabel(): string {
+  return `\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}`;
+}
 export function afford(n: number): boolean {
   return DB.infinite || DB.coins >= n;
 }
@@ -58,14 +62,15 @@ export function grantReward(mode: string): void {
 export function updateCoinBar(): void {
   const cp = document.getElementById('coinbar');
   if (!cp) return;
-  cp.querySelector('.cb-coins')!.textContent = DB.infinite ? '∞' : String(DB.coins);
+  const coins = cp.querySelector('.cb-coins')!;
+  coins.textContent = DB.infinite ? '∞' : String(DB.coins);
   const cm = cp.querySelector('.cb-combo') as HTMLElement;
-  cm.textContent = `\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}`;
+  cm.textContent = comboLabel();
   cm.classList.toggle('hot', DB.combo >= 2);
   cm.classList.add('pulse');
   setTimeout(() => cm.classList.remove('pulse'), 350);
-  cp.querySelector('.cb-coins')!.classList.add('roll');
-  setTimeout(() => cp.querySelector('.cb-coins')!.classList.remove('roll'), 400);
+  coins.classList.add('roll');
+  setTimeout(() => coins.classList.remove('roll'), 400);
 }
 export function coinToast(n: number): void {
   const t = document.createElement('div');

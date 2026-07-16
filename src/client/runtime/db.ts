@@ -225,13 +225,6 @@ export function saveDB(): void {
   } catch (e) {}
   for (const fn of savedHooks) fn();
 }
-export function today(): string {
-  try {
-    return new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch (e) {
-    return '';
-  }
-}
 export function stamp(): string {
   try {
     return new Date().toLocaleString(undefined, {

@@ -1,12 +1,10 @@
 import { setScreenBg } from '../garden/screenbg.js';
 import { addFav } from '../quiz/engine.js';
-import { dismissTransients } from '../quiz/pause.js';
+import { leavePlay } from '../quiz/pause.js';
 import { reviewIds } from '../quiz/session.js';
-import { stopTicker } from '../quiz/timer.js';
 // Notes / review page for a saved session: step through missed + noted cards, edit notes. Verbatim.
 import { CATS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
 import { esc, setKey } from '../runtime/util.js';
 import { setup } from './home.js';
 
@@ -15,9 +13,7 @@ export function reviewSession(id: string): void {
   if (!s) return;
   const ids = reviewIds(s);
   if (!ids.length) return;
-  stopTicker();
-  S.running = false;
-  dismissTransients();
+  leavePlay();
   setScreenBg(false);
   let idx = 0;
   function render(): void {

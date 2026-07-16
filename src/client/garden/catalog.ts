@@ -212,8 +212,6 @@ TREE_COLORS.forEach((cc) =>
 );
 export const FEAT_BY_ID: Record<string, Feature> = {};
 FEATURES.forEach((f) => (FEAT_BY_ID[f.id] = f));
-export const FEAT_SECS = ['Bushes', 'Flowers', 'Trees', 'Rocks', 'Wood'];
-export const FEAT_DROP = 0.18; // tileset object features shift down this fraction of a tile
 
 export interface Animal {
   id: string;

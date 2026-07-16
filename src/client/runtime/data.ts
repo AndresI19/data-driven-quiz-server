@@ -19,6 +19,8 @@ export const K = 'flashcards_v2';
 export const CARDS: GameCard[] = [];
 export const CATS: Record<string, string> = {};
 export const CATCOL: Record<string, string> = {};
+/** Category accent used when a card's category has no colour of its own. */
+export const ACCENT_FALLBACK = '#5a67f2';
 export const byId: Record<string, GameCard> = {};
 export const MULTIPOOL: Record<string, string[]> = {};
 export const DIAGRAMS: Record<string, string> = {};
