@@ -84,11 +84,13 @@ describe('repairDB backfills the grant ledger', () => {
 });
 
 describe('mail button + guest watermark', () => {
-  test('the mail button carries the unread dot only while something is unclaimed', () => {
+  test('the mail button renders only while unclaimed, and is absent (not a dead icon) once claimed', () => {
     DB.grant.login = 'pending';
-    expect(mailButtonHtml()).toContain('gmail-dot');
+    const html = mailButtonHtml();
+    expect(html).toContain('gmailrow'); // rendered, in its own row, with the unread dot
+    expect(html).toContain('gmail-dot');
     DB.grant.login = 'claimed';
-    expect(mailButtonHtml()).not.toContain('gmail-dot');
+    expect(mailButtonHtml()).toBe(''); // nothing rendered at all once collected
   });
 
   test('the mail button is absent for a guest', () => {

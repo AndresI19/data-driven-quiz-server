@@ -2668,21 +2668,23 @@ body.ambient .saved-note {
 }
 
 /* ── Welcome-coin grant: garden mail button, claim message, guest watermark (garden/grants.ts) ── */
+/* In-flow row below the toolbar, above the board — left-aligned under the Back button. */
+.gmailrow {
+  display: flex;
+  margin: 2px 0 10px;
+}
 .gmail {
-  position: fixed;
-  left: 14px;
-  top: 12px;
-  z-index: 60;
-  width: 44px;
-  height: 44px;
+  position: relative; /* anchors the .gmail-dot */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow);
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: transform .12s, box-shadow .12s;
@@ -2714,30 +2716,30 @@ body.ambient .saved-note {
     opacity: 0.65;
   }
 }
-/* Claim feedback — fades in, holds, fades out; no dialog, no dismiss. */
+/* Claim feedback — a small message anchored at the mail icon's spot (left/top set inline from its
+   rect), drifting up a touch as it fades in, then out. No dialog, no dismiss. */
 .grantclaim {
   position: fixed;
-  left: 50%;
-  top: 40%;
-  transform: translate(-50%, -42%);
   z-index: 80;
   pointer-events: none;
-  text-align: center;
+  text-align: left;
   opacity: 0;
-  transition: opacity .5s ease, transform .5s ease;
+  transform: translateY(6px);
+  transition: opacity .45s ease, transform .45s ease;
 }
 .grantclaim.go {
   opacity: 1;
-  transform: translate(-50%, -50%);
+  transform: translateY(-4px);
 }
 .grantclaim .gc-msg {
-  font-size: 16px;
+  font-size: 12.5px;
   font-weight: 650;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 1px;
+  white-space: nowrap;
 }
 .grantclaim .gc-amt {
-  font-size: 44px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--good);
   font-variant-numeric: tabular-nums;

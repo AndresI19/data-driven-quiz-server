@@ -171,10 +171,10 @@ export function gardenPage(): void {
     ? `<button class="btn primary sm" id="gbuy" title="start a fresh garden">+ New garden (${COIN}${NEW_GARDEN_COST})</button>`
     : `<span class="tiny gslot">next garden at \u{1F3C6} ${nextGardenThreshold()} total</span>`;
   app.innerHTML = `<div class="wrap gardenwrap">
-    <!-- Welcome-coin mail button (top-left, signed-in only) and the guest watermark under the login
-         FAB. Both are position:fixed, so their spot in the markup is immaterial; they live here so the
-         route swap that replaces app.innerHTML tears them down when you leave the garden. -->
-    ${mailButtonHtml()}${guestWatermarkHtml()}
+    <!-- Guest watermark (position:fixed, top-right under the login FAB). Its spot in the markup is
+         immaterial; it lives here so the route swap that replaces app.innerHTML tears it down when you
+         leave the garden. The mail button is in-flow below, between the toolbar and the board. -->
+    ${guestWatermarkHtml()}
     <div class="rvbar">
       <!-- Returns to the quiz's own home screen (setup), not the platform home page — so it is
            labelled "Back" rather than "Home", which would collide with the top-left home link. -->
@@ -192,6 +192,9 @@ export function gardenPage(): void {
       <button class="btn ghost sm" id="gnext" ${DB.gardenIdx >= DB.gardens.length - 1 ? 'disabled' : ''} title="next garden">→</button>
       ${buyBtn}
     </div>
+    <!-- Welcome-coin mail button: in-flow below the Back button and above the garden board. Empty
+         string once claimed or for a guest, so no dead icon lingers. -->
+    ${mailButtonHtml()}
     <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
       <!-- Layer tabs — shown only while a brush is selected (editing). Highest layer on top, ground
            (F1) at the bottom, mirroring the physical stack; only the tabbed-into layer is editable,

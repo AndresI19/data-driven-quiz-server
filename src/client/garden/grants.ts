@@ -51,34 +51,38 @@ export function claimGrants(): void {
   if (DB.grant.contact === 'pending') DB.grant.contact = 'claimed';
   saveDB();
 
-  // Refresh the top-bar balance and remove the marker without a full page re-render (which would
-  // rebuild the board and interrupt the fade message below).
+  // Refresh the top-bar balance in place (no full re-render, which would rebuild the board and
+  // interrupt the fade below). Anchor the claim message where the mail icon is, then remove the whole
+  // row — once claimed, the icon no longer renders at all (see mailButtonHtml).
   const bal = document.querySelector('.coinbal');
   if (bal) bal.textContent = `${COIN} ${DB.infinite ? '∞' : DB.coins}`;
-  document.querySelector('.gmail-dot')?.remove();
+  const rect = document.getElementById('gmail')?.getBoundingClientRect();
+  document.querySelector('.gmailrow')?.remove();
 
-  showGrantClaim(amount);
+  showGrantClaim(amount, rect);
 }
 
-/** The claim feedback: "Thanks…" then a big "+N", faded in and then out. No dialog, no dismiss. */
-function showGrantClaim(amount: number): void {
+/** The claim feedback: a small "Thanks…" + "+N", faded in then out, anchored at the mail icon's spot
+ *  (falls back to a fixed corner if the icon's position could not be read). No dialog, no dismiss. */
+function showGrantClaim(amount: number, at?: DOMRect): void {
   document.querySelector('.grantclaim')?.remove();
   const el = document.createElement('div');
   el.className = 'grantclaim';
   el.innerHTML = `<div class="gc-msg">Thanks for creating a login</div><div class="gc-amt">+${amount} ${COIN}</div>`;
+  el.style.left = `${Math.round(at?.left ?? 16)}px`;
+  el.style.top = `${Math.round(at?.top ?? 96)}px`;
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('go'), 20); // fade in
-  setTimeout(() => el.classList.remove('go'), 2200); // hold, then fade out (CSS transition)
-  setTimeout(() => el.remove(), 3000); // remove after the fade-out completes
+  setTimeout(() => el.classList.remove('go'), 1800); // hold, then fade out (CSS transition)
+  setTimeout(() => el.remove(), 2400); // remove after the fade-out completes
 }
 
-/** Garden top-left mail button (signed-in only); the red dot shows only while something is unclaimed. */
+/** The welcome-coin mail button, wrapped in its own row for placement below the toolbar. Rendered
+ *  ONLY when a signed-in player has something to claim — once claimed (or for a guest) it is absent
+ *  entirely, not a dead icon. */
 export function mailButtonHtml(): string {
-  if (!isSignedIn()) return '';
-  const unclaimed = hasUnclaimed();
-  const label = unclaimed ? 'Claim your welcome coins' : 'Mail';
-  const dot = unclaimed ? '<span class="gmail-dot" aria-hidden="true"></span>' : '';
-  return `<button class="gmail" id="gmail" type="button" title="${label}" aria-label="${label}">✉️${dot}</button>`;
+  if (!isSignedIn() || !hasUnclaimed()) return '';
+  return `<div class="gmailrow"><button class="gmail" id="gmail" type="button" title="Claim your welcome coins" aria-label="Claim your welcome coins">✉️<span class="gmail-dot" aria-hidden="true"></span></button></div>`;
 }
 
 /** Guest-only watermark under the login FAB, inviting them to create an account to claim coins. */
