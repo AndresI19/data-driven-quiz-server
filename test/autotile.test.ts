@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { autotile } from './autotile.js';
-import { BLOCKS, type GardenCell, WATER_MAP, isLand, waterMask } from './catalog.js';
+import { autotile } from '../src/client/garden/autotile.js';
+import { BLOCKS, type GardenCell, WATER_MAP, isLand, waterMask } from '../src/client/garden/catalog.js';
 
 /**
  * The autotiler is the only real algorithm in the garden — a 16-entry lookup keyed by which of a

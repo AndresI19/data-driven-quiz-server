@@ -3,19 +3,19 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 // interact.ts reaches for audio, the page renderer, and the autotiler — none of which these tests care
 // about. Stub them so applyBrush's RULES run without a Web Audio graph or a DOM re-render. (setup.ts
 // mocks sound for the quiz modes, but not sndDig/sndPlant/sndWater, which only the garden uses.)
-vi.mock('../audio/sound.js', () => ({
+vi.mock('../src/client/audio/sound.js', () => ({
   sndDig: vi.fn(),
   sndPlant: vi.fn(),
   sndWater: vi.fn(),
   sndWrong: vi.fn(),
 }));
-vi.mock('./page.js', () => ({ gardenPage: vi.fn() }));
-vi.mock('./autotile.js', () => ({ recomputeAutotile: vi.fn() }));
+vi.mock('../src/client/garden/page.js', () => ({ gardenPage: vi.fn() }));
+vi.mock('../src/client/garden/autotile.js', () => ({ recomputeAutotile: vi.fn() }));
 
-import { DB, newGarden } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import { LAYERS } from './catalog.js';
-import { applyBrush } from './interact.js';
+import { LAYERS } from '../src/client/garden/catalog.js';
+import { applyBrush } from '../src/client/garden/interact.js';
+import { DB, newGarden } from '../src/client/runtime/db.js';
+import { S } from '../src/client/runtime/state.js';
 
 /**
  * The support rule has to hold in BOTH directions. Placement already refuses to put a tile on an

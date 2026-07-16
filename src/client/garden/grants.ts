@@ -88,5 +88,9 @@ export function mailButtonHtml(): string {
 /** Guest-only watermark under the login FAB, inviting them to create an account to claim coins. */
 export function guestWatermarkHtml(): string {
   if (!isGuest()) return '';
-  return `<div class="guestmark">Create a user to claim 200–400 free ${CURRENCY.many}</div>`;
+  // Range derived from the grant consts so the pitch can't drift from what's actually paid: the login
+  // grant alone at the low end, both grants together at the high end.
+  const low = LOGIN_GRANT;
+  const high = LOGIN_GRANT + CONTACT_GRANT;
+  return `<div class="guestmark">Create a user to claim ${low}–${high} free ${CURRENCY.many}</div>`;
 }

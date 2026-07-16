@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, test } from 'vitest';
-import { DB } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
-import { APPLY_COST, BG_PRICE, REWARD_BASE } from './catalog.js';
-import { applyDecor, breakCombo, clearDecor, grantReward, unlockDecor } from './economy.js';
+import { APPLY_COST, BG_PRICE, REWARD_BASE } from '../src/client/garden/catalog.js';
+import {
+  applyDecor,
+  breakCombo,
+  clearDecor,
+  grantReward,
+  unlockDecor,
+} from '../src/client/garden/economy.js';
+import { DB } from '../src/client/runtime/db.js';
+import { S } from '../src/client/runtime/state.js';
 
 /**
  * The payout rules. These exist because a real bug lived here: correct inverse-recall answers were

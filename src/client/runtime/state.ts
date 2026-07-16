@@ -9,7 +9,6 @@ export interface QItem {
 
 export interface Session {
   label: string;
-  deckId: string | null;
   q: QItem[];
   i: number;
   correct: number;

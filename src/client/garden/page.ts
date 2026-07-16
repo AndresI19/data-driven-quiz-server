@@ -26,16 +26,18 @@ import {
   FX_URL,
   type Feature,
   LAYERS,
+  NEW_GARDEN_COST,
   TIMG,
   TOOL_IMG,
   TREE_COLORS,
   TREE_PRICE,
   WATER_COST,
   WATER_OPEN,
+  colOf,
+  rowOf,
 } from './catalog.js';
 import {
   type Decor,
-  NEW_GARDEN_COST,
   applyDecor,
   buyGarden,
   canBuyGarden,
@@ -109,7 +111,10 @@ export function gardenPage(): void {
   dismissTransients();
   setPath('/garden');
   setScreenBg(true);
-  updateMaxScore();
+  // Total value across all gardens: summed once here and reused for both the max-score bump and the
+  // 🏆 readout below (it walks every garden × cell × layer, so computing it twice per render adds up).
+  const total = totalGardenValue();
+  updateMaxScore(total);
   const G = DB.garden;
   const palTool = (id: string, label: string, cost: number | null): string =>
     `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : `${COIN}${cost}`}</span></button>`;
@@ -180,7 +185,7 @@ export function gardenPage(): void {
            labelled "Back" rather than "Home", which would collide with the top-left home link. -->
       <button class="btn ghost sm" id="gback" title="back to the quiz home screen">← Back</button>
       <div class="coinbal big">${COIN} ${DB.infinite ? '∞' : DB.coins}</div>
-      <span class="gscore big" title="achievement — total value across ALL your gardens (unlocks new gardens)">\u{1F3C6} ${totalGardenValue()}</span>
+      <span class="gscore big" title="achievement — total value across ALL your gardens (unlocks new gardens)">\u{1F3C6} ${total}</span>
       <span class="gscore" title="this garden's value">\u{1F3C5} ${gardenValue()}</span>
       <button class="btn ghost sm${G.hideFg ? ' on' : ''}" id="ghide" title="hide plants &amp; animals to work at block level">\u{1F332} ${G.hideFg ? 'hidden' : 'shown'}</button>
       <button class="btn ghost sm" id="gexport" title="download an animated GIF of the garden">\u{1F3AC} GIF</button>
@@ -325,14 +330,14 @@ export function gardenPage(): void {
   cells.forEach((b) => {
     if (cursor) b.style.cursor = cursor;
     const i = +b.dataset.i!;
-    const c = i % 10;
-    const r = (i / 10) | 0;
+    const c = colOf(i);
+    const r = rowOf(i);
     b.addEventListener('click', () => applyBrush(i));
     b.addEventListener('mouseenter', () => {
       if (hint) hint.textContent = tileDesc(i);
       cells.forEach((x) => {
         const j = +x.dataset.i!;
-        x.classList.toggle('rc', j % 10 === c || ((j / 10) | 0) === r);
+        x.classList.toggle('rc', colOf(j) === c || rowOf(j) === r);
       });
       b.classList.add('cell-hot');
       const gc = app.querySelector(`.gg-col[data-c="${c}"]`);

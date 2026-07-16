@@ -11,6 +11,7 @@ import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { esc, fmtClock, setKey, shuffle } from '../runtime/util.js';
+import { resolveMode } from './capabilities.js';
 import {
   renderBF,
   renderCS,
@@ -55,14 +56,7 @@ export function renderQ(): void {
   }
   audioInit();
   sndFlip();
-  let mode = it.d;
-  if (mode === 'cz' && !c.cloze) mode = 'fb';
-  if (mode === 'ma' && !c.match) mode = 'bf';
-  if (mode === 'ms' && !c.multi) mode = 'bf';
-  if (mode === 'iv' && !c.inverse) mode = 'fb';
-  if (mode === 'dm' && !c.manifest) mode = c.match ? 'ma' : 'bf';
-  if (mode === 'cw' && !c.code) mode = 'bf';
-  if (mode === 'cs' && !(c.code && c.codeselect)) mode = c.code ? 'cw' : 'bf';
+  const mode = resolveMode(it.d, c);
   S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
   startTicker();
   S.running = true;

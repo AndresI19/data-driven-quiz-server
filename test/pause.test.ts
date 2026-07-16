@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest';
-import { S } from '../runtime/state.js';
-import { dismissTransients } from './pause.js';
+import { dismissTransients } from '../src/client/quiz/pause.js';
+import { S } from '../src/client/runtime/state.js';
 
 // dismissTransients is the guard against a class of "dead click" bug: pause / peek-back / diagram-zoom
 // are all position:fixed full-screen CLICKABLE overlays, and each once relied solely on its own close

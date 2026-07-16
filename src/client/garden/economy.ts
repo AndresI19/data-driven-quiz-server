@@ -9,13 +9,20 @@ import {
   APPLY_COST,
   BG_PRICE,
   BLOCK_VALUE,
+  BOARD_CELLS,
+  COMBO_CAP,
+  COMBO_STEP,
+  DECOR_VALUE,
   FEAT_BY_ID,
+  GARDEN_STEP,
+  NEW_GARDEN_COST,
   REWARD_BASE,
+  REWARD_DEFAULT,
   newBoard,
 } from './catalog.js';
 
 export function comboMult(): number {
-  return Math.min(1 + Math.max(0, DB.combo - 1) * 0.5, 5);
+  return Math.min(1 + Math.max(0, DB.combo - 1) * COMBO_STEP, COMBO_CAP);
 } // caps at 5x (combo 9)
 export function afford(n: number): boolean {
   return DB.infinite || DB.coins >= n;
@@ -34,7 +41,7 @@ export function breakCombo(): void {
 }
 export function grantReward(mode: string): void {
   DB.combo = (DB.combo || 0) + 1;
-  const base = REWARD_BASE[mode] || 6;
+  const base = REWARD_BASE[mode] || REWARD_DEFAULT;
   let coins = base;
   if (S.curLimit > 0) {
     const usedSec = ((S.answeredAt || Date.now()) - S.cardStart) / 1000;
@@ -79,12 +86,10 @@ export function resetGarden(): void {
   S.selBrush = null;
   saveDB();
 }
-/** A selected background or effect each add this to a garden's value (applying improves the score). */
-export const DECOR_VALUE = 200;
 function gardenValueOf(g: import('../runtime/db.js').Garden): number {
   const layerValue = (cells: (import('./catalog.js').GardenCell | null)[]): number => {
     let v = 0;
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < BOARD_CELLS; i++) {
       const c = cells[i];
       if (!c) continue;
       v += BLOCK_VALUE[c.block] || 0;
@@ -121,8 +126,6 @@ export function refund(n: number): void {
 }
 
 // ---- multiple gardens ----
-export const NEW_GARDEN_COST = 3000;
-export const GARDEN_STEP = 1500; // total-value increment that unlocks each new garden
 /** How many gardens are unlocked: one, plus one per GARDEN_STEP of best-ever TOTAL value. */
 export function gardenSlots(): number {
   return 1 + Math.floor((DB.maxScore || 0) / GARDEN_STEP);
@@ -147,10 +150,10 @@ export function switchGarden(idx: number): void {
   S.layer = 0; // a different garden has its own elevation content — start on the ground
   saveDB();
 }
-/** Track the best TOTAL garden value reached across all gardens (gates new-garden purchases). */
-export function updateMaxScore(): void {
-  const v = totalGardenValue();
-  if (v > (DB.maxScore || 0)) DB.maxScore = v;
+/** Track the best TOTAL garden value reached across all gardens (gates new-garden purchases). Accepts
+    an already-computed total so a caller that just summed it (the garden render) need not recompute. */
+export function updateMaxScore(total: number = totalGardenValue()): void {
+  if (total > (DB.maxScore || 0)) DB.maxScore = total;
 }
 /** Threshold (total 🏆) at which the next garden slot unlocks. */
 export function nextGardenThreshold(): number {

@@ -1,7 +1,7 @@
 // Directional water autotile: water picks a rim variant per land-facing edge; a spire shows its
 // water base (tile 72) when both front edges (SW & SE) are water or blank.
 import { DB } from '../runtime/db.js';
-import { type GardenCell, WATER_MAP, isLand, waterMask } from './catalog.js';
+import { BOARD_W, type GardenCell, WATER_MAP, colOf, isLand, rowOf, waterMask } from './catalog.js';
 
 /**
  * Re-pick the tile variant of every water and spire cell on a board.
@@ -25,10 +25,10 @@ export function autotile(cells: (GardenCell | null)[]): void {
     if (cell.block === 'spire') {
       // A spire standing over water shows its wet base — only the two FRONT edges matter, because
       // those are the ones the player can see beneath it.
-      const r = (i / 10) | 0;
-      const c = i % 10;
-      const SE = c < 9 ? cells[r * 10 + c + 1] : null;
-      const SW = r < 9 ? cells[(r + 1) * 10 + c] : null;
+      const r = rowOf(i);
+      const c = colOf(i);
+      const SE = c < BOARD_W - 1 ? cells[r * BOARD_W + c + 1] : null;
+      const SW = r < BOARD_W - 1 ? cells[(r + 1) * BOARD_W + c] : null;
       cell.v = !isLand(SW) && !isLand(SE) ? 72 : 64;
     }
   }

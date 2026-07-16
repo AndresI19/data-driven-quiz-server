@@ -3,7 +3,7 @@
 import { app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
-import { TIMG } from './catalog.js';
+import { BOARD_CELLS, TIMG } from './catalog.js';
 
 export function stopSplashes(): void {
   if (S.splashTimer) {
@@ -16,7 +16,7 @@ export function startSplashes(): void {
   S.splashTimer = setInterval(() => {
     const C = DB.garden.cells;
     const water: number[] = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < BOARD_CELLS; i++) {
       if (C[i] && C[i]!.block === 'water') water.push(i);
     }
     if (!water.length) return;

@@ -41,7 +41,7 @@ export function setPath(path: string): void {
 /** /quiz: show the active session, resume a saved one, or start a fresh quiz with current config. */
 function quizRoute(): void {
   if (S.ses) renderQ();
-  else if (DB.active) resumeSnap(DB.active, DB.active.deckId);
+  else if (DB.active) resumeSnap(DB.active);
   else start();
 }
 
