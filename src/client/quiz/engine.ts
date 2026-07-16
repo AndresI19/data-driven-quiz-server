@@ -1,7 +1,7 @@
 import { isAdmin } from '@platform/ui/auth';
 import type { GameCard } from '../../shared/card-schema.js';
 import { audioInit, sndFlip } from '../audio/sound.js';
-import { comboMult } from '../garden/economy.js';
+import { comboLabel } from '../garden/economy.js';
 import { setScreenBg } from '../garden/screenbg.js';
 import { setup } from '../pages/home.js';
 import { COIN } from '../runtime/currency.js';
@@ -132,7 +132,7 @@ export function decorateCard(c: GameCard): void {
   row.appendChild(qc);
   const aside = document.createElement('aside');
   aside.className = 'notes';
-  aside.innerHTML = `<div class="coinbar" id="coinbar"><span class="cb-ico">${COIN}</span> <span class="cb-coins">${DB.infinite ? '∞' : DB.coins}</span><span class="cb-combo${DB.combo >= 2 ? ' hot' : ''}">\u{1F525} ${DB.combo} ×${comboMult().toFixed(1)}</span></div><div class="col-h">Notes</div><textarea class="noteta" placeholder="Notes on this card…"></textarea>`;
+  aside.innerHTML = `<div class="coinbar" id="coinbar"><span class="cb-ico">${COIN}</span> <span class="cb-coins">${DB.infinite ? '∞' : DB.coins}</span><span class="cb-combo${DB.combo >= 2 ? ' hot' : ''}">${comboLabel()}</span></div><div class="col-h">Notes</div><textarea class="noteta" placeholder="Notes on this card…"></textarea>`;
   row.appendChild(aside);
   const nta = aside.querySelector('.noteta') as HTMLTextAreaElement;
   nta.value = ses.notes?.[c.id] || '';
