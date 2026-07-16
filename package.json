@@ -1,6 +1,6 @@
 {
   "name": "data-driven-quiz-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A data-driven quiz server: drop a YAML file into cards/ and it becomes a section, with the question types inferred from the fields each card carries. Isometric garden reward system included.",

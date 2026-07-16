@@ -123,7 +123,6 @@ const PAYLOAD: CardsPayload = {
 function startSession(c: GameCard, mode: string): void {
   S.ses = {
     label: 'test',
-    deckId: null,
     q: [{ id: c.id, d: mode }],
     i: 0,
     correct: 0,

@@ -1,4 +1,4 @@
-import { type GardenCell, LAYERS, newBoard } from '../garden/catalog.js';
+import { BOARD_CELLS, type GardenCell, LAYERS, newBoard } from '../garden/catalog.js';
 // Persistent store (localStorage key 'flashcards_v2'): lifetime per-card stats, the in-progress
 // session, saved retry decks, sessions, favorites, flags, settings, and the garden. The init +
 // migration block runs once at import and matches the original defaults exactly.
@@ -19,9 +19,9 @@ export interface Garden {
 export function newGarden(): Garden {
   return { cells: newBoard(), upper: emptyElevation(), hideFg: false, bg: null, fx: null };
 }
-/** A blank 10x10 layer. Elevation layers start empty — you build up onto them. */
+/** A blank layer. Elevation layers start empty — you build up onto them. */
 export function emptyLayer(): (GardenCell | null)[] {
-  return Array(100).fill(null);
+  return Array(BOARD_CELLS).fill(null);
 }
 /** A fresh set of empty elevation layers (one per layer above the ground). */
 export function emptyElevation(): (GardenCell | null)[][] {
@@ -46,7 +46,6 @@ export interface SessionRec {
 }
 export interface ActiveSnap {
   label: string;
-  deckId: string | null;
   q: QItem[];
   i: number;
   correct: number;
@@ -54,12 +53,6 @@ export interface ActiveSnap {
   elapsedMs: number;
   notes: Record<string, string>;
   timeSpeed: number;
-}
-export interface Deck {
-  id: string;
-  name: string;
-  cardIds: string[];
-  progress?: ActiveSnap | null;
 }
 export interface Settings {
   volume: number;
@@ -75,7 +68,6 @@ export type GrantState = 'none' | 'pending' | 'claimed';
 export interface DBShape {
   stats: Record<string, { seen: number; missed: number }>;
   active: ActiveSnap | null;
-  decks: Deck[];
   sessions: SessionRec[];
   favorites: Record<string, boolean>;
   flags: Record<string, boolean>;
@@ -106,7 +98,7 @@ export const DB: DBShape = (() => {
     const v = JSON.parse(localStorage.getItem(K) || 'null');
     if (v) return v as DBShape;
   } catch (e) {}
-  return { stats: {}, active: null, decks: [] } as unknown as DBShape;
+  return { stats: {}, active: null } as unknown as DBShape;
 })();
 /**
  * Repair a document IN PLACE — backfill the fields every consumer reads unconditionally, migrate
@@ -122,7 +114,6 @@ export const DB: DBShape = (() => {
  */
 export function repairDB(): void {
   if (!DB.stats) DB.stats = {};
-  if (!DB.decks) DB.decks = [];
   if (!DB.sessions) DB.sessions = [];
   // A session can predate fields the UI reads unconditionally, or arrive malformed from a synced
   // document. One entry missing `missedIds` made setup() throw at `s.missedIds.length` — mid-render,

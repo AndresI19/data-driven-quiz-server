@@ -29,6 +29,15 @@ export const WATER_MAP: Record<number, number> = {
 }; // NE+SE(5) and NW+SW(10) tiles swapped per playtest
 export const WATER_OPEN = 104; // interior (no land edges)
 
+// ---- Board dimensions ----
+// The board is a square grid stored row-major in a flat array. These are the single source for its
+// size; the row/col helpers turn a flat index back into grid coordinates. Everything that walks the
+// board (rendering, autotiling, value, splashes) reads these instead of open-coding 10 / 100.
+export const BOARD_W = 10; // cells per row (the board is BOARD_W × BOARD_W)
+export const BOARD_CELLS = BOARD_W * BOARD_W; // total cells per layer
+export const rowOf = (i: number): number => (i / BOARD_W) | 0;
+export const colOf = (i: number): number => i % BOARD_W;
+
 export interface Block {
   name: string;
   price: number;
@@ -239,10 +248,20 @@ export const TOOL_IMG: Record<string, string> = {
 };
 
 // Backgrounds & effects: a one-time unlock (owned across all gardens), then a small cost each time
-// you apply one — which also raises the achievement score (see economy.DECOR_VALUE).
+// you apply one — which also raises the achievement score (see DECOR_VALUE below).
 export const BG_PRICE = 1000; // one-time unlock
 export const APPLY_COST = 200; // cost to apply an owned background/effect
 export const BG_URL = (id: string): string => `${ASSET}backgrounds/${id}.png`;
+
+// ---- Economy tunables ----
+// The remaining scattered garden-value/cost numbers, gathered next to the shop prices above so the
+// whole economy reads in one place (economy.ts imports these rather than open-coding them).
+export const DECOR_VALUE = 200; // 🏆 each applied background/effect adds to a garden's value
+export const NEW_GARDEN_COST = 3000; // coins to buy an unlocked garden slot
+export const GARDEN_STEP = 1500; // total-value increment that unlocks each new garden slot
+export const COMBO_STEP = 0.5; // combo multiplier gained per streak step
+export const COMBO_CAP = 5; // combo multiplier ceiling (reached at combo 9)
+export const REWARD_DEFAULT = 6; // payout for a mode with no explicit REWARD_BASE entry
 
 // Purchasable falling-particle effects (same price as a background). Sweep NE → SW.
 export const FX_URL = (id: string): string => `${ASSET}fx/${id}.png`;
@@ -335,9 +354,9 @@ export interface GardenCell {
   adir?: number;
 }
 export function newBoard(): (GardenCell | null)[] {
-  const cells: (GardenCell | null)[] = Array(100).fill(null); // 10x10 row-major
+  const cells: (GardenCell | null)[] = Array(BOARD_CELLS).fill(null); // row-major
   for (let r = 2; r < 7; r++)
-    for (let c = 2; c < 7; c++) cells[r * 10 + c] = { block: 'dirt', v: pick(DIRT_V) }; // centre 5x5 of dirt
+    for (let c = 2; c < 7; c++) cells[r * BOARD_W + c] = { block: 'dirt', v: pick(DIRT_V) }; // centre 5x5 of dirt
   return cells;
 }
 
@@ -359,12 +378,12 @@ export function isLand(cell: GardenCell | null): boolean {
  * That is the one thing an overlay exists not to do.
  */
 export function waterMask(cells: (GardenCell | null)[], i: number): number {
-  const r = (i / 10) | 0;
-  const c = i % 10;
+  const r = rowOf(i);
+  const c = colOf(i);
   let m = 0;
-  if (r > 0 && isLand(cells[(r - 1) * 10 + c])) m |= 1; // NE
-  if (c > 0 && isLand(cells[r * 10 + c - 1])) m |= 2; // NW
-  if (c < 9 && isLand(cells[r * 10 + c + 1])) m |= 4; // SE
-  if (r < 9 && isLand(cells[(r + 1) * 10 + c])) m |= 8; // SW
+  if (r > 0 && isLand(cells[(r - 1) * BOARD_W + c])) m |= 1; // NE
+  if (c > 0 && isLand(cells[r * BOARD_W + c - 1])) m |= 2; // NW
+  if (c < BOARD_W - 1 && isLand(cells[r * BOARD_W + c + 1])) m |= 4; // SE
+  if (r < BOARD_W - 1 && isLand(cells[(r + 1) * BOARD_W + c])) m |= 8; // SW
   return m;
 }

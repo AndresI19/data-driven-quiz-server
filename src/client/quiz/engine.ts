@@ -1,4 +1,5 @@
 import type { GameCard } from '../../shared/card-schema.js';
+import { resolveMode } from './capabilities.js';
 import { audioInit, sndFlip } from '../audio/sound.js';
 import { comboMult } from '../garden/economy.js';
 import { setScreenBg } from '../garden/screenbg.js';
@@ -55,14 +56,7 @@ export function renderQ(): void {
   }
   audioInit();
   sndFlip();
-  let mode = it.d;
-  if (mode === 'cz' && !c.cloze) mode = 'fb';
-  if (mode === 'ma' && !c.match) mode = 'bf';
-  if (mode === 'ms' && !c.multi) mode = 'bf';
-  if (mode === 'iv' && !c.inverse) mode = 'fb';
-  if (mode === 'dm' && !c.manifest) mode = c.match ? 'ma' : 'bf';
-  if (mode === 'cw' && !c.code) mode = 'bf';
-  if (mode === 'cs' && !(c.code && c.codeselect)) mode = c.code ? 'cw' : 'bf';
+  const mode = resolveMode(it.d, c);
   S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
   startTicker();
   S.running = true;

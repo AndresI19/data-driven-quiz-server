@@ -30,7 +30,7 @@ npm run build       # vite build → dist/client
 npm start           # tsx src/server/index.ts
 npm run serve       # build && start
 npm run typecheck   # tsc --noEmit
-npm test            # vitest run  (5 files)
+npm test            # vitest run  (13 files)
 ```
 
 **There is no linter.** `typecheck` is the only static gate.
@@ -73,7 +73,9 @@ npm test            # vitest run  (5 files)
 
 - `src/shared/` — `load-cards.ts` (read + zod-validate + assign IDs), `card-schema.ts`,
   `card-transform.ts`. Pure; shared by the server and the Vite dev middleware.
-- `src/client/quiz/` — engine, modes, grading, session, timer.
+- `src/client/quiz/` — engine, modes, grading, session, timer, and `capabilities.ts` (the single
+  source of truth for which modes a card supports, derived from its fields — used by mode selection,
+  deck-direction filtering, and the render fallback).
 - `src/client/garden/` — the reward system (autotiler, economy, sprites, particles).
 - `src/server/index.ts` — the only server file. `CARDS_DIR` is a **constant** here (`<repo>/cards`),
   not an env var.

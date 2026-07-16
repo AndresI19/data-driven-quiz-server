@@ -7,6 +7,7 @@ import type { GameCard } from '../../shared/card-schema.js';
 // what is left below is the part that genuinely differs between modes.
 import { MULTIPOOL, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
+import type { Session } from '../runtime/state.js';
 import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, gradeNote, modeKeys, score, typedFeedback } from './card.js';
 import { navKey } from './engine.js';
@@ -111,11 +112,27 @@ export function renderFB(c: GameCard): void {
   );
 }
 
-/** Identify: show the (masked) answer, pick the concept it describes. */
-export function renderBF(c: GameCard): void {
-  const extras = (c.mc || []).map((s) => ({ topic: s }));
+/** The A–H hotkey letters shared by every single-pick choice grid. */
+const CHOICE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+/**
+ * Shared scaffold for the single-pick "choice grid" modes (identify / read-the-code). The pool is
+ * deduped against the answer, capped at seven, and the correct card is mixed in; picking one (or
+ * timing out) disables the grid, marks correct/wrong, scores, and appends a Next button.
+ *
+ * The two callers differ only in: the pre-shuffle distractor order, the direction label, the
+ * question HTML above the grid, the score key, and an optional reveal step run just before scoring.
+ */
+function renderChoice(
+  c: GameCard,
+  dir: string,
+  poolSource: { topic: string }[],
+  question: (btns: string) => string,
+  scoreKey: string,
+  reveal?: () => void,
+): void {
   const seen = new Set([c.topic]);
-  const pool = shuffle((distractors(c, 7) as { topic: string }[]).concat(extras))
+  const pool = shuffle(poolSource)
     .filter((o) => {
       if (seen.has(o.topic)) return false;
       seen.add(o.topic);
@@ -123,21 +140,14 @@ export function renderBF(c: GameCard): void {
     })
     .slice(0, 7);
   const opts = shuffle(pool.concat(c));
-  const L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   const btns = opts
     .map(
       (o, i) =>
-        `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`,
+        `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${CHOICE_LETTERS[i]}</span>${esc(o.topic)}</button>`,
     )
     .join('');
 
-  const ses = drawCard(
-    c,
-    'identify',
-    `<div class="answer" id="bfans">${c.backMasked || c.back}</div>
-      <div style="margin-top:16px;font-weight:650">Which concept is this?</div>
-      <div class="choices" id="choices">${btns}</div>`,
-  );
+  const ses = drawCard(c, dir, question(btns));
 
   function finish(picked: HTMLElement | null): void {
     if (ses.answered) return;
@@ -148,9 +158,8 @@ export function renderBF(c: GameCard): void {
       if ((b as HTMLElement).dataset.topic === c.topic) b.classList.add('correct');
     });
     if (picked && !ok) picked.classList.add('wrong');
-    const ansEl = app.querySelector('#bfans');
-    if (ansEl) ansEl.innerHTML = c.back; // reveal the un-masked answer
-    score(c, ok, 'bf');
+    if (reveal) reveal();
+    score(c, ok, scoreKey);
 
     // This mode has no #act to replace — its Next button is appended after the choices — so it does
     // its own ending rather than calling endCard.
@@ -172,6 +181,24 @@ export function renderBF(c: GameCard): void {
       if (b) finish(b as HTMLElement);
     }
   });
+}
+
+/** Identify: show the (masked) answer, pick the concept it describes. */
+export function renderBF(c: GameCard): void {
+  const extras = (c.mc || []).map((s) => ({ topic: s }));
+  renderChoice(
+    c,
+    'identify',
+    (distractors(c, 7) as { topic: string }[]).concat(extras),
+    (btns) => `<div class="answer" id="bfans">${c.backMasked || c.back}</div>
+      <div style="margin-top:16px;font-weight:650">Which concept is this?</div>
+      <div class="choices" id="choices">${btns}</div>`,
+    'bf',
+    () => {
+      const ansEl = app.querySelector('#bfans');
+      if (ansEl) ansEl.innerHTML = c.back; // reveal the un-masked answer
+    },
+  );
 }
 
 /** Fill-in: type the missing word into the sentence. */
@@ -383,6 +410,50 @@ export function renderMA(c: GameCard): void {
   });
 }
 
+/**
+ * Wire the ☐/☑ toggle onto every checkbox-style option (`.choice` or `.cl-btn`). Clicking a live
+ * option flips its membership in `picked` and swaps the box glyph; a graded card ignores clicks.
+ */
+function bindCheckboxToggle(selector: string, ses: Session, picked: Set<number>): void {
+  app.querySelectorAll(selector).forEach((b) =>
+    b.addEventListener('click', () => {
+      if (ses.answered) return;
+      const i = +(b as HTMLElement).dataset.i!;
+      if (picked.has(i)) {
+        picked.delete(i);
+        b.classList.remove('picked');
+        b.querySelector('.k')!.textContent = '☐';
+      } else {
+        picked.add(i);
+        b.classList.add('picked');
+        b.querySelector('.k')!.textContent = '☑';
+      }
+    }),
+  );
+}
+
+/**
+ * The shared reveal loop for the two multi-pick modes: disable every option and paint it correct /
+ * missed-opt / wrong from `picked` and a per-mode correctness predicate. Options are addressed by
+ * `${selector}[data-i="i"]` for i in 0..count-1.
+ */
+function gradeCheckboxes(
+  selector: string,
+  count: number,
+  picked: Set<number>,
+  isCorrect: (i: number) => boolean,
+): void {
+  for (let i = 0; i < count; i++) {
+    const b = app.querySelector(`${selector}[data-i="${i}"]`) as HTMLButtonElement;
+    b.disabled = true;
+    const sel = picked.has(i);
+    const correct = isCorrect(i);
+    if (correct && sel) b.classList.add('correct');
+    else if (correct && !sel) b.classList.add('missed-opt');
+    else if (!correct && sel) b.classList.add('wrong');
+  }
+}
+
 /** Multi-select: tick every member of a set. One wrong pick fails the card. */
 export function renderMS(c: GameCard): void {
   const nCorrect = Math.min(4, c.multi!.length);
@@ -406,39 +477,13 @@ export function renderMS(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="mscheck">Check</button></div>`,
   );
 
-  app.querySelectorAll('.choice').forEach((b) =>
-    b.addEventListener('click', () => {
-      if (ses.answered) return;
-      const i = +(b as HTMLElement).dataset.i!;
-      if (picked.has(i)) {
-        picked.delete(i);
-        b.classList.remove('picked');
-        b.querySelector('.k')!.textContent = '☐';
-      } else {
-        picked.add(i);
-        b.classList.add('picked');
-        b.querySelector('.k')!.textContent = '☑';
-      }
-    }),
-  );
+  bindCheckboxToggle('.choice', ses, picked);
 
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    let allRight = !timedOut;
-    opts.forEach((o, i) => {
-      const b = app.querySelector(`.choice[data-i="${i}"]`) as HTMLButtonElement;
-      b.disabled = true;
-      const sel = picked.has(i);
-      if (o.ok && sel) b.classList.add('correct');
-      else if (o.ok && !sel) {
-        b.classList.add('missed-opt');
-        allRight = false;
-      } else if (!o.ok && sel) {
-        b.classList.add('wrong');
-        allRight = false;
-      }
-    });
+    const allRight = !timedOut && opts.every((o, i) => o.ok === picked.has(i));
+    gradeCheckboxes('.choice', opts.length, picked, (i) => opts[i].ok);
     score(c, allRight, 'ms');
 
     const note = timedOut
@@ -666,61 +711,16 @@ function codeBlock(code: NonNullable<GameCard['code']>): string {
 export function renderCW(c: GameCard): void {
   const code = c.code!;
   const extras = (c.mc || []).map((s) => ({ topic: s }));
-  const seen = new Set([c.topic]);
-  // Prefer the card's own authored distractors; top up from the global pool only if it runs short.
-  const pool = shuffle(extras.concat(distractors(c, 7) as { topic: string }[]))
-    .filter((o) => {
-      if (seen.has(o.topic)) return false;
-      seen.add(o.topic);
-      return true;
-    })
-    .slice(0, 7);
-  const opts = shuffle(pool.concat(c));
-  const L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-  const btns = opts
-    .map(
-      (o, i) =>
-        `<button class="choice" data-topic="${esc(o.topic)}"><span class="k">${L[i]}</span>${esc(o.topic)}</button>`,
-    )
-    .join('');
-
-  const ses = drawCard(
+  renderChoice(
     c,
     'read the code',
-    `${codeBlock(code)}
+    // Prefer the card's own authored distractors; top up from the global pool only if it runs short.
+    extras.concat(distractors(c, 7) as { topic: string }[]),
+    (btns) => `${codeBlock(code)}
       <div style="margin-top:16px;font-weight:650">What is this code doing?</div>
       <div class="choices" id="choices">${btns}</div>`,
+    'cw',
   );
-
-  function finish(picked: HTMLElement | null): void {
-    if (ses.answered) return;
-    answeredNow();
-    const ok = picked ? picked.dataset.topic === c.topic : false;
-    app.querySelectorAll('.choice').forEach((b) => {
-      (b as HTMLButtonElement).disabled = true;
-      if ((b as HTMLElement).dataset.topic === c.topic) b.classList.add('correct');
-    });
-    if (picked && !ok) picked.classList.add('wrong');
-    score(c, ok, 'cw');
-
-    const note = picked ? '' : '<div class="grade-note bad">⏱ Timed out</div>';
-    const cont = document.createElement('div');
-    cont.innerHTML = `${note}<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
-    app.querySelector('#choices')!.after(cont);
-    app.querySelector('#next')!.addEventListener('click', advance);
-  }
-
-  ses._onTimeout = () => finish(null);
-  app.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => finish(b as HTMLElement)));
-
-  modeKeys((e) => {
-    if (ses.answered) return;
-    const idx = choiceIndex(e);
-    if (idx >= 0) {
-      const b = app.querySelectorAll('.choice')[idx];
-      if (b) finish(b as HTMLElement);
-    }
-  });
 }
 
 /** Select the lines: tick every line that does X. One wrong (or missing) line fails the card. */
@@ -745,35 +745,13 @@ export function renderCS(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="mscheck">Check</button></div>`,
   );
 
-  app.querySelectorAll('.cl-btn').forEach((b) =>
-    b.addEventListener('click', () => {
-      if (ses.answered) return;
-      const i = +(b as HTMLElement).dataset.i!;
-      if (picked.has(i)) {
-        picked.delete(i);
-        b.classList.remove('picked');
-        b.querySelector('.k')!.textContent = '☐';
-      } else {
-        picked.add(i);
-        b.classList.add('picked');
-        b.querySelector('.k')!.textContent = '☑';
-      }
-    }),
-  );
+  bindCheckboxToggle('.cl-btn', ses, picked);
 
   function check(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
     const allRight = !timedOut && codeSelectOK([...picked], cs.answer);
-    code.lines.forEach((_, i) => {
-      const b = app.querySelector(`.cl-btn[data-i="${i}"]`) as HTMLButtonElement;
-      b.disabled = true;
-      const sel = picked.has(i);
-      const correct = answer.has(i);
-      if (correct && sel) b.classList.add('correct');
-      else if (correct && !sel) b.classList.add('missed-opt');
-      else if (!correct && sel) b.classList.add('wrong');
-    });
+    gradeCheckboxes('.cl-btn', code.lines.length, picked, (i) => answer.has(i));
     score(c, allRight, 'cs');
 
     const note = timedOut

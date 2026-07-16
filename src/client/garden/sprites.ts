@@ -7,6 +7,8 @@ import {
   ASSET,
   type Animal,
   BLOCKS,
+  BOARD_CELLS,
+  BOARD_W,
   FEAT_BY_ID,
   type Feature,
   type GardenCell,
@@ -18,6 +20,8 @@ import {
   LAYERS,
   TIMG,
   Z_STEP,
+  colOf,
+  rowOf,
   supportsUpper,
   waterMask,
 } from './catalog.js';
@@ -79,8 +83,8 @@ export function animThumb(a: Animal): string {
   return `<span class="ganim" style="position:static;left:auto;bottom:auto;transform:none;width:${w}px;height:${h}px;overflow:visible"><span class="ganimf anim-${a.id}" style="width:${a.fw}px;height:${a.fh}px;background-image:url(${ASSET}critters/${a.id}_d0.png);transform-origin:top left;transform:scale(${s.toFixed(3)}) translate(${-a.cx}px,${-a.cy}px)"></span></span>`;
 }
 export function cellPos(i: number, layer = 0): { x: number; y: number; z: number } {
-  const r = (i / 10) | 0;
-  const c = i % 10;
+  const r = rowOf(i);
+  const c = colOf(i);
   // Lift the elevation layer one cube; sort by footprint first, layer only as a tiebreak.
   return {
     x: (c - r) * ISO_HX + ISO_OX,
@@ -139,13 +143,13 @@ export type HitFill = 'open' | 'blocked' | 'none';
 export function hitCell(cell: GardenCell | null, i: number, layer = 0, fill: HitFill = 'open'): string {
   const p = cellPos(i, layer);
   const cls = cell ? '' : fill === 'open' ? ' empty' : fill === 'blocked' ? ' void' : '';
-  return `<button class="gcell${cls}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${i % 10},${(i / 10) | 0}"></button>`;
+  return `<button class="gcell${cls}" data-i="${i}" style="left:${p.x}px;top:${p.y}px" aria-label="tile ${colOf(i)},${rowOf(i)}"></button>`;
 }
 function gGuides(): string {
   let h = '';
-  for (let k = 0; k < 10; k++) {
+  for (let k = 0; k < BOARD_W; k++) {
     const cp = cellPos(k);
-    const rp = cellPos(k * 10);
+    const rp = cellPos(k * BOARD_W);
     h += `<span class="gguide gg-col" data-c="${k}" style="left:${cp.x + ISO_HX * 1.5}px;top:${cp.y + ISO_HY * 0.5}px">${k}</span>`;
     h += `<span class="gguide gg-row" data-r="${k}" style="left:${rp.x + ISO_HX * 0.5}px;top:${rp.y + ISO_HY * 0.5}px">${k}</span>`;
   }
@@ -155,7 +159,7 @@ function gGuides(): string {
 function tileIdOverlay(): string {
   const C = DB.garden.cells;
   let h = '';
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < BOARD_CELLS; i++) {
     const cell = C[i];
     if (!cell) continue;
     const p = cellPos(i);
@@ -177,7 +181,7 @@ export function gardenBoardInner(): string {
   const editing = !!S.selBrush;
   const L = S.layer;
   let art = '';
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < BOARD_CELLS; i++) {
     for (let layer = 0; layer < LAYERS; layer++) {
       // In view-all, or on the active layer, paint live. The layer directly BELOW the active one is
       // the support layer: it greys out, and turns red where nothing can be built on it. Every other
@@ -207,7 +211,7 @@ export function gardenArt(): string {
   // Display only (home mini-board): every layer, always foreground, full colour.
   const G = DB.garden;
   let out = '';
-  for (let i = 0; i < 100; i++)
+  for (let i = 0; i < BOARD_CELLS; i++)
     for (let layer = 0; layer < LAYERS; layer++) out += cellArt(layerCells(G, layer)[i], i, layer, true);
   return out;
 }
@@ -215,7 +219,7 @@ export function gardenArt(): string {
 export function tileDesc(i: number): string {
   const L = S.layer;
   const cell = layerCells(DB.garden, L)[i];
-  const loc = `col ${i % 10} · row ${(i / 10) | 0}${L ? ` · layer ${L + 1}` : ''}`;
+  const loc = `col ${colOf(i)} · row ${rowOf(i)}${L ? ` · layer ${L + 1}` : ''}`;
   if (!cell) {
     if (L > 0 && !supportsUpper(layerCells(DB.garden, L - 1)[i])) return `${loc} — nothing below to build on`;
     return `${loc} — empty`;
