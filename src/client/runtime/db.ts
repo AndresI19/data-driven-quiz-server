@@ -95,80 +95,97 @@ export const DB: DBShape = (() => {
   } catch (e) {}
   return { stats: {}, active: null, decks: [] } as unknown as DBShape;
 })();
-if (!DB.stats) DB.stats = {};
-if (!DB.decks) DB.decks = [];
-if (!DB.sessions) DB.sessions = [];
-// A session can predate fields the UI reads unconditionally, or arrive malformed from a synced
-// document. One entry missing `missedIds` made setup() throw at `s.missedIds.length` — mid-render,
-// AFTER it had already pushed /home and switched on the ambient background — so "quit to menu"
-// changed the URL and the effects but left the quiz on screen, wedging navigation and leaving the
-// pause button dead. Backfill what every consumer assumes; drop entries too broken to repair.
-DB.sessions = DB.sessions.filter((s) => !!s && typeof s === 'object');
-DB.sessions.forEach((s) => {
-  if (!Array.isArray(s.missedIds)) s.missedIds = [];
-  if (!s.notes || typeof s.notes !== 'object') s.notes = {};
-  if (typeof s.noteCount !== 'number') {
-    s.noteCount = Object.keys(s.notes).filter((k) => (s.notes[k] || '').trim()).length;
-  }
-});
-// A resume snapshot with no question list would throw the same way in the home resume banner.
-if (DB.active && !Array.isArray(DB.active.q)) DB.active = null;
-if (!DB.favorites) DB.favorites = {};
-if (!DB.flags) DB.flags = {};
-// Garden(s): shared wallet lives on DB; each garden holds only cells/hideFg/bg.
-// Migrate a legacy single garden (wallet fields on DB.garden) up to the shared level.
-{
-  const legacy = (DB.garden && typeof DB.garden === 'object' ? DB.garden : {}) as Record<string, unknown>;
-  if (DB.coins == null) DB.coins = (legacy.coins as number) ?? 0;
-  if (DB.combo == null) DB.combo = (legacy.combo as number) ?? 0;
-  // Default OFF. This used to default to `?? true`, which granted every player unlimited free
-  // currency — a dev "god mode" that shipped switched on. It is an ADMIN tool now: enforced false
-  // for non-admins at boot (see main.ts) and toggled only through the admin-only debug menu.
-  if (DB.infinite == null) DB.infinite = (legacy.infinite as boolean) ?? false;
-  if (DB.spent == null) DB.spent = (legacy.spent as number) ?? 0;
-  if (DB.maxScore == null) DB.maxScore = 0;
-  if (!DB.ownedBg) DB.ownedBg = {};
-  if (!DB.ownedFx) DB.ownedFx = {};
-  if (!Array.isArray(DB.gardens)) {
-    const cells =
-      DB.garden && Array.isArray(DB.garden.cells) && !(legacy.gardens as unknown)
-        ? DB.garden.cells
-        : newBoard();
-    DB.gardens = [
-      {
-        cells,
-        upper: emptyElevation(),
-        hideFg: (legacy.hideFg as boolean) ?? false,
-        bg: (legacy.bg as string) ?? null,
-        fx: null,
-      },
-    ];
-    DB.gardenIdx = 0;
-  }
-  if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;
-  DB.gardens.forEach((g) => {
-    if (!Array.isArray(g.cells)) g.cells = newBoard();
-    // Elevation layers. Three shapes reach here: absent (pre-elevation gardens), a single FLAT layer
-    // (the first elevation release stored `upper` as one 100-cell array), or the current array-of-
-    // layers. Wrap the flat one so its content stays at layer 1, then pad up to LAYERS-1 layers.
-    const up = g.upper as unknown;
-    if (!Array.isArray(up)) g.upper = [];
-    else if (up.length > 0 && !Array.isArray(up[0])) g.upper = [up as (GardenCell | null)[]]; // legacy single flat elevation layer → layer 1
-    while (g.upper.length < LAYERS - 1) g.upper.push(emptyLayer());
-    if (g.hideFg == null) g.hideFg = false;
-    if (g.bg === undefined) g.bg = null;
-    if (g.fx === undefined) g.fx = null;
+/**
+ * Repair a document IN PLACE — backfill the fields every consumer reads unconditionally, migrate
+ * legacy garden shapes, and drop entries too broken to keep. Idempotent, so running it twice is safe.
+ *
+ * Exported (not merely run at import) because the boot path is NOT the only one that fills DB: pull()
+ * adopts a signed-in player's server document with `Object.assign(DB, data)`, replacing every field
+ * without re-running this. A document that predates a field the UI assumes — the original culprit was
+ * a session with no `missedIds` — would then reach the UI unrepaired. Because pull() runs after boot,
+ * only for a signed-in account, and only its stored shape matters, this surfaced as an "admin-only"
+ * bug: guests never pull, and newer accounts were written under the current schema. Sharing this one
+ * function across both paths is the fix — see the sessions block below for the exact crash it caused.
+ */
+export function repairDB(): void {
+  if (!DB.stats) DB.stats = {};
+  if (!DB.decks) DB.decks = [];
+  if (!DB.sessions) DB.sessions = [];
+  // A session can predate fields the UI reads unconditionally, or arrive malformed from a synced
+  // document. One entry missing `missedIds` made setup() throw at `s.missedIds.length` — mid-render,
+  // AFTER it had already pushed /home and switched on the ambient background — so "quit to menu"
+  // changed the URL and the effects but left the quiz on screen, wedging navigation and leaving the
+  // pause button dead. Backfill what every consumer assumes; drop entries too broken to repair.
+  DB.sessions = DB.sessions.filter((s) => !!s && typeof s === 'object');
+  DB.sessions.forEach((s) => {
+    if (!Array.isArray(s.missedIds)) s.missedIds = [];
+    if (!s.notes || typeof s.notes !== 'object') s.notes = {};
+    if (typeof s.noteCount !== 'number') {
+      s.noteCount = Object.keys(s.notes).filter((k) => (s.notes[k] || '').trim()).length;
+    }
   });
-  DB.garden = DB.gardens[DB.gardenIdx];
+  // A resume snapshot with no question list would throw the same way in the home resume banner.
+  if (DB.active && !Array.isArray(DB.active.q)) DB.active = null;
+  if (!DB.favorites) DB.favorites = {};
+  if (!DB.flags) DB.flags = {};
+  // Garden(s): shared wallet lives on DB; each garden holds only cells/hideFg/bg.
+  // Migrate a legacy single garden (wallet fields on DB.garden) up to the shared level.
+  {
+    const legacy = (DB.garden && typeof DB.garden === 'object' ? DB.garden : {}) as Record<string, unknown>;
+    if (DB.coins == null) DB.coins = (legacy.coins as number) ?? 0;
+    if (DB.combo == null) DB.combo = (legacy.combo as number) ?? 0;
+    // Default OFF. This used to default to `?? true`, which granted every player unlimited free
+    // currency — a dev "god mode" that shipped switched on. It is an ADMIN tool now: enforced false
+    // for non-admins at boot (see main.ts) and toggled only through the admin-only debug menu.
+    if (DB.infinite == null) DB.infinite = (legacy.infinite as boolean) ?? false;
+    if (DB.spent == null) DB.spent = (legacy.spent as number) ?? 0;
+    if (DB.maxScore == null) DB.maxScore = 0;
+    if (!DB.ownedBg) DB.ownedBg = {};
+    if (!DB.ownedFx) DB.ownedFx = {};
+    if (!Array.isArray(DB.gardens)) {
+      const cells =
+        DB.garden && Array.isArray(DB.garden.cells) && !(legacy.gardens as unknown)
+          ? DB.garden.cells
+          : newBoard();
+      DB.gardens = [
+        {
+          cells,
+          upper: emptyElevation(),
+          hideFg: (legacy.hideFg as boolean) ?? false,
+          bg: (legacy.bg as string) ?? null,
+          fx: null,
+        },
+      ];
+      DB.gardenIdx = 0;
+    }
+    if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;
+    DB.gardens.forEach((g) => {
+      if (!Array.isArray(g.cells)) g.cells = newBoard();
+      // Elevation layers. Three shapes reach here: absent (pre-elevation gardens), a single FLAT layer
+      // (the first elevation release stored `upper` as one 100-cell array), or the current array-of-
+      // layers. Wrap the flat one so its content stays at layer 1, then pad up to LAYERS-1 layers.
+      const up = g.upper as unknown;
+      if (!Array.isArray(up)) g.upper = [];
+      else if (up.length > 0 && !Array.isArray(up[0])) g.upper = [up as (GardenCell | null)[]]; // legacy single flat elevation layer → layer 1
+      while (g.upper.length < LAYERS - 1) g.upper.push(emptyLayer());
+      if (g.hideFg == null) g.hideFg = false;
+      if (g.bg === undefined) g.bg = null;
+      if (g.fx === undefined) g.fx = null;
+    });
+    DB.garden = DB.gardens[DB.gardenIdx];
+  }
+  if (!DB.settings) DB.settings = {} as Settings;
+  {
+    const Sset = DB.settings;
+    if (Sset.volume == null) Sset.volume = 50;
+    if (Sset.muted == null) Sset.muted = false;
+    if (Sset.timeSpeed == null) Sset.timeSpeed = 1;
+    if (Sset.hints == null) Sset.hints = true;
+  }
 }
-if (!DB.settings) DB.settings = {} as Settings;
-{
-  const Sset = DB.settings;
-  if (Sset.volume == null) Sset.volume = 50;
-  if (Sset.muted == null) Sset.muted = false;
-  if (Sset.timeSpeed == null) Sset.timeSpeed = 1;
-  if (Sset.hints == null) Sset.hints = true;
-}
+
+// Repair the local document once, at import — the same pass pull() re-runs on an adopted document.
+repairDB();
 
 /**
  * Anything that wants to know the document changed. There is exactly ONE write point in this app —

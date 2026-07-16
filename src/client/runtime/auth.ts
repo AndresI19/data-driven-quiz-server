@@ -4,7 +4,7 @@
 // What IS here is the part only the quiz has: reconciling a player's document with the server.
 
 import { authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
-import { DB, saveDB } from './db.js';
+import { DB, repairDB, saveDB } from './db.js';
 
 // The app's mount prefix (Vite's baked-in base, always trailing-slashed; '/' at root) — NOT
 // window.location.pathname. The pathname is the live SPA route (/home, /quiz, …), so reading it here
@@ -55,6 +55,7 @@ export async function pull(): Promise<PullOutcome> {
 
   if (localIsEmpty()) {
     Object.assign(DB, data);
+    repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
     if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
     saveDB();
     setIdentity({ ...id, version });
@@ -68,6 +69,7 @@ export async function pull(): Promise<PullOutcome> {
     /* out of quota — proceed; the server copy is the one being kept */
   }
   Object.assign(DB, data);
+  repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
   if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
   saveDB();
   setIdentity({ ...id, version });
