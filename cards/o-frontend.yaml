@@ -1,0 +1,94 @@
+# Front-End — currently the delivery half of it: how static assets reach a browser, and why the
+# obvious checks lie to you. Every card here is a failure this platform actually shipped: a garden
+# image swapped in place that nobody could see for hours, and the 200 OK that hid a missing file.
+#
+# Authored like the Debugging deck: no card sets `recall: true`, and every card carries the fields
+# (mc for identify, cloze for fill-in-the-blank) that let the mixed draw pick a machine-graded mode.
+# It cannot be pinned to those — `fb`/`bf` are ungated in capabilities.ts, so open recall still comes
+# up in the rotation. Which is why each `desc` below has to read on its own: identify HIDES the topic,
+# so a desc that refers back to its own title ("the shortcut…") leaves nothing to reason from.
+section:
+  key: O
+  name: Front-End
+  color: "#84cc16"
+
+cards:
+  # ── Delivery & caching ────────────────────────────────────────────────────────────────────────
+  - topic: "Stale asset behind an unfingerprinted filename"
+    desc: "New artwork is deployed over the old file at the same path, and the origin is confirmed to be returning the new bytes — yet visitors keep seeing the previous picture for hours, and a hard refresh changes nothing. The file ships from a static directory under a long max-age, so every browser and every CDN edge still considers the copy it already holds fresh, and nothing about the address changed to tell them otherwise."
+    mc:
+      - "The deploy rolled out but the pod is still running the old image"
+      - "The file was written to the wrong static directory"
+      - "The CDN is re-compressing the image and corrupting it"
+      - "The browser has run out of room for its cache"
+    cloze:
+      text: "An asset replaced in place goes on serving stale because its {} never changed — so no cache has any reason to fetch it again."
+      answer: "URL"
+      alts:
+        - "url"
+        - "filename"
+        - "file name"
+        - "path"
+        - "name"
+
+  - topic: "Content fingerprinting"
+    desc: "Build tools emit bundles under hashed names like index-CWr5tzLu.js so the file can be cached indefinitely, while any change to it ships under an address no cache has ever seen. Files copied verbatim out of a public/ or static/ directory never pass through that step — which is precisely why those are the assets that go stale after a swap."
+    mc:
+      - "Minification"
+      - "Tree shaking"
+      - "Code splitting"
+      - "Source mapping"
+    cloze:
+      text: "Hashing a built file's name so that changing it ships a brand-new URL is called content {}."
+      answer: "fingerprinting"
+      alts:
+        - "hashing"
+        - "fingerprint"
+
+  - topic: "A hard refresh does not clear a CDN edge"
+    desc: "Pressing Ctrl+Shift+R throws away the local browser copy and refetches, but the request still terminates at the nearest edge, which keeps serving the copy it holds for as long as that copy is fresh. Only an expiry, an explicit purge, or a changed address replaces it — which is also why a colleague routed to a different edge can honestly report seeing the new version while you still cannot."
+    mc:
+      - "It purges every cache between the client and the origin"
+      - "It forces the edge to revalidate against the origin"
+      - "Cache-Control applies only to browsers, never to a CDN"
+      - "A private-browsing window bypasses the CDN"
+    cloze:
+      text: "A hard refresh clears only the {} cache — the CDN edge serves its own copy until it expires, is purged, or the URL changes."
+      answer: "browser"
+      alts:
+        - "local"
+        - "client"
+
+  # ── Checks that lie to you ────────────────────────────────────────────────────────────────────
+  - topic: "SPA catch-all masking a missing file"
+    desc: "A single-page app's server ends its route table with a wildcard that returns index.html, so that deep links into client-side routes still work. A request for a file that does not exist therefore answers 200 with an HTML body instead of 404 — so a script that polls for the asset to appear reports success immediately, and a file that was never deployed looks like it arrived."
+    mc:
+      - "The CDN is rewriting 404 responses into 200s"
+      - "The static directory was left out of the image"
+      - "A service worker is intercepting the request"
+      - "The health endpoint is masking the failure"
+    cloze:
+      text: "Behind an SPA wildcard route a 200 does not prove a file exists — read the {} to tell the fallback HTML apart from the asset you asked for."
+      answer: "content-type"
+      alts:
+        - "content type"
+        - "Content-Type"
+        - "mime type"
+        - "MIME type"
+        - "media type"
+
+  - topic: 'loading="lazy" above the fold'
+    desc: "Marking an image lazy defers its fetch until it nears the viewport, which buys exactly nothing for an image already in the viewport when the page arrives. A heavy hero or banner graphic stays in the critical path, and the attribute leaves a comfortable impression that page weight has been dealt with when it has not."
+    mc:
+      - "It defers the fetch until after the load event wherever the image sits"
+      - "It lowers the request priority but still fetches immediately"
+      - "It applies only once a service worker is registered"
+      - "It has the browser re-encode the image at a smaller size"
+    cloze:
+      text: 'An image that is already {} the fold gains nothing from loading="lazy" — the attribute only defers fetches until the image nears the viewport.'
+      answer: "above"
+      alts:
+        - "in view"
+        - "visible"
+        - "on screen"
+        - "onscreen"
