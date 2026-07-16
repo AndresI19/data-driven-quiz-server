@@ -9,7 +9,7 @@ import { ACCENT_FALLBACK, MULTIPOOL, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import type { Session } from '../runtime/state.js';
 import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
-import { choiceIndex, drawCard, endCard, gradeNote, modeKeys, score, typedFeedback } from './card.js';
+import { choiceIndex, drawCard, endCard, endGraded, modeKeys, score, typedFeedback } from './card.js';
 import { navKey } from './engine.js';
 import { codeSelectOK, czOK, distractors, ivOK, record } from './grading.js';
 import { advance } from './session.js';
@@ -393,12 +393,14 @@ export function renderMA(c: GameCard): void {
     box.classList.add('locked');
     score(c, allRight, 'ma');
 
-    const note = timedOut
-      ? '⏱ Timed out'
-      : allRight
-        ? '✓ all matched!'
-        : '✗ red = your wrong link; green marks the right target';
-    endCard(c, gradeNote(allRight, note), { reveal: true });
+    endGraded(
+      c,
+      allRight,
+      timedOut,
+      '✓ all matched!',
+      '✗ red = your wrong link; green marks the right target',
+      { reveal: true },
+    );
   }
 
   ses._onTimeout = () => check(true);
@@ -489,12 +491,7 @@ export function renderMS(c: GameCard): void {
     gradeCheckboxes('.choice', opts.length, picked, (i) => opts[i].ok);
     score(c, allRight, 'ms');
 
-    const note = timedOut
-      ? '⏱ Timed out'
-      : allRight
-        ? '✓ perfect selection!'
-        : '✗ the correct set is highlighted';
-    endCard(c, gradeNote(allRight, note));
+    endGraded(c, allRight, timedOut, '✓ perfect selection!', '✗ the correct set is highlighted');
   }
 
   ses._onTimeout = () => check(true);
@@ -681,12 +678,14 @@ export function renderDM(c: GameCard): void {
     });
     score(c, allRight, 'dm');
 
-    const note = timedOut
-      ? '⏱ Timed out'
-      : allRight
-        ? '✓ all labels correct!'
-        : '✗ red = wrong; the correct label is now shown';
-    endCard(c, gradeNote(allRight, note), { reveal: true });
+    endGraded(
+      c,
+      allRight,
+      timedOut,
+      '✓ all labels correct!',
+      '✗ red = wrong; the correct label is now shown',
+      { reveal: true },
+    );
   }
 
   ses._onTimeout = () => check(true);
@@ -757,12 +756,7 @@ export function renderCS(c: GameCard): void {
     gradeCheckboxes('.cl-btn', code.lines.length, picked, (i) => answer.has(i));
     score(c, allRight, 'cs');
 
-    const note = timedOut
-      ? '⏱ Timed out'
-      : allRight
-        ? '✓ exactly the right lines!'
-        : '✗ the correct lines are highlighted';
-    endCard(c, gradeNote(allRight, note));
+    endGraded(c, allRight, timedOut, '✓ exactly the right lines!', '✗ the correct lines are highlighted');
   }
 
   ses._onTimeout = () => check(true);

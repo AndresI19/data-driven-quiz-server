@@ -56,17 +56,6 @@ export interface AuthoredCard {
   codeselect?: CodeSelect; // + a block → enables "select the lines" (cs)
 }
 
-export interface Section {
-  key: string; // A..Z, the ID prefix
-  name: string;
-  color: string; // hex, drives the per-section accent
-}
-
-export interface SectionFile {
-  section: Section;
-  cards: AuthoredCard[];
-}
-
 /** Game-ready card the client renders (mirrors the Python `game_cards` objects). */
 export interface GameCard {
   id: string;
