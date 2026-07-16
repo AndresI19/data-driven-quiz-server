@@ -15,7 +15,7 @@ import { mountScreenBg } from './garden/screenbg.js';
 import { mountDebug } from './pages/debug.js';
 import { closePeek } from './quiz/engine.js';
 import { closeZoom, openZoom, pauseGame, unpauseGame } from './quiz/pause.js';
-import { pull, schedulePush } from './runtime/auth.js';
+import { pull, reconcileOwner, schedulePush } from './runtime/auth.js';
 import { app, initData } from './runtime/data.js';
 import { DB, onSaved, saveDB } from './runtime/db.js';
 import { route } from './runtime/router.js';
@@ -79,6 +79,11 @@ async function boot(): Promise<void> {
     nudgeGuest: true,
     onUpgrade: () => mountGate({ onDone: () => void pull().finally(() => route()) }),
   });
+  // Identity is settled now (a first visitor was just defaulted to guest above). Scope the document to
+  // it BEFORE pull(): a doc left by a different signed-in user is discarded here so it neither renders
+  // as, nor uploads into, this identity. Runs on every load, so a sign-out (which reloads) lands a
+  // fresh slate for the guest or next user that follows.
+  reconcileOwner();
   // A returning signed-in player picks up whatever another browser did since last time. A conflict is
   // handled inside pull() by keeping BOTH copies — never by overwriting one in silence. A guest has
   // nothing to pull; route() at the end of boot renders either way.

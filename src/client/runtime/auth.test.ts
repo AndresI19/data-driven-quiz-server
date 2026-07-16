@@ -11,11 +11,12 @@ vi.mock('@platform/ui/auth', () => ({
   setIdentity: vi.fn(),
 }));
 
-import { authFetch } from '@platform/ui/auth';
-import { pull } from './auth.js';
+import { authFetch, current } from '@platform/ui/auth';
+import { pull, reconcileOwner } from './auth.js';
 import { DB, repairDB } from './db.js';
 
 const fetchMock = authFetch as unknown as ReturnType<typeof vi.fn>;
+const currentMock = current as unknown as ReturnType<typeof vi.fn>;
 
 /**
  * A server document written under an OLDER schema: its one session predates `missedIds`. This is the
@@ -56,6 +57,7 @@ function serverReturns(doc: Record<string, unknown> | null, version = 3): void {
 
 beforeEach(() => {
   fetchMock.mockReset();
+  currentMock.mockReturnValue({ username: 'admin', version: 1 }); // default identity for pull() tests
   // Reset the DB singleton to a clean, empty baseline, then normalize gardens/settings.
   DB.sessions = [];
   DB.stats = {};
@@ -63,6 +65,7 @@ beforeEach(() => {
   DB.combo = 0;
   DB.spent = 0;
   DB.active = null;
+  DB.owner = undefined;
   repairDB();
 });
 
@@ -116,5 +119,68 @@ describe('repairDB()', () => {
     }).not.toThrow();
     expect(DB.sessions[0].missedIds).toEqual([]);
     expect(Array.isArray(DB.gardens)).toBe(true); // absent gardens were migrated in, not left undefined
+  });
+});
+
+describe('reconcileOwner scopes the document to the identity', () => {
+  // A distinctive amount stands in for "this account's data"; a reset zeroes it, a keep preserves it.
+  const asUser = (username: string) => currentMock.mockReturnValue({ mode: 'user', username });
+  const asGuest = () => currentMock.mockReturnValue({ mode: 'guest' });
+
+  test("another user's document is discarded, not shown as mine", () => {
+    DB.owner = 'alice';
+    DB.coins = 500;
+    DB.grant.login = 'claimed';
+    asUser('bob');
+
+    reconcileOwner();
+
+    expect(DB.coins).toBe(0); // alice's wallet did not bleed into bob's session
+    expect(DB.grant.login).toBe('none'); // …nor did her claimed grant (bob should still see the mail)
+    expect(DB.owner).toBe('bob');
+  });
+
+  test('signing out to guest resets the document (the signed-in data is safe on the server)', () => {
+    DB.owner = 'alice';
+    DB.coins = 500;
+    asGuest();
+
+    reconcileOwner();
+
+    expect(DB.coins).toBe(0);
+    expect(DB.owner).toBe('guest');
+  });
+
+  test("a guest's document is kept and re-tagged when they sign up (the migration is preserved)", () => {
+    DB.owner = 'guest';
+    DB.coins = 300; // a month of guest play
+    asUser('carol');
+
+    reconcileOwner();
+
+    expect(DB.coins).toBe(300); // NOT reset — pull() will upload this as carol's starting document
+    expect(DB.owner).toBe('carol');
+  });
+
+  test('reloading as the same user keeps the document', () => {
+    DB.owner = 'dave';
+    DB.coins = 500;
+    asUser('dave');
+
+    reconcileOwner();
+
+    expect(DB.coins).toBe(500);
+    expect(DB.owner).toBe('dave');
+  });
+
+  test('a legacy document with no owner tag is grandfathered, not wiped', () => {
+    DB.owner = undefined;
+    DB.coins = 500;
+    asUser('erin');
+
+    reconcileOwner();
+
+    expect(DB.coins).toBe(500);
+    expect(DB.owner).toBe('erin');
   });
 });
