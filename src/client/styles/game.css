@@ -2666,3 +2666,104 @@ body.ambient .saved-note {
 .cl-btn:disabled {
   cursor: default;
 }
+
+/* ── Welcome-coin grant: garden mail button, claim message, guest watermark (garden/grants.ts) ── */
+.gmail {
+  position: fixed;
+  left: 14px;
+  top: 12px;
+  z-index: 60;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .12s, box-shadow .12s;
+}
+.gmail:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: var(--shadow-lg);
+}
+/* Unread marker — shown only while an award is pending (garden/grants.ts adds/omits it). */
+.gmail-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bad);
+  border: 2px solid var(--panel);
+  animation: gmailpulse 1.8s ease-in-out infinite;
+}
+@keyframes gmailpulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.65;
+  }
+}
+/* Claim feedback — fades in, holds, fades out; no dialog, no dismiss. */
+.grantclaim {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -42%);
+  z-index: 80;
+  pointer-events: none;
+  text-align: center;
+  opacity: 0;
+  transition: opacity .5s ease, transform .5s ease;
+}
+.grantclaim.go {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+.grantclaim .gc-msg {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.grantclaim .gc-amt {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--good);
+  font-variant-numeric: tabular-nums;
+}
+/* Guest watermark, in the top-right column beneath the login FAB. It sits BELOW the garden toolbar
+   (rvbar + garden switcher), not tight under the FAB — otherwise its second line collides with the
+   toolbar's right-hand Reset/GIF buttons on narrower viewports (they share the top-right corner). */
+.guestmark {
+  position: fixed;
+  top: 152px;
+  right: 16px;
+  z-index: 60;
+  max-width: 190px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gmail-dot {
+    animation: none;
+  }
+  .grantclaim {
+    transition: opacity .01s;
+  }
+}

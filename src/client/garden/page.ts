@@ -4,6 +4,7 @@ import { stopTicker } from '../quiz/timer.js';
 // The garden editor page: garden switcher, palette (tools/blocks/plants+wood/trees/rocks/animals/
 // backgrounds — each row scrolls horizontally to stay compact), the board, hover row/column
 // highlight, tool cursors, and all its wiring.
+import { COIN, CURRENCY } from '../runtime/currency.js';
 import { app } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
@@ -48,6 +49,7 @@ import {
   updateMaxScore,
 } from './economy.js';
 import { exportGardenGif } from './export-gif.js';
+import { claimGrants, guestWatermarkHtml, mailButtonHtml } from './grants.js';
 import { applyBrush, brushHint, brushSel, costTag } from './interact.js';
 import { setScreenBg } from './screenbg.js';
 import { startSplashes } from './splash.js';
@@ -110,7 +112,7 @@ export function gardenPage(): void {
   updateMaxScore();
   const G = DB.garden;
   const palTool = (id: string, label: string, cost: number | null): string =>
-    `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : `\u{1FA99}${cost}`}</span></button>`;
+    `<button class="palbtn tool${brushSel('tool', id)}" data-bt="tool" data-bi="${id}"><span class="palico-wrap"><img class="palico-img" src="${TOOL_IMG[id]}" draggable="false" alt=""></span><span class="pallab">${label}</span><span class="palcost">${cost == null ? 'free' : `${COIN}${cost}`}</span></button>`;
   // The "View" tool: the first item in the shop. It selects nothing — clicking it clears the brush,
   // which drops the board into view-all (every layer in full colour, no layer tabs). It reads as
   // selected whenever no brush is held. Placeholder eyeball SVG for now; swap for a PNG icon later.
@@ -121,7 +123,7 @@ export function gardenPage(): void {
   const palBlock = (id: string): string => {
     const s = BLOCKS[id];
     const spr = id === 'water' ? WATER_OPEN : s.pool![0];
-    return `<button class="palbtn${brushSel('block', id)}" data-bt="block" data-bi="${id}"><img class="palimg" src="${TIMG(spr)}" draggable="false" alt=""><span class="pallab">${s.name}</span><span class="palcost">\u{1FA99}${s.price}</span></button>`;
+    return `<button class="palbtn${brushSel('block', id)}" data-bt="block" data-bi="${id}"><img class="palimg" src="${TIMG(spr)}" draggable="false" alt=""><span class="pallab">${s.name}</span><span class="palcost">${COIN}${s.price}</span></button>`;
   };
   const palFeat = (f: Feature): string => {
     const img = f.pack ? `${ASSET}decor/${f.cat}/${f.file}` : TIMG(f.t!);
@@ -135,20 +137,16 @@ export function gardenPage(): void {
     const ts = Math.min(46 / tfw, 46 / tfh);
     const th = Math.round(tfh * ts);
     const thumb = `<span class="paltree" style="width:${Math.round(tfw * ts)}px;height:${th}px;background-image:url(${ASSET}decor/tree/spruce_${COLOR}.png);background-size:auto ${th}px;background-position:0 0"></span>`;
-    return `<button class="palbtn${brushSel('tree', COLOR)}" data-bt="tree" data-bi="${COLOR}"><span class="palimgwrap">${thumb}</span><span class="pallab">${name}</span><span class="palcost">\u{1FA99}${TREE_PRICE}</span></button>`;
+    return `<button class="palbtn${brushSel('tree', COLOR)}" data-bt="tree" data-bi="${COLOR}"><span class="palimgwrap">${thumb}</span><span class="pallab">${name}</span><span class="palcost">${COIN}${TREE_PRICE}</span></button>`;
   };
   const palAnimal = (a: Animal): string =>
-    `<button class="palbtn animrow${brushSel('animal', a.id)}" data-bt="animal" data-bi="${a.id}"><span class="palanim">${animThumb(a)}</span><span class="pallab">${a.name}</span><span class="palcost prem">\u{1FA99}${a.price}</span></button>`;
+    `<button class="palbtn animrow${brushSel('animal', a.id)}" data-bt="animal" data-bi="${a.id}"><span class="palanim">${animThumb(a)}</span><span class="pallab">${a.name}</span><span class="palcost prem">${COIN}${a.price}</span></button>`;
   const palBg = (): string => {
     const none = `<button class="palbtn bgbtn${G.bg == null ? ' sel' : ''}" data-bg="__none"><span class="palbgthumb none">∅</span><span class="pallab">None</span><span class="palcost">free</span></button>`;
     const items = BACKGROUNDS.map((bg) => {
       const owned = !!DB.ownedBg[bg.id];
       const active = G.bg === bg.id;
-      const cost = active
-        ? 'active'
-        : owned
-          ? `\u{1FA99}${APPLY_COST} apply`
-          : `\u{1F512} \u{1FA99}${BG_PRICE}`;
+      const cost = active ? 'active' : owned ? `${COIN}${APPLY_COST} apply` : `\u{1F512} ${COIN}${BG_PRICE}`;
       return `<button class="palbtn bgbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-bg="${bg.id}"><span class="palbgthumb" style="background-image:url(${BG_URL(bg.id)})"></span><span class="pallab">${bg.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
     }).join('');
     return none + items;
@@ -158,11 +156,7 @@ export function gardenPage(): void {
     const items = EFFECTS.map((e: Effect) => {
       const owned = !!DB.ownedFx[e.id];
       const active = G.fx === e.id;
-      const cost = active
-        ? 'active'
-        : owned
-          ? `\u{1FA99}${APPLY_COST} apply`
-          : `\u{1F512} \u{1FA99}${BG_PRICE}`;
+      const cost = active ? 'active' : owned ? `${COIN}${APPLY_COST} apply` : `\u{1F512} ${COIN}${BG_PRICE}`;
       const th = 34;
       const preview = `<span class="palfxthumb" style="width:${e.fw}px;height:${e.fh}px;background-image:url(${FX_URL(e.id)});animation:fx-spin-${e.id} ${e.dur}s steps(${e.n}) infinite;transform:scale(${(th / e.fw).toFixed(2)})"></span>`;
       return `<button class="palbtn fxbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-fx="${e.id}"><span class="palimgwrap">${preview}</span><span class="pallab">${e.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
@@ -174,14 +168,18 @@ export function gardenPage(): void {
   );
   const rocks = FEATURES.filter((f) => f.sec === 'Rocks');
   const buyBtn = canBuyGarden()
-    ? `<button class="btn primary sm" id="gbuy" title="start a fresh garden">+ New garden (\u{1FA99}${NEW_GARDEN_COST})</button>`
+    ? `<button class="btn primary sm" id="gbuy" title="start a fresh garden">+ New garden (${COIN}${NEW_GARDEN_COST})</button>`
     : `<span class="tiny gslot">next garden at \u{1F3C6} ${nextGardenThreshold()} total</span>`;
   app.innerHTML = `<div class="wrap gardenwrap">
+    <!-- Welcome-coin mail button (top-left, signed-in only) and the guest watermark under the login
+         FAB. Both are position:fixed, so their spot in the markup is immaterial; they live here so the
+         route swap that replaces app.innerHTML tears them down when you leave the garden. -->
+    ${mailButtonHtml()}${guestWatermarkHtml()}
     <div class="rvbar">
       <!-- Returns to the quiz's own home screen (setup), not the platform home page — so it is
            labelled "Back" rather than "Home", which would collide with the top-left home link. -->
       <button class="btn ghost sm" id="gback" title="back to the quiz home screen">← Back</button>
-      <div class="coinbal big">\u{1FA99} ${DB.infinite ? '∞' : DB.coins}</div>
+      <div class="coinbal big">${COIN} ${DB.infinite ? '∞' : DB.coins}</div>
       <span class="gscore big" title="achievement — total value across ALL your gardens (unlocks new gardens)">\u{1F3C6} ${totalGardenValue()}</span>
       <span class="gscore" title="this garden's value">\u{1F3C5} ${gardenValue()}</span>
       <button class="btn ghost sm${G.hideFg ? ' on' : ''}" id="ghide" title="hide plants &amp; animals to work at block level">\u{1F332} ${G.hideFg ? 'hidden' : 'shown'}</button>
@@ -217,8 +215,8 @@ export function gardenPage(): void {
       <div class="palgroup"><div class="palh">Trees — 6 colours · a random tree type is planted</div><div class="palrow">${TREE_COLORS.map(palTree).join('')}</div></div>
       <div class="palgroup"><div class="palh">Rocks — on grass, dirt or rock</div><div class="palrow">${rocks.map(palFeat).join('')}</div></div>
       <div class="palgroup"><div class="palh">Animals — premium · animated · not on trees</div><div class="palrow">${ANIMALS.map(palAnimal).join('')}</div></div>
-      <div class="palgroup"><div class="palh">Backgrounds — \u{1FA99}${BG_PRICE} unlock · \u{1FA99}${APPLY_COST} to apply (raises 🏆) · full-screen on garden + home</div><div class="palrow">${palBg()}</div></div>
-      <div class="palgroup"><div class="palh">Effects — \u{1FA99}${BG_PRICE} unlock · \u{1FA99}${APPLY_COST} to apply (raises 🏆) · falling particles on garden + home</div><div class="palrow">${palFx()}</div></div>
+      <div class="palgroup"><div class="palh">Backgrounds — ${COIN}${BG_PRICE} unlock · ${COIN}${APPLY_COST} to apply (raises 🏆) · full-screen on garden + home</div><div class="palrow">${palBg()}</div></div>
+      <div class="palgroup"><div class="palh">Effects — ${COIN}${BG_PRICE} unlock · ${COIN}${APPLY_COST} to apply (raises 🏆) · falling particles on garden + home</div><div class="palrow">${palFx()}</div></div>
     </div>
   </div>`;
   app.querySelector('#gback')!.addEventListener('click', () => {
@@ -231,12 +229,15 @@ export function gardenPage(): void {
     gardenPage();
   });
   app.querySelector('#greset')!.addEventListener('click', () => {
-    if (confirm("Reset this garden's tiles back to the 5×5 starter? (Your coins are kept.)")) {
+    if (confirm(`Reset this garden's tiles back to the 5×5 starter? (Your ${CURRENCY.many} are kept.)`)) {
       resetGarden();
       gardenPage();
     }
   });
   app.querySelector('#gexport')!.addEventListener('click', exportGardenGif);
+  // Claim welcome coins straight from the mail button — no dialog; claimGrants shows a fade message
+  // and is a no-op when nothing is pending, so clicking an already-read mailbox does nothing.
+  app.querySelector('#gmail')?.addEventListener('click', claimGrants);
   app.querySelector('#gprev')!.addEventListener('click', () => {
     switchGarden(DB.gardenIdx - 1);
     gardenPage();

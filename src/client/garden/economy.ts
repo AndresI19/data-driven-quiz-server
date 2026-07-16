@@ -1,6 +1,7 @@
 // Shared coin wallet + garden value, multi-garden purchase/switching, and background purchase.
 // Wallet (coins/combo/infinite/spent) lives on DB (shared across gardens); DB.garden is the
 // active board.
+import { COIN } from '../runtime/currency.js';
 import { DB, emptyElevation, newGarden, saveDB } from '../runtime/db.js';
 import { S } from '../runtime/state.js';
 import {
@@ -62,7 +63,7 @@ export function updateCoinBar(): void {
 export function coinToast(n: number): void {
   const t = document.createElement('div');
   t.className = 'cointoast';
-  t.textContent = `+${n} \u{1FA99}`;
+  t.textContent = `+${n} ${COIN}`;
   document.body.appendChild(t);
   setTimeout(() => t.classList.add('go'), 20);
   setTimeout(() => t.remove(), 1400);

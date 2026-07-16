@@ -1,4 +1,5 @@
 import { resetAllGardens } from '../garden/economy.js';
+import { CURRENCY } from '../runtime/currency.js';
 // Persistent debug/settings surface: a bug-icon FAB (bottom-right) that opens a settings dialog,
 // plus a version tag below it. Replaces the old inline "debug" menu on the home page.
 import { DB, saveDB } from '../runtime/db.js';
@@ -36,8 +37,8 @@ function openDebugDialog(): void {
     <div class="tiny" style="margin-bottom:16px">The Cloud Developer Quiz · ${__APP_VERSION__}</div>
     <label class="dbgrow"><span>Infinite money</span><input type="checkbox" id="dbg-inf" ${DB.infinite ? 'checked' : ''}></label>
     <label class="dbgrow"><span>Show garden tile IDs <span class="tiny">sprite index · water bitmask</span></span><input type="checkbox" id="dbg-tiles" ${S.showTileIds ? 'checked' : ''}></label>
-    <div class="dbgrow"><span>Export save file <span class="tiny">full backup — quiz history, notes, gardens, coins</span></span><button class="btn ghost sm" id="dbg-json">⬇ Download JSON</button></div>
-    <div class="dbgrow"><span>Reset all garden progress <span class="tiny">removes extra gardens, backgrounds, coins &amp; unlocks</span></span><button class="btn bad sm" id="dbg-reset">Reset all</button></div>
+    <div class="dbgrow"><span>Export save file <span class="tiny">full backup — quiz history, notes, gardens, ${CURRENCY.many}</span></span><button class="btn ghost sm" id="dbg-json">⬇ Download JSON</button></div>
+    <div class="dbgrow"><span>Reset all garden progress <span class="tiny">removes extra gardens, backgrounds, ${CURRENCY.many} &amp; unlocks</span></span><button class="btn bad sm" id="dbg-reset">Reset all</button></div>
     <div class="actions center" style="margin-top:18px"><button class="btn primary" id="dbg-close">Done</button></div>
   </div>`;
   document.body.appendChild(ov);
@@ -66,7 +67,7 @@ function openDebugDialog(): void {
   ov.querySelector('#dbg-reset')!.addEventListener('click', () => {
     if (
       confirm(
-        'Reset ALL garden progress? This removes every extra garden, all purchased backgrounds, your coins, and all unlocks. This cannot be undone.',
+        `Reset ALL garden progress? This removes every extra garden, all purchased backgrounds, your ${CURRENCY.many}, and all unlocks. This cannot be undone.`,
       )
     ) {
       resetAllGardens();

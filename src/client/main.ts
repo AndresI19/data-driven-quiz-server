@@ -9,6 +9,7 @@ import { isAdmin, isSignedIn } from '@platform/ui/auth';
 import { mountAccountFab, mountGate } from '@platform/ui/gate';
 import type { CardsPayload } from '../shared/card-schema.js';
 import { recomputeAutotile } from './garden/autotile.js';
+import { ensureLoginGrant } from './garden/grants.js';
 import { mountParticles } from './garden/particles.js';
 import { mountScreenBg } from './garden/screenbg.js';
 import { mountDebug } from './pages/debug.js';
@@ -81,7 +82,11 @@ async function boot(): Promise<void> {
   // A returning signed-in player picks up whatever another browser did since last time. A conflict is
   // handled inside pull() by keeping BOTH copies — never by overwriting one in silence. A guest has
   // nothing to pull; route() at the end of boot renders either way.
-  if (isSignedIn()) void pull().then(() => route());
+  if (isSignedIn())
+    void pull().then(() => {
+      ensureLoginGrant(); // after pull(), so a server 'claimed' state is not reset to 'pending'
+      route();
+    });
 
   app.addEventListener('click', (e) => {
     const t = e.target as Element;
@@ -116,6 +121,7 @@ async function boot(): Promise<void> {
     }
   });
 
+  ensureLoginGrant(); // for the immediate render (offline, or landing straight on /garden); idempotent
   route();
 }
 
