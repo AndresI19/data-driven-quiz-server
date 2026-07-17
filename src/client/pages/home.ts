@@ -345,34 +345,56 @@ export function setup(): void {
     if (frame && board) {
       let panX = 0;
       let panY = 0;
-      let zoom = 1;
       let moved = false;
+      // The board's effective scale, driven exactly like the editor's --gfit: clamped to [fit, 1],
+      // where fit is the scale at which the whole 800×448 board sits inside the frame. So a pinch zooms
+      // OUT to the fit (the entire garden) and IN to full detail. The old model floored the scale at
+      // 0.82 and only let it grow, which is why the preview could zoom in but never out.
+      let scale = 0.82;
+      let fit = 0.82;
 
-      // Clamp so a board bigger than the frame covers it (pan within), a smaller one centres; then
-      // write the offsets. getBoundingClientRect reflects the live 0.82 * zoom, so bounds track it.
-      const apply = (): void => {
+      // fit from the board's UNSCALED layout size (offsetWidth ignores the transform) against the frame,
+      // capped at 1 so the preview never enlarges past full detail.
+      const measure = (): { fw: number; fh: number; bw: number; bh: number } => {
         const fw = frame.clientWidth;
         const fh = frame.clientHeight;
-        const bw = board.getBoundingClientRect().width;
-        const bh = board.getBoundingClientRect().height;
-        panX = bw > fw ? Math.min(0, Math.max(fw - bw, panX)) : (fw - bw) / 2;
-        panY = bh > fh ? Math.min(0, Math.max(fh - bh, panY)) : (fh - bh) / 2;
+        const bw = board.offsetWidth;
+        const bh = board.offsetHeight;
+        fit = Math.min(1, fw / bw, fh / bh);
+        return { fw, fh, bw, bh };
+      };
+
+      // Clamp the scale into range, then place the board: bigger than the frame → pan within bounds,
+      // smaller → centre. Writes the three CSS vars the transform reads.
+      const apply = (): void => {
+        const { fw, fh, bw, bh } = measure();
+        scale = Math.max(fit, Math.min(1, scale));
+        const sw = bw * scale;
+        const sh = bh * scale;
+        panX = sw > fw ? Math.min(0, Math.max(fw - sw, panX)) : (fw - sw) / 2;
+        panY = sh > fh ? Math.min(0, Math.max(fh - sh, panY)) : (fh - sh) / 2;
+        board.style.setProperty('--pv-scale', String(scale));
         board.style.setProperty('--pan-x', `${panX}px`);
         board.style.setProperty('--pan-y', `${panY}px`);
       };
-      requestAnimationFrame(apply); // centre once the board has painted
+      requestAnimationFrame(() => {
+        measure();
+        scale = Math.min(1, Math.max(fit, 0.82)); // a framed default, never below the fit
+        apply();
+      });
 
-      // Two-finger pinch zooms, anchored on the midpoint — the same behaviour as the editor board.
+      // Two-finger pinch zooms about the finger midpoint — the same focal maths as the editor board,
+      // expressed on the transform rather than a scroller's scrollLeft.
       const gap = (t: TouchList): number =>
         Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
       let pinchGap = 0;
-      let pinchZoom = 1;
+      let pinchScale = 1;
       frame.addEventListener(
         'touchstart',
         (e) => {
           if (e.touches.length === 2) {
             pinchGap = gap(e.touches);
-            pinchZoom = zoom;
+            pinchScale = scale;
             moved = true; // a pinch is not a tap — keep it from entering the garden
           }
         },
@@ -386,10 +408,9 @@ export function setup(): void {
           const r = frame.getBoundingClientRect();
           const fx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
           const fy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
-          const z0 = zoom;
-          zoom = Math.max(1, Math.min(2.5, pinchZoom * (gap(e.touches) / pinchGap)));
-          board.style.setProperty('--pv-zoom', String(zoom));
-          const k = zoom / z0; // keep the content under the midpoint fixed as it scales
+          const s0 = scale;
+          scale = Math.max(fit, Math.min(1, pinchScale * (gap(e.touches) / pinchGap)));
+          const k = scale / s0; // keep the content under the midpoint fixed as it scales
           panX = fx - (fx - panX) * k;
           panY = fy - (fy - panY) * k;
           apply();

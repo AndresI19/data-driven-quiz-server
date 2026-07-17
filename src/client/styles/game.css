@@ -422,9 +422,11 @@ h1 {
   left: 0;
   top: 0;
   z-index: 1;
-  /* Top-left origin so pan (--pan-x/--pan-y in px) and pinch (--pv-zoom, a multiplier on the 0.82
-     preview scale) compose cleanly: home.ts centres it on mount and does the pinch focal maths. */
-  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(calc(0.82 * var(--pv-zoom, 1)));
+  /* Top-left origin so pan (--pan-x/--pan-y in px) and zoom (--pv-scale, the board's effective scale)
+     compose cleanly: home.ts centres it on mount and does the pinch focal maths. --pv-scale is clamped
+     to [fit, 1] exactly like the editor's --gfit, so a pinch zooms out to the whole garden and in to
+     full detail — it is not a floor-0.82 multiplier any more. */
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--pv-scale, 0.82));
   transform-origin: 0 0;
 }
 .gd-cta {
