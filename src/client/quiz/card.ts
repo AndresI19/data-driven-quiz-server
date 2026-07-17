@@ -2,12 +2,12 @@ import type { GameCard } from '../../shared/card-schema.js';
 import { breakCombo, grantReward } from '../garden/economy.js';
 // The frame every quiz card is drawn in.
 //
-// All seven modes open the same way (wrap → hud → qcard → direction label → category chip), score
-// the same way (record, then pay or break the combo), and end the same way (a feedback line, an
-// optional reveal of the answer, and a Next button). Only the middle — how the question is asked and
-// answered — is actually different per mode.
+// All nine modes open the same way (wrap → hud → qcard → direction label → category chip), score the
+// same way (record, then pay or break the combo), and end the same way (a feedback line, an optional
+// reveal of the answer, and a Next button). Only the middle — how the question is asked and answered —
+// differs per mode.
 //
-// That shell used to be hand-written seven times, which is how the modes drifted apart: `iv` quietly
+// That shell used to be hand-written per mode, which is how the modes drifted apart: `iv` quietly
 // stopped paying out, and `dm` borrowed `ma`'s payout key. Stating the frame once means a new mode
 // gets it right by construction rather than by careful copy-paste.
 import { CATS, app } from '../runtime/data.js';

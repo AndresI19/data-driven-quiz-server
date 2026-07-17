@@ -48,11 +48,13 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 | `recall` | bool | Open-recall only — suppresses cloze/match/multi/inverse/manifest. |
 | `inverse` | bool | Adds a reverse-recall variant (given the definition, recall the term). |
 | `manifest` | `{lines, blanks, distractors?}` | Drag-labels-onto-a-YAML-block question. |
+| `code` | `{lang?, text}` | A code block (`text` is the whole block). Enables read-the-code (pick what it does). |
+| `codeselect` | `{prompt, answer}` | With `code`: select-the-lines. `answer` is the 0-based indices of the correct lines. |
 
 ## Derived behavior (no authoring needed)
 
 An explicit field always wins. These inferences are the *fallback*, for cards that do not author one:
-- **match** is auto-derived from a 2-column `table` (≥3 rows) or from `items` shaped
+- **match** is auto-derived from a 2-column `table` (≥3 data rows) or from `items` shaped
   `verb — purpose` when the topic mentions "command".
 - **multi** is auto-derived from `items` when the topic mentions "framework" or
   "core k8s objects". (Until recently this was the ONLY way to get select-all — an authored
