@@ -42,10 +42,10 @@ export function warn(msg: string): void {
   sndWrong();
 }
 export function applyBrush(i: number): void {
-  const L = S.layer; // active editing layer
-  const C = layerCells(DB.garden, L); // the cells the brush actually edits
-  const below = L > 0 ? layerCells(DB.garden, L - 1) : null; // the layer this one keys onto (support)
-  const cell = C[i];
+  const layer = S.layer; // active editing layer
+  const cells = layerCells(DB.garden, layer); // the cells the brush actually edits
+  const below = layer > 0 ? layerCells(DB.garden, layer - 1) : null; // the layer this one keys onto (support)
+  const cell = cells[i];
   const b = S.selBrush;
   if (!b) {
     nudge('.palette');
@@ -82,10 +82,10 @@ export function applyBrush(i: number): void {
       // upper tile floating. Placement already requires solid support directly beneath (see the block
       // branch below); removal has to protect that same support, or the two rules disagree and the
       // garden can reach a state placement would never have allowed.
-      const above = L < LAYERS - 1 ? layerCells(DB.garden, L + 1) : null;
+      const above = layer < LAYERS - 1 ? layerCells(DB.garden, layer + 1) : null;
       if (above?.[i]) return warn('Something is built on top — dig the tile above first.');
       refund(BLOCK_VALUE[cell.block] || 0);
-      C[i] = null;
+      cells[i] = null;
     }
     sndDig();
     done();
@@ -122,8 +122,8 @@ export function applyBrush(i: number): void {
     if (!afford(spec.price)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
     spend(spec.price);
     if (b.id === 'water') {
-      C[i] = { block: 'water', v: WATER_OPEN };
-    } else C[i] = { block: b.id, v: pick(spec.pool!) };
+      cells[i] = { block: 'water', v: WATER_OPEN };
+    } else cells[i] = { block: b.id, v: pick(spec.pool!) };
     // Grass shaded under a new elevated tile loses its light and reverts to dirt.
     if (below && below[i]!.block === 'grass') {
       below[i]!.block = 'dirt';

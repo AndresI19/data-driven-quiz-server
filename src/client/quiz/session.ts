@@ -153,7 +153,7 @@ export function start(): void {
     app.querySelector('#back')!.addEventListener('click', setup);
     return;
   }
-  const dmap: Record<string, string> = {
+  const directionLabels: Record<string, string> = {
     fb: 'recall',
     bf: 'choice',
     cz: 'fill-in',
@@ -171,7 +171,7 @@ export function start(): void {
       : S.cfg.scope === 'fav'
         ? '★ Favorites'
         : `§ ${(S.cfg.scope as string[]).join(' ')}`
-  } · ${dmap[S.cfg.direction]}`;
+  } · ${directionLabels[S.cfg.direction]}`;
   begin(cards, { label });
 }
 export function resumeActive(): void {
