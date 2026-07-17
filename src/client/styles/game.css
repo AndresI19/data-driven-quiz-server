@@ -208,19 +208,25 @@ h1 {
   font-size: 19px;
   color: var(--ink);
 }
+/* No pill: the coin count sits as plain emphasised text, not in a bubble. Kept the flex row, gap,
+   weight and tabular figures; dropped the background, border, radius and padding that made it a chip. */
 .coinbar {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  padding: 8px 14px;
   margin-bottom: 12px;
   font-weight: 800;
   font-size: 14.5px;
   font-variant-numeric: tabular-nums;
+}
+/* The coin mark: an inline SVG (see currency.ts) sized to the text it sits beside, on the baseline.
+   Consistent on every OS, unlike the emoji it replaced. */
+.coin-ico {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.14em;
+  flex: none;
 }
 .cb-coins {
   display: inline-block;
@@ -310,14 +316,11 @@ h1 {
 .gardenfab:active {
   transform: scale(0.96);
 }
+/* No pill: the coin count reads as plain emphasised text beside the trophy/medal scores, which are
+   already bare. Dropped the panel background, border, radius, padding and shadow that made it a chip. */
 .fab-coins {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  padding: 3px 14px;
   font-weight: 800;
   font-size: 17px;
-  box-shadow: var(--shadow);
   font-variant-numeric: tabular-nums;
 }
 .gardenwrap {
