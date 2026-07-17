@@ -336,7 +336,60 @@ export function setup(): void {
   const eb = app.querySelector('#exportbtn');
   if (eb) eb.addEventListener('click', exportPage);
   const hg = app.querySelector('#homegarden');
-  if (hg) hg.addEventListener('click', enterGarden);
+  if (hg) {
+    // A tap enters the garden; a horizontal drag pans the preview instead (the garden overflows the
+    // width on a phone). The click is suppressed once a drag passes the threshold, so a pan never also
+    // opens the editor. Bounds keep an edge from pulling inside the frame.
+    const frame = hg.querySelector<HTMLElement>('.gdboardwrap');
+    const board = hg.querySelector<HTMLElement>('.homeboard');
+    let startX = 0;
+    let panX = 0;
+    let dragging = false;
+    let moved = false;
+    if (frame && board) {
+      // getBoundingClientRect, not offsetWidth: the board is scale(0.82)'d, and only the rect reflects
+      // the visual width the pan is bounded by. Half the overflow each way from centre.
+      const clampMax = (): number =>
+        Math.max(0, (board.getBoundingClientRect().width - frame.clientWidth) / 2);
+      frame.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        moved = false;
+        startX = e.clientX;
+        frame.setPointerCapture(e.pointerId);
+      });
+      frame.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        const max = clampMax();
+        const next = Math.max(-max, Math.min(max, panX + dx));
+        board.style.setProperty('--pan-x', `${next}px`);
+      });
+      const end = (e: PointerEvent): void => {
+        if (!dragging) return;
+        dragging = false;
+        frame.classList.remove('grabbing');
+        panX = Number.parseFloat(board.style.getPropertyValue('--pan-x')) || 0;
+        try {
+          frame.releasePointerCapture(e.pointerId);
+        } catch {
+          // capture already gone; nothing to release.
+        }
+      };
+      frame.addEventListener('pointerup', end);
+      frame.addEventListener('pointercancel', end);
+      frame.addEventListener('pointerdown', () => frame.classList.add('grabbing'));
+      // Swallow the click that a drag would otherwise deliver to the button.
+      hg.addEventListener('click', (e) => {
+        if (moved) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          moved = false;
+        }
+      });
+    }
+    hg.addEventListener('click', enterGarden);
+  }
   const hgp = app.querySelector('#hgprev');
   if (hgp)
     hgp.addEventListener('click', () => {

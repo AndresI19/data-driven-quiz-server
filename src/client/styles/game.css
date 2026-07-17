@@ -409,13 +409,22 @@ h1 {
   height: 456px;
   position: relative;
   overflow: hidden;
+  /* Horizontal drag pans the (overflowing) garden; vertical is left to the page so a swipe here does
+     not trap the scroll. grab cursor says it is draggable. Wired in home.ts. */
+  touch-action: pan-y;
+  cursor: grab;
+}
+.gdboardwrap.grabbing {
+  cursor: grabbing;
 }
 .homeboard {
   position: absolute;
   left: 50%;
   top: 0;
   z-index: 1;
-  transform: translateX(-50%) translateY(90px) scale(0.82);
+  /* --pan-x is the drag offset (0 = centred); it precedes the centring/peek transforms so it simply
+     slides the whole board left/right within the clip. */
+  transform: translateX(var(--pan-x, 0px)) translateX(-50%) translateY(90px) scale(0.82);
   transform-origin: top center;
 }
 .gd-cta {
