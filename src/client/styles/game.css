@@ -462,6 +462,9 @@ h1 {
   overflow-y: hidden;
   /* A swipe past the edge of the garden is not a request to leave the page. */
   overscroll-behavior-x: contain;
+  /* Single-finger swipes still pan (horizontal) and scroll the page (vertical); leaving pinch-zoom OFF
+     the browser is what frees a two-finger pinch for the garden's own zoom handler (page.ts). */
+  touch-action: pan-x pan-y;
 }
 
 /* FIT BY DEFAULT — the board is scaled to whatever room the column has.
@@ -494,42 +497,6 @@ h1 {
   z-index: 1;
 }
 
-/* The zoom control. Pinned to the SCROLLER, not the board, on purpose — the opposite of .ltabs: the
-   tabs label a place on the board and must travel with it, while this is a control for looking at the
-   board and must stay put while it pans underneath. */
-.gzoom {
-  position: absolute;
-  left: 0;
-  top: 84px;
-  z-index: 6;
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-.gz {
-  min-width: 34px;
-  height: 34px;
-  padding: 0 7px;
-  border: 2px solid var(--line);
-  border-radius: 9px;
-  background: var(--panel);
-  color: var(--ink);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  /* 34px, because a control you cannot hit is not a control. The garden's own tap targets are diamonds
-     and cannot be grown without breaking the tessellation — that is what the zoom is FOR — but these
-     have no such excuse. */
-}
-.gz:hover {
-  border-color: var(--accent);
-}
-.gzlvl {
-  min-width: 52px;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
 .boardwrap .gboard {
   position: absolute;
   top: 0;

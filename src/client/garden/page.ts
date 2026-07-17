@@ -123,8 +123,6 @@ function applyBoard(): void {
   S.gardenZoom = Math.max(fit, Math.min(1, S.gardenZoom));
   wrap.style.setProperty('--gbw', `${BOARD_PX_W}px`);
   wrap.style.setProperty('--gfit', String(S.gardenZoom));
-  const lvl = app.querySelector<HTMLElement>('#gzfit');
-  if (lvl) lvl.textContent = `${Math.round(S.gardenZoom * 100)}%`;
 }
 
 function fitBoard(): void {
@@ -254,14 +252,8 @@ export function gardenPage(): void {
          string once claimed or for a guest, so no dead icon lingers. -->
     ${mailButtonHtml()}
     <div class="boardwrap">
-      <!-- Zoom. Multiplies the fit rather than setting an absolute scale, so "1x" means the whole
-           garden at every width and the control never has to know the viewport. Zooming in overflows
-           the scroller and pans — which works only because .boardwrap uses safe center. -->
-      <div class="gzoom" role="group" aria-label="zoom">
-        <button class="gz" id="gzout" type="button" aria-label="zoom out">&minus;</button>
-        <button class="gz gzlvl" id="gzfit" type="button" aria-label="fit the whole garden">${Math.round(S.gardenZoom * 100)}%</button>
-        <button class="gz" id="gzin" type="button" aria-label="zoom in">+</button>
-      </div>
+      <!-- No zoom control: on desktop the whole garden is visible (no zoom needed), and on a phone
+           zoom is a two-finger pinch (see setup) — panning is the scroll. No buttons either way. -->
       <div class="gfit"><div class="gboard">${gardenBoardInner()}</div>
       <!-- Layer tabs — shown only while a brush is selected (editing). Highest layer on top, ground
            (F1) at the bottom, mirroring the physical stack; only the tabbed-into layer is editable,
@@ -296,19 +288,41 @@ export function gardenPage(): void {
   </div>`;
   fitBoard();
 
-  // Step the zoom; applyBoard clamps to [fit, 1] and syncs the label. Not fitBoard() — that re-arms the
-  // ResizeObserver and re-centres, which a zoom click should not do.
-  const zoom = (mult: number): void => {
-    S.gardenZoom = Math.round((S.gardenZoom + mult) * 10) / 10;
-    applyBoard();
-  };
-  app.querySelector('#gzout')?.addEventListener('click', () => zoom(-0.5));
-  app.querySelector('#gzin')?.addEventListener('click', () => zoom(0.5));
-  // The middle button FITS the whole garden — drop below the floor and let applyBoard clamp up to it.
-  app.querySelector('#gzfit')?.addEventListener('click', () => {
-    S.gardenZoom = 0;
-    applyBoard();
-  });
+  // Pinch to zoom, phone only. No buttons, and nothing on the desktop — there a mouse never pinches,
+  // so gardenZoom stays at 1 (full size, which fits the wide viewport). The board still pans by
+  // scrolling. TouchEvents (not pointer) so two fingers arrive together as e.touches; single-finger
+  // touches fall through to the scroller (pan) and to tap-to-place, untouched.
+  const wrap = app.querySelector<HTMLElement>('.boardwrap');
+  if (wrap) {
+    const dist = (t: TouchList): number => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    let startDist = 0;
+    let startZoom = 1;
+    wrap.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 2) {
+          startDist = dist(e.touches);
+          startZoom = S.gardenZoom;
+        }
+      },
+      { passive: true },
+    );
+    wrap.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length !== 2 || startDist === 0) return;
+        e.preventDefault(); // this is a pinch, not a scroll — keep the scroller out of it
+        S.gardenZoom = startZoom * (dist(e.touches) / startDist);
+        applyBoard(); // clamps to [fit, 1]
+      },
+      { passive: false },
+    );
+    const endPinch = (e: TouchEvent): void => {
+      if (e.touches.length < 2) startDist = 0;
+    };
+    wrap.addEventListener('touchend', endPinch);
+    wrap.addEventListener('touchcancel', endPinch);
+  }
 
   app.querySelector('#gback')!.addEventListener('click', () => {
     S.selBrush = null;
