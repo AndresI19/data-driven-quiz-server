@@ -423,32 +423,108 @@ h1 {
   font-weight: 700;
   transition: color .12s;
 }
+/* THE GARDEN BOARD, AND THE ONE WORD THAT LOST A QUARTER OF IT.
+   ────────────────────────────────────────────────────────────────────────────────────────────────
+   This was `justify-content: center` on a flex scroller holding a `flex:none; width:800px` board, and
+   the combination strands the west corner of the garden where nobody can reach it. When the item is
+   wider than the container, `center` splits the NEGATIVE free space evenly across both sides — so the
+   board's left edge sits at a negative offset from the scroll origin. A scroll container's origin IS
+   its left padding edge and scrollLeft cannot go below 0, so the right half scrolls and the left half
+   is simply gone.
+
+   Measured on a 390px phone before the fix:
+       clientWidth 362 · gboard 800 · overflow 438
+       scrollWidth 581 · max scrollLeft 219 · board left @scroll 0 = -219px
+   219px — the low-column/high-row tiles, the whole west corner — unreachable at any scroll position.
+
+   `safe center` centres only while it fits and falls back to flex-start the moment it does not, which
+   restores the full 438px of scroll range. Note `margin: 0 auto` is NOT an alternative: it has exactly
+   the same bug. */
 .boardwrap {
   position: relative;
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   margin: 16px 0 8px;
   padding-top: 120px;
   overflow-x: auto;
   overflow-y: hidden;
+  /* A swipe past the edge of the garden is not a request to leave the page. */
+  overscroll-behavior-x: contain;
 }
-.boardwrap .gboard {
+
+/* FIT BY DEFAULT — the board is scaled to whatever room the column has.
+   ────────────────────────────────────────────────────────────────────────────────────────────────
+   `safe center` above makes the whole board REACHABLE, but on a phone you would still be panning a
+   box 2.2x wider than the screen to plant in a garden — and that pan competes with the tap that
+   places the tile. So the board is also scaled to fit.
+
+   --gfit is set by fitBoard() in garden/page.ts, not here, and the reason is worth writing down: a
+   scale is a RATIO, and CSS cannot reliably produce one. The obvious formula —
+     clamp(0.34, calc((min(1440px, 92vw) - 28px) / 800), 1)
+   is invalid: a length divided by a number is a LENGTH (0.41px), so the clamp mixes a length with the
+   numbers either side of it and the whole declaration is thrown away. It fails SILENTLY — .gfit simply
+   computed to 0x0 — which is exactly how this was caught.
+
+   The fallback is 1: with no JS the board renders full size and is still fully reachable, because
+   `safe center` is doing that job on its own. Degrading to "big but complete" is the right direction.
+
+   The scale is a TRANSFORM, which does not affect layout — so .gfit carries the scaled size as its
+   real box. Without it the scroller would still believe the board is 800px wide and overflow anyway,
+   which is the bug we just removed. Zooming past the fit makes it overflow again and pan correctly,
+   because of `safe center`. */
+.gfit {
   position: relative;
+  flex: none;
+  /* --gbw is the board's real width, published by fitBoard() from BOARD_PX_W so the number is not
+     restated here. The 800px fallback is only for the no-JS case. */
+  width: calc(var(--gbw, 800px) * var(--gfit, 1));
+  height: calc(448px * var(--gfit, 1));
   z-index: 1;
 }
-.gardenbg {
+
+/* The zoom control. Pinned to the SCROLLER, not the board, on purpose — the opposite of .ltabs: the
+   tabs label a place on the board and must travel with it, while this is a control for looking at the
+   board and must stay put while it pans underneath. */
+.gzoom {
   position: absolute;
-  top: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 440px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 18px;
-  z-index: 0;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 6px 20px rgba(0, 0, 0, 0.14);
+  left: 0;
+  top: 84px;
+  z-index: 6;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.gz {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 7px;
+  border: 2px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  /* 34px, because a control you cannot hit is not a control. The garden's own tap targets are diamonds
+     and cannot be grown without breaking the tessellation — that is what the zoom is FOR — but these
+     have no such excuse. */
+}
+.gz:hover {
+  border-color: var(--accent);
+}
+.gzlvl {
+  min-width: 52px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.boardwrap .gboard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  transform: scale(var(--gfit, 1));
+  transform-origin: top left;
 }
 .homebg {
   position: absolute;
@@ -545,7 +621,10 @@ h1 {
 .ltabs {
   position: absolute;
   right: 0;
-  top: 126px;
+  /* Scaled with the board it now sits in. 126px is the desktop offset that clears the back-row tree
+     canopies; multiplying by --gfit keeps the tabs in the same place on the board at every width,
+     rather than at a fixed pixel offset that would drift as the board shrinks. */
+  top: calc(126px * var(--gfit, 1));
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -961,6 +1040,9 @@ select.opt {
 }
 .hud {
   display: flex;
+  /* Same reason as .rvbar: a flex bar with no wrap squashes its children rather than moving them to a
+     second line, and there is not room for all of it across a phone. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   /* Clear the shared account FAB. It is fixed top-right (.pg-fab-host, z-index 8500) and its width
@@ -1796,6 +1878,9 @@ kbd {
 }
 .rvbar {
   display: flex;
+  /* Seven children on .rvbar (Back, coins, trophies, medals, hide, GIF, Reset) and no wrap: on a phone
+     they squashed or overflowed. Wrapping is the only honest answer for a bar whose contents grow. */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1921,8 +2006,20 @@ kbd {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* The 60px column gap is the channel the connector SVG is drawn down. */
   gap: 12px 60px;
   margin-top: 16px;
+}
+/* .match was the only card mode with no breakpoint at any width. On a 390px phone that is two ~135px
+   columns with a 60px gutter between them — a third of the screen spent on an arrow channel, and the
+   terms unreadable either side of it. The drag itself was always fine (.mitem has touch-action:none
+   and the hit-testing is elementFromPoint); it was the layout that collapsed.
+   One column, and the gutter goes with it: with nothing to the right there is no channel to draw. */
+@media (max-width: 560px) {
+  .match {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 .matchsvg {
   position: absolute;
