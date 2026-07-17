@@ -7,7 +7,7 @@ import { setup } from '../pages/home.js';
 import { COIN } from '../runtime/currency.js';
 // Quiz engine: the HUD, the per-card dispatcher (renderQ), fav/flag + notes decoration, arrow-key
 // navigation with peek-back, and the results screen. Ported verbatim.
-import { ACCENT_FALLBACK, CATCOL, CATS, app, byId } from '../runtime/data.js';
+import { CATS, app, byId, catAccent } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
@@ -75,7 +75,7 @@ export function renderQ(): void {
 export function addFav(c: GameCard): void {
   const qc = app.querySelector('.qcard') as HTMLElement | null;
   if (!qc) return;
-  qc.style.setProperty('--cat', CATCOL[c.cat] || ACCENT_FALLBACK);
+  qc.style.setProperty('--cat', catAccent(c));
   const fav = document.createElement('button');
   const set = (): void => {
     const on = !!DB.favorites[c.id];
@@ -179,7 +179,7 @@ export function peekBack(): void {
     : '';
   ov.innerHTML = `<div class="pausebox" style="max-width:660px;text-align:left;max-height:88vh;overflow:auto">
     <div class="lab" style="margin-bottom:8px">← Previous card</div>
-    <span class="catchip" style="--cat:${CATCOL[c.cat] || ACCENT_FALLBACK}">${esc(CATS[c.cat])}</span>
+    <span class="catchip" style="--cat:${catAccent(c)}">${esc(CATS[c.cat])}</span>
     <div class="topic" style="margin:6px 0 6px;font-size:19px">${esc(c.topic)}</div>
     <div class="answer">${c.back}</div>${note}
     <div class="actions center" style="margin-top:16px"><button class="btn primary" id="peekclose">Back to quiz →</button></div>
