@@ -342,44 +342,100 @@ export function setup(): void {
     // opens the editor. Bounds keep an edge from pulling inside the frame.
     const frame = hg.querySelector<HTMLElement>('.gdboardwrap');
     const board = hg.querySelector<HTMLElement>('.homeboard');
-    let startX = 0;
-    let panX = 0;
-    let dragging = false;
-    let moved = false;
     if (frame && board) {
-      // getBoundingClientRect, not offsetWidth: the board is scale(0.82)'d, and only the rect reflects
-      // the visual width the pan is bounded by. Half the overflow each way from centre.
-      const clampMax = (): number =>
-        Math.max(0, (board.getBoundingClientRect().width - frame.clientWidth) / 2);
+      let panX = 0;
+      let panY = 0;
+      let zoom = 1;
+      let moved = false;
+
+      // Clamp so a board bigger than the frame covers it (pan within), a smaller one centres; then
+      // write the offsets. getBoundingClientRect reflects the live 0.82 * zoom, so bounds track it.
+      const apply = (): void => {
+        const fw = frame.clientWidth;
+        const fh = frame.clientHeight;
+        const bw = board.getBoundingClientRect().width;
+        const bh = board.getBoundingClientRect().height;
+        panX = bw > fw ? Math.min(0, Math.max(fw - bw, panX)) : (fw - bw) / 2;
+        panY = bh > fh ? Math.min(0, Math.max(fh - bh, panY)) : (fh - bh) / 2;
+        board.style.setProperty('--pan-x', `${panX}px`);
+        board.style.setProperty('--pan-y', `${panY}px`);
+      };
+      requestAnimationFrame(apply); // centre once the board has painted
+
+      // Two-finger pinch zooms, anchored on the midpoint — the same behaviour as the editor board.
+      const gap = (t: TouchList): number =>
+        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      let pinchGap = 0;
+      let pinchZoom = 1;
+      frame.addEventListener(
+        'touchstart',
+        (e) => {
+          if (e.touches.length === 2) {
+            pinchGap = gap(e.touches);
+            pinchZoom = zoom;
+            moved = true; // a pinch is not a tap — keep it from entering the garden
+          }
+        },
+        { passive: true },
+      );
+      frame.addEventListener(
+        'touchmove',
+        (e) => {
+          if (e.touches.length !== 2 || pinchGap === 0) return;
+          e.preventDefault();
+          const r = frame.getBoundingClientRect();
+          const fx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+          const fy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+          const z0 = zoom;
+          zoom = Math.max(1, Math.min(2.5, pinchZoom * (gap(e.touches) / pinchGap)));
+          board.style.setProperty('--pv-zoom', String(zoom));
+          const k = zoom / z0; // keep the content under the midpoint fixed as it scales
+          panX = fx - (fx - panX) * k;
+          panY = fy - (fy - panY) * k;
+          apply();
+        },
+        { passive: false },
+      );
+      const endPinch = (e: TouchEvent): void => {
+        if (e.touches.length < 2) pinchGap = 0;
+      };
+      frame.addEventListener('touchend', endPinch);
+      frame.addEventListener('touchcancel', endPinch);
+
+      // Single-finger / mouse drag pans horizontally (vertical is the page's). Skipped while a pinch
+      // owns the gesture; a real drag suppresses the enter-garden click.
+      let dragging = false;
+      let downX = 0;
+      let baseX = 0;
       frame.addEventListener('pointerdown', (e) => {
+        if (pinchGap > 0) return;
         dragging = true;
         moved = false;
-        startX = e.clientX;
+        downX = e.clientX;
+        baseX = panX;
         frame.setPointerCapture(e.pointerId);
+        frame.classList.add('grabbing');
       });
       frame.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const dx = e.clientX - startX;
+        if (!dragging || pinchGap > 0) return;
+        const dx = e.clientX - downX;
         if (Math.abs(dx) > 4) moved = true;
-        const max = clampMax();
-        const next = Math.max(-max, Math.min(max, panX + dx));
-        board.style.setProperty('--pan-x', `${next}px`);
+        panX = baseX + dx;
+        apply();
       });
-      const end = (e: PointerEvent): void => {
-        if (!dragging) return;
+      const endDrag = (e: PointerEvent): void => {
         dragging = false;
         frame.classList.remove('grabbing');
-        panX = Number.parseFloat(board.style.getPropertyValue('--pan-x')) || 0;
         try {
           frame.releasePointerCapture(e.pointerId);
         } catch {
           // capture already gone; nothing to release.
         }
       };
-      frame.addEventListener('pointerup', end);
-      frame.addEventListener('pointercancel', end);
-      frame.addEventListener('pointerdown', () => frame.classList.add('grabbing'));
-      // Swallow the click that a drag would otherwise deliver to the button.
+      frame.addEventListener('pointerup', endDrag);
+      frame.addEventListener('pointercancel', endDrag);
+
+      // Swallow the click a drag or pinch would otherwise deliver to the button.
       hg.addEventListener('click', (e) => {
         if (moved) {
           e.preventDefault();
