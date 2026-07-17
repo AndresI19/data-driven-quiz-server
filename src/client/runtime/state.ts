@@ -54,4 +54,16 @@ export const S = {
   warnTimer: null as ReturnType<typeof setTimeout> | null,
   splashTimer: null as ReturnType<typeof setInterval> | null,
   showTileIds: false, // debug: overlay each garden tile's sprite index + water autotile bitmask
+  /**
+   * The garden's zoom, as a MULTIPLIER ON TOP of the fit — never an absolute scale.
+   *
+   * fitBoard() computes how much the 800px board must shrink to fit the column, and this multiplies
+   * that. So 1 always means "the whole garden, whatever the screen", on a phone and on a desktop
+   * alike, and the control does not need to know the viewport. Above 1 the board overflows its
+   * scroller and pans, which works only because .boardwrap uses `safe center` — plain `center` strands
+   * the left half at a negative offset that scrollLeft cannot reach.
+   *
+   * Runtime only, deliberately not persisted: it is a way of looking at the garden, not part of it.
+   */
+  gardenZoom: 1,
 };

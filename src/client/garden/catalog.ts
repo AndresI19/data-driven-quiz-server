@@ -316,7 +316,21 @@ export const BLOCK_VALUE: Record<string, number> = Object.fromEntries(
 export const ISO_W = 80,
   ISO_HX = 40,
   ISO_HY = 20,
-  ISO_OX = 9 * ISO_HX;
+  ISO_OX = (BOARD_W - 1) * ISO_HX;
+
+/**
+ * The board's pixel WIDTH — derived here, not restated wherever it is needed.
+ *
+ * cellPos() puts a cell at x = (c - r) * ISO_HX + ISO_OX. c-r runs from -(BOARD_W-1) to +(BOARD_W-1),
+ * so ISO_OX is exactly the term that slides that range to start at 0, and the span is
+ * (BOARD_W-1) * 2 * ISO_HX wide plus one tile. It comes to 800.
+ *
+ * That 800 was previously hardcoded into game.css with nothing linking it back, and ISO_OX was written
+ * as `9 * ISO_HX` — where 9 is silently BOARD_W-1. Two derived constants, both spelled as literals, in
+ * two files that had to agree. The garden's fit divides by this, so it now divides by the same number
+ * the projection is drawn with, and changing BOARD_W moves both together.
+ */
+export const BOARD_PX_W = (BOARD_W - 1) * 2 * ISO_HX + ISO_W;
 
 // ---- Elevation layers ----
 // The board has stacked editing layers. Layer 0 is the ground; each layer above is an elevation plane

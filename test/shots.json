@@ -1,0 +1,45 @@
+{
+  "//": "Visual baselines. Run against a LOCAL build: `npm run build && PORT=3220 BASE_PATH=/ npm start`,",
+  "//2": "then: node ../Claude-Project-Tooling/claude/tools/shots.mjs --manifest test/shots.json --base-url http://127.0.0.1:3220 --check",
+  "//3": "These exist because the garden's geometry cannot be unit-tested: the suite runs under happy-dom,",
+  "//4": "which has no layout engine, so getBoundingClientRect returns zeros. The 14 test files assert the",
+  "//5": "autotiler, the economy and placement rules \u2014 all correct, and all blind to a board with a quarter",
+  "//6": "of itself off-screen.",
+  "baseUrl": "http://localhost:3220",
+  "dir": "shots",
+  "shots": [
+    {
+      "name": "garden-board-mobile",
+      "//": "THE regression. `justify-content: center` on a scroller holding a flex:none 800px board put",
+      "//2": "219px of the west corner at a negative offset, where scrollLeft cannot reach. If this shot ever",
+      "//3": "gets wider than its wrapper again, that bug is back.",
+      "path": "/garden",
+      "mobile": true,
+      "identity": "user",
+      "selector": ".boardwrap",
+      "wait": 5000,
+      "tolerance": 1
+    },
+    {
+      "name": "garden-board-desktop",
+      "//": "--gfit clamps to 1 past ~870px, so this must look exactly as it always has.",
+      "path": "/garden",
+      "width": 1460,
+      "height": 1200,
+      "identity": "user",
+      "selector": ".boardwrap",
+      "wait": 5000,
+      "tolerance": 1
+    },
+    {
+      "name": "quiz-setup-mobile",
+      "path": "/",
+      "mobile": true,
+      "identity": "guest",
+      "selector": ".wrap",
+      "wait": 3000,
+      "tolerance": 1
+    }
+  ],
+  "//7": "tolerance: 1 on every shot here is deliberate, and it means these are GEOMETRY guards, not pixel guards. The garden's contents are per-user and freshly generated, so its pixels are not reproducible between runs \u2014 but its BOX is, and the box is the whole bug: a board wider than its wrapper is what stranded 219px of it. shots.mjs reports a size change before it ever counts pixels, so a size regression still fails loudly while the planting inside is free to differ. Asserting the thing that is stable beats asserting the thing that looks thorough and cries wolf."
+}

@@ -2,8 +2,8 @@
 # Pull the shared design system (@platform/ui) into this repo.
 #
 # @platform/ui lives in portfolio-home, which is the source of truth for it. This repo consumes it by
-# vendoring portfolio-home as a git SUBMODULE at vendor/portfolio-home, and package.json depends on
-# the package by path (`file:vendor/portfolio-home/packages/platform-ui`).
+# vendoring portfolio-home as a git SUBMODULE at vendor/project-platform, and package.json depends on
+# the package by path (`file:vendor/project-platform/portfolio-home/packages/platform-ui`).
 #
 # A submodule is a PINNED COMMIT, not a branch. That is the point — it is what makes this repo's
 # build reproducible — but it also means a change to the design system does not reach this app until
@@ -74,7 +74,22 @@ if ! git -C "$SUB" fetch --quiet origin 2>/dev/null; then
 fi
 
 PINNED="$(git -C "$SUB" rev-parse HEAD)"
-UPSTREAM="$(git -C "$SUB" rev-parse origin/feat/auth-experiment 2>/dev/null || git -C "$SUB" rev-parse origin/HEAD)"
+
+# WHICH UPSTREAM: whatever .gitmodules declares, and nothing else.
+#
+# This read `origin/feat/auth-experiment 2>/dev/null || origin/HEAD` — a hardcoded feature branch,
+# tried FIRST, silently falling back only if it had been deleted. It has not been: it still exists, so
+# every `npm run ui:sync` today would pin @platform/ui to that experiment rather than to main, which is
+# what .gitmodules says this submodule follows (`branch = main`). Two sources of truth, and the one the
+# reader would check was losing to the one buried in a script.
+#
+# The fallback is `main` rather than origin/HEAD because .gitmodules naming no branch is a defect in
+# .gitmodules, not a licence to guess from the remote's default.
+BRANCH="$(git config -f .gitmodules "submodule.${SUB}.branch" 2>/dev/null || echo main)"
+UPSTREAM="$(git -C "$SUB" rev-parse "origin/${BRANCH}" 2>/dev/null)" || {
+  echo "FATAL: ${SUB} has no origin/${BRANCH} — .gitmodules says branch=${BRANCH}" >&2
+  exit 1
+}
 
 if [ "$PINNED" = "$UPSTREAM" ]; then
   echo "@platform/ui is up to date (${PINNED:0:7})"

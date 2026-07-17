@@ -18,6 +18,7 @@ import {
   BG_PRICE,
   BG_URL,
   BLOCKS,
+  BOARD_PX_W,
   EFFECTS,
   type Effect,
   FEATURES,
@@ -85,6 +86,43 @@ function brushCursor(): string {
 
 /** One tab per layer, highest on top down to the ground (F1), mirroring the physical stack. Scales
     with LAYERS — adding a layer adds its tab automatically. */
+
+/**
+ * Fit the board to the room the column actually has, and keep it fitted.
+ *
+ * The board is a fixed 800px art box (BOARD_PX_W, derived from the projection) inside a column that is
+ * min(1440px, 92vw) wide. On a 390px phone that is ~362px of room for 800px of garden, and before this
+ * the surplus was simply lost: `justify-content: center` on the scroller pushed 219px of the west
+ * corner to a NEGATIVE offset, where scrollLeft cannot reach. `safe center` in game.css fixes the
+ * reachability; this makes the whole garden visible without panning at all.
+ *
+ * WHY JS AND NOT CSS. A scale is a ratio, and CSS cannot reliably make one: dividing a length by a
+ * number yields a length, so `clamp(0.34, calc((92vw - 28px) / 800), 1)` is a type error that browsers
+ * discard silently — the element just computes to 0x0. Six lines here beat a formula that fails without
+ * saying so.
+ *
+ * ResizeObserver rather than `resize`: the question is whether THIS column changed width, which a
+ * window event neither implies nor is required for (a scrollbar appearing, or the panel opening, does
+ * it with no resize at all). No feedback loop — the wrapper is sized by the page's column, never by the
+ * board it holds.
+ *
+ * `zoom` is a user multiplier ON TOP of the fit. Above 1 the board overflows again and pans, which is
+ * correct and only works because of `safe center`.
+ */
+function fitBoard(): void {
+  const wrap = app.querySelector<HTMLElement>('.boardwrap');
+  if (!wrap) return;
+  const apply = (): void => {
+    const room = wrap.clientWidth;
+    if (!room) return; // not laid out yet; the observer will call again when it is
+    const fit = Math.min(1, room / BOARD_PX_W);
+    wrap.style.setProperty('--gbw', `${BOARD_PX_W}px`);
+    wrap.style.setProperty('--gfit', String(fit * S.gardenZoom));
+  };
+  apply();
+  new ResizeObserver(apply).observe(wrap);
+}
+
 function layerTabs(): string {
   let h = '';
   for (let L = LAYERS - 1; L >= 0; L--) {
@@ -197,12 +235,25 @@ export function gardenPage(): void {
     <!-- Welcome-coin mail button: in-flow below the Back button and above the garden board. Empty
          string once claimed or for a guest, so no dead icon lingers. -->
     ${mailButtonHtml()}
-    <div class="boardwrap"><div class="gboard">${gardenBoardInner()}</div>
+    <div class="boardwrap">
+      <!-- Zoom. Multiplies the fit rather than setting an absolute scale, so "1x" means the whole
+           garden at every width and the control never has to know the viewport. Zooming in overflows
+           the scroller and pans — which works only because .boardwrap uses safe center. -->
+      <div class="gzoom" role="group" aria-label="zoom">
+        <button class="gz" id="gzout" type="button" aria-label="zoom out">&minus;</button>
+        <button class="gz gzlvl" id="gzfit" type="button" aria-label="fit the whole garden">${Math.round(S.gardenZoom * 100)}%</button>
+        <button class="gz" id="gzin" type="button" aria-label="zoom in">+</button>
+      </div>
+      <div class="gfit"><div class="gboard">${gardenBoardInner()}</div>
       <!-- Layer tabs — shown only while a brush is selected (editing). Highest layer on top, ground
            (F1) at the bottom, mirroring the physical stack; only the tabbed-into layer is editable,
            the others render greyed. With no brush selected the board is already in view-all, so the
            tabs are hidden. "View all" here is hold-to-preview: while held, every layer shows in full
-           colour without leaving the layer you are editing. -->
+           colour without leaving the layer you are editing.
+
+           INSIDE .gfit, not .boardwrap. Its right:0 needs a containing block that IS the board; against
+           the scroller that resolved to the viewport's right edge, so the tabs landed in the middle of
+           the board and then scrolled away from it. .gfit is the board's real (scaled) box. -->
       ${
         S.selBrush
           ? `<div class="ltabs" role="tablist" aria-label="editing layer">
@@ -211,6 +262,7 @@ export function gardenPage(): void {
       </div>`
           : ''
       }
+      </div>
     </div>
     <div class="palhint" id="palhint">${brushHint()}</div>
     <div class="palette">
@@ -224,6 +276,24 @@ export function gardenPage(): void {
       <div class="palgroup"><div class="palh">Effects — ${COIN}${BG_PRICE} unlock · ${COIN}${APPLY_COST} to apply (raises 🏆) · falling particles on garden + home</div><div class="palrow">${palFx()}</div></div>
     </div>
   </div>`;
+  fitBoard();
+
+  // Zoom is clamped to [1, 3]: 1 is the whole garden (never smaller — there is no reason to want less
+  // than all of it), 3 is enough to place a tile precisely on a phone, where the fitted tap diamond is
+  // only ~33x16.
+  const zoom = (mult: number): void => {
+    S.gardenZoom = Math.min(3, Math.max(1, Math.round((S.gardenZoom + mult) * 10) / 10));
+    const lvl = app.querySelector<HTMLElement>('#gzfit');
+    if (lvl) lvl.textContent = `${Math.round(S.gardenZoom * 100)}%`;
+    fitBoard();
+  };
+  app.querySelector('#gzout')?.addEventListener('click', () => zoom(-0.5));
+  app.querySelector('#gzin')?.addEventListener('click', () => zoom(0.5));
+  app.querySelector('#gzfit')?.addEventListener('click', () => {
+    S.gardenZoom = 1;
+    zoom(0);
+  });
+
   app.querySelector('#gback')!.addEventListener('click', () => {
     S.selBrush = null;
     setup();
@@ -329,23 +399,40 @@ export function gardenPage(): void {
     const i = +b.dataset.i!;
     const c = colOf(i);
     const r = rowOf(i);
-    b.addEventListener('click', () => applyBrush(i));
-    b.addEventListener('mouseenter', () => {
+    /* WHICH TILE AM I ON. All four channels — the #palhint readout, the row/column cross-highlight,
+       .cell-hot, and the axis guides — used to hang off mouseenter alone, so on a phone every one of
+       them was dead. The garden was reachable and still unusable: you tapped blind, and :hover is the
+       ONLY thing that says which of two overlapping diamonds the pointer resolves to. It matters more
+       after the fit, not less — the tap target is a 80x40 diamond scaled to ~36x18. */
+    const show = (): void => {
       if (hint) hint.textContent = tileDesc(i);
       cells.forEach((x) => {
         const j = +x.dataset.i!;
         x.classList.toggle('rc', colOf(j) === c || rowOf(j) === r);
       });
+      cells.forEach((x) => x.classList.remove('cell-hot'));
       b.classList.add('cell-hot');
-      const gc = app.querySelector(`.gg-col[data-c="${c}"]`);
-      const gr = app.querySelector(`.gg-row[data-r="${r}"]`);
-      if (gc) gc.classList.add('hot');
-      if (gr) gr.classList.add('hot');
-    });
-    b.addEventListener('mouseleave', () => {
+      app.querySelectorAll('.gguide.hot').forEach((x) => x.classList.remove('hot'));
+      app.querySelector(`.gg-col[data-c="${c}"]`)?.classList.add('hot');
+      app.querySelector(`.gg-row[data-r="${r}"]`)?.classList.add('hot');
+    };
+    const clear = (): void => {
       if (hint) hint.textContent = brushHint();
       cells.forEach((x) => x.classList.remove('rc', 'cell-hot'));
       app.querySelectorAll('.gguide.hot').forEach((x) => x.classList.remove('hot'));
+    };
+
+    b.addEventListener('click', () => applyBrush(i));
+    b.addEventListener('mouseenter', show);
+    b.addEventListener('mouseleave', clear);
+
+    /* Touch has no enter and no leave — it has a tap. So the tap does the telling, on pointerdown, an
+       instant BEFORE the click applies the brush: you see which tile resolved and what was there, and
+       it stays on screen afterwards rather than being wiped by a leave that never comes. Mouse is
+       excluded because it already has the real thing above; a pen gets it, which is right — a stylus
+       cannot hover either. */
+    b.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') show();
     });
   });
   // Mouse-wheel over a scrollable shop row scrolls it horizontally.
