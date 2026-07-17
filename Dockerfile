@@ -19,6 +19,13 @@ ENV BASE_PATH=$BASE_PATH
 COPY package*.json ./
 COPY vendor ./vendor
 RUN npm ci
+# Cache-bust the source copy and bundle on every commit. The run stage stamps VERSION and the revision
+# label from build-args, independently of what this stage bundled — so a reused build-stage layer would
+# ship OLD code under a FRESH version and revision, an image that labels itself correct while running
+# the previous release (this happened to home at 0.1.42). Referencing GIT_SHA in a RUN here ties the
+# source layer's cache key to the commit; npm ci above stays cached.
+ARG GIT_SHA
+RUN echo "build stage source commit: ${GIT_SHA:-unknown}"
 COPY . .
 # Vite builds the client; esbuild bundles the server into dist/server/index.mjs — the SAME depth below
 # the app root as the original src/server/index.ts, so the server's `resolve(__dirname, '../..')` still
