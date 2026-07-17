@@ -294,7 +294,8 @@ export function gardenPage(): void {
   // touches fall through to the scroller (pan) and to tap-to-place, untouched.
   const wrap = app.querySelector<HTMLElement>('.boardwrap');
   if (wrap) {
-    const dist = (t: TouchList): number => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const dist = (t: TouchList): number =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
     let startDist = 0;
     let startZoom = 1;
     wrap.addEventListener(
