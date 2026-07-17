@@ -5,7 +5,7 @@ import { setup } from '../pages/home.js';
 // entry points. Ported verbatim.
 import { CARDS, app, byId } from '../runtime/data.js';
 import { type ActiveSnap, DB, saveDB, stamp } from '../runtime/db.js';
-import { S } from '../runtime/state.js';
+import { S, type Scope } from '../runtime/state.js';
 import { shuffle } from '../runtime/util.js';
 import { availableModes, supportsMode } from './capabilities.js';
 import { renderQ } from './engine.js';
@@ -57,7 +57,7 @@ export function begin(cards: GameCard[], opts: BeginOpts): void {
     missed: [],
     elapsedMs: 0,
     notes: {},
-    timeSpeed: opts.timeSpeed != null ? opts.timeSpeed : DB.settings.timeSpeed,
+    timeSpeed: opts.timeSpeed ?? DB.settings.timeSpeed,
   };
   persist();
   renderQ();
@@ -71,7 +71,7 @@ export function resumeSnap(snap: ActiveSnap): void {
     missed: snap.missed,
     elapsedMs: snap.elapsedMs || 0,
     notes: snap.notes || {},
-    timeSpeed: snap.timeSpeed != null ? snap.timeSpeed : DB.settings.timeSpeed,
+    timeSpeed: snap.timeSpeed ?? DB.settings.timeSpeed,
   };
   renderQ();
 }
@@ -82,7 +82,7 @@ export function retrySession(id: string, speed?: number): void {
   if (cards.length)
     begin(cards, {
       label: `Retry · ${s.label}`,
-      timeSpeed: speed != null ? speed : s.timeSpeed != null ? s.timeSpeed : DB.settings.timeSpeed,
+      timeSpeed: speed ?? s.timeSpeed ?? DB.settings.timeSpeed,
     });
 }
 export function reviewIds(s: { missedIds?: string[]; notes?: Record<string, string> }): string[] {
@@ -138,14 +138,35 @@ export function finalize(): void {
   }
   saveDB();
 }
+const DIRECTION_LABELS: Record<string, string> = {
+  fb: 'recall',
+  bf: 'choice',
+  cz: 'fill-in',
+  ma: 'match',
+  ms: 'multi',
+  iv: 'inverse',
+  dm: 'label the YAML',
+  cw: 'read the code',
+  cs: 'select lines',
+  mixed: 'mixed',
+};
+
+/** The cards a scope selects, before mode-filtering: favourites, a set of sections, or everything. */
+function scopedCards(scope: Scope): GameCard[] {
+  if (scope === 'fav') return CARDS.filter((c) => DB.favorites[c.id]);
+  if (Array.isArray(scope)) return CARDS.filter((c) => scope.includes(c.cat));
+  return CARDS.slice();
+}
+
+/** Human-readable name for the chosen scope, used in the session label. */
+function scopeLabel(scope: Scope): string {
+  if (scope === 'all') return 'All sections';
+  if (scope === 'fav') return '★ Favorites';
+  return `§ ${scope.join(' ')}`;
+}
+
 export function start(): void {
-  let cards =
-    S.cfg.scope === 'fav'
-      ? CARDS.filter((c) => DB.favorites[c.id])
-      : Array.isArray(S.cfg.scope)
-        ? CARDS.filter((c) => (S.cfg.scope as string[]).includes(c.cat))
-        : CARDS.slice();
-  cards = cards.filter((c) => supportsMode(c, S.cfg.direction));
+  let cards = scopedCards(S.cfg.scope).filter((c) => supportsMode(c, S.cfg.direction));
   cards = S.cfg.weak ? cards.slice().sort((a, b) => rate(b) - rate(a)) : shuffle(cards);
   if (S.cfg.count) cards = cards.slice(0, S.cfg.count);
   if (!cards.length) {
@@ -153,25 +174,7 @@ export function start(): void {
     app.querySelector('#back')!.addEventListener('click', setup);
     return;
   }
-  const directionLabels: Record<string, string> = {
-    fb: 'recall',
-    bf: 'choice',
-    cz: 'fill-in',
-    ma: 'match',
-    ms: 'multi',
-    iv: 'inverse',
-    dm: 'label the YAML',
-    cw: 'read the code',
-    cs: 'select lines',
-    mixed: 'mixed',
-  };
-  const label = `${
-    S.cfg.scope === 'all'
-      ? 'All sections'
-      : S.cfg.scope === 'fav'
-        ? '★ Favorites'
-        : `§ ${(S.cfg.scope as string[]).join(' ')}`
-  } · ${directionLabels[S.cfg.direction]}`;
+  const label = `${scopeLabel(S.cfg.scope)} · ${DIRECTION_LABELS[S.cfg.direction]}`;
   begin(cards, { label });
 }
 export function resumeActive(): void {

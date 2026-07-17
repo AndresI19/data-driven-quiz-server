@@ -224,7 +224,7 @@ export function renderCZ(c: GameCard): void {
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    const ok = timedOut ? false : czOK(inp.value, cz);
+    const ok = !timedOut && czOK(inp.value, cz);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
     score(c, ok, 'cz');
@@ -540,7 +540,7 @@ export function renderIV(c: GameCard): void {
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    const ok = timedOut ? false : ivOK(inp.value, c.topic);
+    const ok = !timedOut && ivOK(inp.value, c.topic);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
     const ansEl = app.querySelector('#ivdef');
