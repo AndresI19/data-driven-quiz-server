@@ -115,11 +115,21 @@ function fitBoard(): void {
   const apply = (): void => {
     const room = wrap.clientWidth;
     if (!room) return; // not laid out yet; the observer will call again when it is
-    const fit = Math.min(1, room / BOARD_PX_W);
+    // Full size by default, panned to navigate — the board is NOT shrunk to fit the screen. The
+    // fit-to-screen scale read as a tiny garden; at 1 the board keeps its real 800px and the west
+    // corner stays reachable because .boardwrap uses `safe center` (the bug #46 fixed). Zoom still
+    // multiplies from here. (`room` above is the "laid out yet?" guard.)
     wrap.style.setProperty('--gbw', `${BOARD_PX_W}px`);
-    wrap.style.setProperty('--gfit', String(fit * S.gardenZoom));
+    wrap.style.setProperty('--gfit', String(S.gardenZoom));
   };
   apply();
+  // Open centred on the garden — the old default. Now that the board is full-size and overflows,
+  // `safe center` left-aligns it, so without this the first thing on screen is the empty top-left of
+  // the isometric bounding box. Done once, after layout; the observer below never re-centres, so a
+  // resize (or the user's own pan) is left alone.
+  requestAnimationFrame(() => {
+    wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
+  });
   new ResizeObserver(apply).observe(wrap);
 }
 
