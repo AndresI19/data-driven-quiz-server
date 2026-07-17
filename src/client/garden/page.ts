@@ -312,8 +312,16 @@ export function gardenPage(): void {
       (e) => {
         if (e.touches.length !== 2 || startDist === 0) return;
         e.preventDefault(); // this is a pinch, not a scroll — keep the scroller out of it
+        // Anchor the zoom on the point BETWEEN the fingers, not the board's corner. Only the
+        // horizontal axis has a scroll window (the board is fully visible vertically — the page grows),
+        // so keeping the focal point fixed is a scrollLeft correction: the content under the midpoint
+        // must sit under the same pixel after the scale. z0/z1 are the actual clamped zoom before/after.
+        const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - wrap.getBoundingClientRect().left;
+        const z0 = S.gardenZoom;
+        const sl0 = wrap.scrollLeft;
         S.gardenZoom = startZoom * (dist(e.touches) / startDist);
         applyBoard(); // clamps to [fit, 1]
+        wrap.scrollLeft = (sl0 + focalX) * (S.gardenZoom / z0) - focalX;
       },
       { passive: false },
     );

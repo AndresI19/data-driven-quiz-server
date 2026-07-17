@@ -419,13 +419,13 @@ h1 {
 }
 .homeboard {
   position: absolute;
-  left: 50%;
+  left: 0;
   top: 0;
   z-index: 1;
-  /* --pan-x is the drag offset (0 = centred); it precedes the centring/peek transforms so it simply
-     slides the whole board left/right within the clip. */
-  transform: translateX(var(--pan-x, 0px)) translateX(-50%) translateY(90px) scale(0.82);
-  transform-origin: top center;
+  /* Top-left origin so pan (--pan-x/--pan-y in px) and pinch (--pv-zoom, a multiplier on the 0.82
+     preview scale) compose cleanly: home.ts centres it on mount and does the pinch focal maths. */
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(calc(0.82 * var(--pv-zoom, 1)));
+  transform-origin: 0 0;
 }
 .gd-cta {
   text-align: center;
