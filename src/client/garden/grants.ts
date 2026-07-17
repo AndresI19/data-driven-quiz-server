@@ -55,7 +55,9 @@ export function claimGrants(): void {
   // interrupt the fade below). Anchor the claim message where the mail icon is, then remove the whole
   // row — once claimed, the icon no longer renders at all (see mailButtonHtml).
   const bal = document.querySelector('.coinbal');
-  if (bal) bal.textContent = `${COIN} ${DB.infinite ? '∞' : DB.coins}`;
+  // innerHTML, not textContent: COIN is an inline SVG now. The interpolated value is a number or ∞,
+  // never user input, so there is nothing to escape.
+  if (bal) bal.innerHTML = `${COIN} ${DB.infinite ? '∞' : DB.coins}`;
   const rect = document.getElementById('gmail')?.getBoundingClientRect();
   document.querySelector('.gmailrow')?.remove();
 

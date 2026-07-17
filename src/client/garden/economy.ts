@@ -75,7 +75,8 @@ export function updateCoinBar(): void {
 export function coinToast(n: number): void {
   const t = document.createElement('div');
   t.className = 'cointoast';
-  t.textContent = `+${n} ${COIN}`;
+  // innerHTML, not textContent: COIN is an inline SVG. `n` is a number, so nothing needs escaping.
+  t.innerHTML = `+${n} ${COIN}`;
   document.body.appendChild(t);
   setTimeout(() => t.classList.add('go'), 20);
   setTimeout(() => t.remove(), 1400);
