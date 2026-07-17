@@ -95,7 +95,7 @@ export const DB: DBShape = (() => {
   try {
     const v = JSON.parse(localStorage.getItem(K) || 'null');
     if (v) return v as DBShape;
-  } catch (e) {}
+  } catch {}
   return { stats: {}, active: null } as unknown as DBShape;
 })();
 /**
@@ -212,7 +212,7 @@ export function onSaved(fn: () => void): void {
 export function saveDB(): void {
   try {
     localStorage.setItem(K, JSON.stringify(DB));
-  } catch (e) {}
+  } catch {}
   for (const fn of savedHooks) fn();
 }
 export function stamp(): string {
@@ -223,7 +223,7 @@ export function stamp(): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch (e) {
+  } catch {
     return '';
   }
 }

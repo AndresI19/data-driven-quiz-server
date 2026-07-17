@@ -41,6 +41,19 @@ export function hud(): string {
     <button class="pillbtn" id="pausebtn" title="pause (P)">⏸</button>
   </div>`;
 }
+// Each resolved mode → its renderer. A data-driven table rather than a nine-arm if/else chain; any
+// mode not listed falls back to renderMS, exactly as the old trailing `else` did.
+const RENDERERS: Record<string, (c: GameCard) => void> = {
+  fb: renderFB,
+  bf: renderBF,
+  cz: renderCZ,
+  ma: renderMA,
+  iv: renderIV,
+  dm: renderDM,
+  cw: renderCW,
+  cs: renderCS,
+  ms: renderMS,
+};
 export function renderQ(): void {
   const ses = S.ses!;
   setPath('/quiz');
@@ -61,15 +74,7 @@ export function renderQ(): void {
   S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
   startTicker();
   S.running = true;
-  if (mode === 'fb') renderFB(c);
-  else if (mode === 'bf') renderBF(c);
-  else if (mode === 'cz') renderCZ(c);
-  else if (mode === 'ma') renderMA(c);
-  else if (mode === 'iv') renderIV(c);
-  else if (mode === 'dm') renderDM(c);
-  else if (mode === 'cw') renderCW(c);
-  else if (mode === 'cs') renderCS(c);
-  else renderMS(c);
+  (RENDERERS[mode] ?? renderMS)(c);
   decorateCard(c);
 }
 export function addFav(c: GameCard): void {
