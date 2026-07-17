@@ -1,9 +1,8 @@
 // Welcome-coin grants: a one-time award for creating an account (and, deferred, for sharing a
-// LinkedIn/company), delivered through a "mail" button on the garden page. The grant STATE lives on
-// the synced document (DB.grant, see runtime/db.ts) so claiming on one browser clears the marker on
-// every other; this module owns the small state machine and the claim UI. It deliberately does NOT
-// import garden/page.ts — the garden imports THIS — so after a claim it refreshes the balance readout
-// and drops the marker by touching the DOM directly rather than re-rendering the page.
+// LinkedIn/company), delivered via a "mail" button on the garden. The grant STATE lives on the synced
+// document (DB.grant) so claiming on one browser clears the marker on every other. Owns the state
+// machine and claim UI; does NOT import garden/page.ts (the garden imports THIS), so after a claim it
+// touches the DOM directly rather than re-rendering.
 import { isGuest, isSignedIn } from '@platform/ui/auth';
 import { COIN, CURRENCY } from '../runtime/currency.js';
 import { DB, saveDB } from '../runtime/db.js';
@@ -14,10 +13,9 @@ export const LOGIN_GRANT = 200;
 export const CONTACT_GRANT = 200;
 
 /**
- * Promote the login grant to 'pending' the first time we see a signed-in (non-guest) account. Existing
- * account-holders pick it up on their next load — an intended one-time welcome rollout. Idempotent, and
- * MUST run AFTER pull() adopts the server document, so a document that already reads 'claimed' is not
- * reset to 'pending'. Guests never earn it (they cannot hold synced coins).
+ * Promote the login grant to 'pending' the first time we see a signed-in (non-guest) account —
+ * existing holders pick it up next load (an intended one-time rollout). Idempotent, and MUST run AFTER
+ * pull() adopts the server document so a 'claimed' state is not reset to 'pending'. Guests never earn it.
  */
 export function ensureLoginGrant(): void {
   if (isSignedIn() && DB.grant.login === 'none') {
@@ -39,9 +37,9 @@ export function hasUnclaimed(): boolean {
 }
 
 /**
- * Collect every pending grant: bank the coins, flip pending→claimed, persist, then refresh the garden
- * balance and drop the marker in place. A second call is a no-op — the guard is what stops a rapid
- * double-click (or a stale re-entrant handler) from awarding the coins twice.
+ * Collect every pending grant: bank the coins, flip pending→claimed, persist, then refresh the balance
+ * and drop the marker in place. The amount<=0 guard makes a second call a no-op, stopping a rapid
+ * double-click (or stale re-entrant handler) from awarding twice.
  */
 export function claimGrants(): void {
   const amount = claimableAmount();
@@ -51,9 +49,9 @@ export function claimGrants(): void {
   if (DB.grant.contact === 'pending') DB.grant.contact = 'claimed';
   saveDB();
 
-  // Refresh the top-bar balance in place (no full re-render, which would rebuild the board and
-  // interrupt the fade below). Anchor the claim message where the mail icon is, then remove the whole
-  // row — once claimed, the icon no longer renders at all (see mailButtonHtml).
+  // Refresh the top-bar balance in place (a full re-render would rebuild the board and interrupt the
+  // fade). Anchor the claim message at the mail icon, then remove the row — once claimed the icon no
+  // longer renders (see mailButtonHtml).
   const bal = document.querySelector('.coinbal');
   // innerHTML, not textContent: COIN is an inline SVG now. The interpolated value is a number or ∞,
   // never user input, so there is nothing to escape.

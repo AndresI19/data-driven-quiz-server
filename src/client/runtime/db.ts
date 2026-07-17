@@ -1,7 +1,6 @@
 import { BOARD_CELLS, type GardenCell, LAYERS, newBoard } from '../garden/catalog.js';
-// Persistent store (localStorage key 'flashcards_v2'): lifetime per-card stats, the in-progress
-// session, saved retry decks, sessions, favorites, flags, settings, and the garden. The init +
-// migration block runs once at import and matches the original defaults exactly.
+// Persistent store (localStorage key 'flashcards_v2'): per-card stats, the in-progress session, saved
+// sessions, favorites, flags, settings, and the garden. The init + migration block runs once at import.
 import { K } from './data.js';
 import type { QItem } from './state.js';
 
@@ -83,13 +82,12 @@ export interface DBShape {
   gardenIdx: number;
   garden: Garden; // === gardens[gardenIdx], the active board
   settings: Settings;
-  // Welcome coin awards, claimed via the garden mail button. `login` is granted for having an account;
-  // `contact` (deferred) will be granted for sharing a LinkedIn/company. See garden/grants.ts.
+  // Welcome coin awards, claimed via the garden mail button. `login` for having an account; `contact`
+  // (deferred) for sharing a LinkedIn/company. See garden/grants.ts.
   grant: { login: GrantState; contact: GrantState };
-  // Which identity this document belongs to — a username, or 'guest'. localStorage is a single
-  // browser-global store, so without this tag one user's document bleeds into the next on the same
-  // browser (garden, coins, and grant state all carried over). reconcileOwner() in runtime/auth.ts
-  // reads it on load and resets the document when it belongs to a different signed-in user.
+  // Which identity owns this document — a username or 'guest'. localStorage is browser-global, so
+  // without this tag one user's document (garden, coins, grant) bleeds into the next on the same
+  // browser. reconcileOwner() in runtime/auth.ts resets the document when it belongs to another user.
   owner?: string;
 }
 
@@ -101,25 +99,20 @@ export const DB: DBShape = (() => {
   return { stats: {}, active: null } as unknown as DBShape;
 })();
 /**
- * Repair a document IN PLACE — backfill the fields every consumer reads unconditionally, migrate
- * legacy garden shapes, and drop entries too broken to keep. Idempotent, so running it twice is safe.
- *
- * Exported (not merely run at import) because the boot path is NOT the only one that fills DB: pull()
- * adopts a signed-in player's server document with `Object.assign(DB, data)`, replacing every field
- * without re-running this. A document that predates a field the UI assumes — the original culprit was
- * a session with no `missedIds` — would then reach the UI unrepaired. Because pull() runs after boot,
- * only for a signed-in account, and only its stored shape matters, this surfaced as an "admin-only"
- * bug: guests never pull, and newer accounts were written under the current schema. Sharing this one
- * function across both paths is the fix — see the sessions block below for the exact crash it caused.
+ * Repair a document IN PLACE — backfill fields every consumer reads unconditionally, migrate legacy
+ * garden shapes, drop entries too broken to keep. Idempotent. Exported (not just run at import)
+ * because pull() also fills DB via `Object.assign(DB, data)` without re-running it: a synced document
+ * predating a field the UI assumes (originally a session with no `missedIds`) would reach the UI
+ * unrepaired. That surfaced as an "admin-only" crash — guests never pull, newer accounts already match
+ * the schema. Sharing this across both paths is the fix; see the sessions block for the crash.
  */
 export function repairDB(): void {
   if (!DB.stats) DB.stats = {};
   if (!DB.sessions) DB.sessions = [];
-  // A session can predate fields the UI reads unconditionally, or arrive malformed from a synced
-  // document. One entry missing `missedIds` made setup() throw at `s.missedIds.length` — mid-render,
-  // AFTER it had already pushed /home and switched on the ambient background — so "quit to menu"
-  // changed the URL and the effects but left the quiz on screen, wedging navigation and leaving the
-  // pause button dead. Backfill what every consumer assumes; drop entries too broken to repair.
+  // A session can predate fields the UI reads unconditionally, or arrive malformed from a sync. One
+  // entry missing `missedIds` threw at `s.missedIds.length` mid-render — AFTER setup() had pushed
+  // /home and switched the ambient background — so "quit to menu" flipped the URL but left the quiz on
+  // screen, wedging navigation and the pause button. Backfill what consumers assume; drop the unfixable.
   DB.sessions = DB.sessions.filter((s) => !!s && typeof s === 'object');
   DB.sessions.forEach((s) => {
     if (!Array.isArray(s.missedIds)) s.missedIds = [];
@@ -137,15 +130,14 @@ export function repairDB(): void {
   if (!DB.grant || typeof DB.grant !== 'object') DB.grant = { login: 'none', contact: 'none' };
   if (DB.grant.login == null) DB.grant.login = 'none';
   if (DB.grant.contact == null) DB.grant.contact = 'none';
-  // Garden(s): shared wallet lives on DB; each garden holds only cells/hideFg/bg.
-  // Migrate a legacy single garden (wallet fields on DB.garden) up to the shared level.
+  // Garden(s): shared wallet on DB, each garden holds only cells/hideFg/bg. Migrate a legacy single
+  // garden (wallet fields on DB.garden) up to the shared level.
   {
     const legacy = (DB.garden && typeof DB.garden === 'object' ? DB.garden : {}) as Record<string, unknown>;
     if (DB.coins == null) DB.coins = (legacy.coins as number) ?? 0;
     if (DB.combo == null) DB.combo = (legacy.combo as number) ?? 0;
-    // Default OFF. This used to default to `?? true`, which granted every player unlimited free
-    // currency — a dev "god mode" that shipped switched on. It is an ADMIN tool now: enforced false
-    // for non-admins at boot (see main.ts) and toggled only through the admin-only debug menu.
+    // Default OFF. Once defaulted `?? true` — a dev "god mode" that shipped on. Now an ADMIN tool:
+    // enforced false for non-admins at boot (see main.ts), toggled only via the admin debug menu.
     if (DB.infinite == null) DB.infinite = (legacy.infinite as boolean) ?? false;
     if (DB.spent == null) DB.spent = (legacy.spent as number) ?? 0;
     if (DB.maxScore == null) DB.maxScore = 0;
@@ -170,9 +162,9 @@ export function repairDB(): void {
     if (DB.gardenIdx == null || DB.gardenIdx < 0 || DB.gardenIdx >= DB.gardens.length) DB.gardenIdx = 0;
     DB.gardens.forEach((g) => {
       if (!Array.isArray(g.cells)) g.cells = newBoard();
-      // Elevation layers. Three shapes reach here: absent (pre-elevation gardens), a single FLAT layer
-      // (the first elevation release stored `upper` as one 100-cell array), or the current array-of-
-      // layers. Wrap the flat one so its content stays at layer 1, then pad up to LAYERS-1 layers.
+      // Elevation layers. Three shapes reach here: absent (pre-elevation), a single FLAT layer (the
+      // first release stored `upper` as one 100-cell array), or the current array-of-layers. Wrap the
+      // flat one so its content stays at layer 1, then pad up to LAYERS-1 layers.
       const up = g.upper as unknown;
       if (!Array.isArray(up)) g.upper = [];
       else if (up.length > 0 && !Array.isArray(up[0])) g.upper = [up as (GardenCell | null)[]]; // legacy single flat elevation layer → layer 1
@@ -197,10 +189,9 @@ export function repairDB(): void {
 repairDB();
 
 /**
- * Discard the current document and rebuild a fresh default in its place. Used by reconcileOwner()
- * when the stored document belongs to a different signed-in user — clearing every key and re-running
- * repairDB() gives exactly the default a first-time visitor starts with (empty stats/sessions, a
- * starter garden, an unearned grant), rather than trying to enumerate what to null out by hand.
+ * Discard the document and rebuild a fresh default. Used by reconcileOwner() when the stored document
+ * belongs to a different signed-in user: clearing every key and re-running repairDB() gives exactly a
+ * first-time visitor's default, rather than enumerating what to null out by hand.
  */
 export function resetDoc(): void {
   const bag = DB as unknown as Record<string, unknown>;
@@ -209,10 +200,9 @@ export function resetDoc(): void {
 }
 
 /**
- * Anything that wants to know the document changed. There is exactly ONE write point in this app —
- * this function — so sync hooks here rather than being sprinkled through the garden, the quiz engine
- * and the session recorder. Registered by main.ts; a plain callback rather than an import so this
- * module keeps knowing nothing about the network.
+ * Notify that the document changed. There is exactly ONE write point in this app (saveDB), so sync
+ * hooks here rather than being sprinkled through the garden, engine, and session recorder. A plain
+ * callback, not an import, so this module knows nothing about the network.
  */
 const savedHooks: Array<() => void> = [];
 export function onSaved(fn: () => void): void {

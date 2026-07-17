@@ -5,23 +5,15 @@ import pg from 'pg';
 /**
  * Server-side progress: the player's document, kept for them instead of only in their browser.
  *
- * ── The shape ───────────────────────────────────────────────────────────────────────────────────
- * ONE JSONB DOCUMENT PER PLAYER, stored verbatim. The quiz's data was never relational — it is a
- * garden of cells, a list of sessions each carrying its own notes map, a mid-quiz snapshot holding a
- * whole question queue, and a per-card statistics map. Modelling that into tables would be a great
- * deal of work to reproduce a document that already exists, followed by a great deal more to
- * reassemble it for a client that wants it back as one object.
+ * Shape: ONE JSONB DOCUMENT PER PLAYER, stored verbatim. The quiz's data was never relational (a
+ * garden of cells, sessions with their own notes maps, a mid-quiz snapshot, a per-card stats map);
+ * modelling it into tables would rebuild a document that already exists, then reassemble it on read.
  *
- * ── The promoted columns ────────────────────────────────────────────────────────────────────────
- * `coins`, `answered` and `correct` are DERIVED from the document by this server on every write, and
- * are never accepted from the client. That is not tidiness. If the client could send them, it could
- * send a document with 10 coins and a `coins` column claiming 10,000, and the leaderboard would be
- * forgeable by anyone holding a bearer token. Deriving them makes the two disagreeing structurally
- * impossible rather than merely unlikely.
+ * Promoted columns: `coins`, `answered`, `correct` are DERIVED server-side on every write, never
+ * accepted from the client — otherwise a client could send 10 coins with a `coins` column of 10,000
+ * and forge the leaderboard with any bearer token. Deriving makes the two disagreeing impossible.
  *
- * ── Guests ──────────────────────────────────────────────────────────────────────────────────────
- * A guest never reaches this file. No identity, no request, no row — their data stays in their
- * browser, and the UI says so plainly. Guest mode is not a degraded account; it is the absence of one.
+ * Guests never reach this file: no identity, no request, no row — their data stays in the browser.
  */
 
 const AUTH_JWKS = process.env.AUTH_JWKS_URI ?? '';
@@ -41,9 +33,8 @@ export async function migrate(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS progress (
       sub         uuid PRIMARY KEY,
-      -- Denormalised from the token, so a leaderboard can name people without asking the auth
-      -- service on every row. It is the PUBLIC half of an identity and safe to hold here; the code
-      -- and the sub are not, and are not here.
+      -- Denormalised from the token so the leaderboard can name people without a call to auth per
+      -- row. The PUBLIC half of an identity, safe here; the code and sub are not, and are not here.
       username    text NOT NULL DEFAULT '',
       data        jsonb NOT NULL,
       coins       integer NOT NULL DEFAULT 0,
@@ -107,8 +98,8 @@ export function mountProgress(app: Express, base: string): void {
       req.sub,
     ]);
     if (!rows[0]) {
-      // Not an error: a brand-new player simply has nothing yet. The client then uploads whatever is
-      // in its localStorage, which is the migration path — see PUT below.
+      // Not an error: a new player has nothing yet. The client then uploads its localStorage — the
+      // migration path, see PUT below.
       res.json({ data: null, version: 0 });
       return;
     }
@@ -125,19 +116,12 @@ export function mountProgress(app: Express, base: string): void {
     const d = derive(body.data);
 
     /**
-     * OPTIMISTIC CONCURRENCY, and it is here because last-write-wins DESTROYS GARDENS.
-     *
-     * One identity, two browsers. Someone plays on their phone, opens their laptop, and the laptop's
-     * stale document silently overwrites an evening's progress — no error, nothing to roll back to.
-     *
-     * So the write only lands if the client is writing on top of the version it actually read. If it
-     * is not, the server refuses and hands back what it has. What the client DOES with that (merge,
-     * ask, refetch) is a UI decision. What the server must not do is throw data away without saying
-     * so.
-     *
-     * `version = 0` means "I have never read from the server", which is only legitimate when no row
-     * exists — the first upload after a sign-in. Once a row exists, a 0 is a stale client and is
-     * rejected like any other mismatch.
+     * OPTIMISTIC CONCURRENCY — here because last-write-wins DESTROYS GARDENS. One identity, two
+     * browsers: a stale laptop document silently overwriting an evening's phone progress, no error, no
+     * rollback. So a write lands only on top of the version the client actually read; otherwise the
+     * server refuses and hands back what it has (the client's merge/ask/refetch is a UI decision).
+     * `version = 0` means "never read from the server", legitimate only when no row exists (the first
+     * upload after sign-in); once a row exists a 0 is a stale client, rejected like any mismatch.
      */
     const { rows } = await pool.query(
       `INSERT INTO progress (sub, username, data, coins, answered, correct, version, updated_at)
