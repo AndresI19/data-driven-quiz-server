@@ -109,20 +109,28 @@ function brushCursor(): string {
  * `zoom` is a user multiplier ON TOP of the fit. Above 1 the board overflows again and pans, which is
  * correct and only works because of `safe center`.
  */
+// Zoom lives in [fitRatio, 1]: 1 is full size (the max zoom-IN — the tiles are already large enough to
+// place precisely), and the low end is exactly the ratio that makes the whole garden fit the viewport,
+// so zooming all the way out fits the page. fitRatio depends on width, so it is recomputed here rather
+// than being a constant. Applies --gfit and keeps the % label in sync; NO observer/scroll side effects,
+// so it is safe to call on every zoom click.
+function applyBoard(): void {
+  const wrap = app.querySelector<HTMLElement>('.boardwrap');
+  if (!wrap) return;
+  const room = wrap.clientWidth;
+  if (!room) return; // not laid out yet; the observer will call again when it is
+  const fit = Math.min(1, room / BOARD_PX_W);
+  S.gardenZoom = Math.max(fit, Math.min(1, S.gardenZoom));
+  wrap.style.setProperty('--gbw', `${BOARD_PX_W}px`);
+  wrap.style.setProperty('--gfit', String(S.gardenZoom));
+  const lvl = app.querySelector<HTMLElement>('#gzfit');
+  if (lvl) lvl.textContent = `${Math.round(S.gardenZoom * 100)}%`;
+}
+
 function fitBoard(): void {
   const wrap = app.querySelector<HTMLElement>('.boardwrap');
   if (!wrap) return;
-  const apply = (): void => {
-    const room = wrap.clientWidth;
-    if (!room) return; // not laid out yet; the observer will call again when it is
-    // Full size by default, panned to navigate — the board is NOT shrunk to fit the screen. The
-    // fit-to-screen scale read as a tiny garden; at 1 the board keeps its real 800px and the west
-    // corner stays reachable because .boardwrap uses `safe center` (the bug #46 fixed). Zoom still
-    // multiplies from here. (`room` above is the "laid out yet?" guard.)
-    wrap.style.setProperty('--gbw', `${BOARD_PX_W}px`);
-    wrap.style.setProperty('--gfit', String(S.gardenZoom));
-  };
-  apply();
+  applyBoard();
   // Open centred on the garden — the old default. Now that the board is full-size and overflows,
   // `safe center` left-aligns it, so without this the first thing on screen is the empty top-left of
   // the isometric bounding box. Done once, after layout; the observer below never re-centres, so a
@@ -130,7 +138,7 @@ function fitBoard(): void {
   requestAnimationFrame(() => {
     wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
   });
-  new ResizeObserver(apply).observe(wrap);
+  new ResizeObserver(applyBoard).observe(wrap);
 }
 
 function layerTabs(): string {
@@ -288,20 +296,18 @@ export function gardenPage(): void {
   </div>`;
   fitBoard();
 
-  // Zoom is clamped to [1, 3]: 1 is the whole garden (never smaller — there is no reason to want less
-  // than all of it), 3 is enough to place a tile precisely on a phone, where the fitted tap diamond is
-  // only ~33x16.
+  // Step the zoom; applyBoard clamps to [fit, 1] and syncs the label. Not fitBoard() — that re-arms the
+  // ResizeObserver and re-centres, which a zoom click should not do.
   const zoom = (mult: number): void => {
-    S.gardenZoom = Math.min(3, Math.max(1, Math.round((S.gardenZoom + mult) * 10) / 10));
-    const lvl = app.querySelector<HTMLElement>('#gzfit');
-    if (lvl) lvl.textContent = `${Math.round(S.gardenZoom * 100)}%`;
-    fitBoard();
+    S.gardenZoom = Math.round((S.gardenZoom + mult) * 10) / 10;
+    applyBoard();
   };
   app.querySelector('#gzout')?.addEventListener('click', () => zoom(-0.5));
   app.querySelector('#gzin')?.addEventListener('click', () => zoom(0.5));
+  // The middle button FITS the whole garden — drop below the floor and let applyBoard clamp up to it.
   app.querySelector('#gzfit')?.addEventListener('click', () => {
-    S.gardenZoom = 1;
-    zoom(0);
+    S.gardenZoom = 0;
+    applyBoard();
   });
 
   app.querySelector('#gback')!.addEventListener('click', () => {
