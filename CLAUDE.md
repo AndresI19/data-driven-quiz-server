@@ -18,9 +18,9 @@ git clone --recurse-submodules …        # or: git submodule update --init --re
 npm install
 ```
 
-`vendor/portfolio-home` is a **git submodule** supplying `@platform/ui` (a `file:` dependency). With
-it missing, `npm install` fails outright and so does `typecheck` — `tsconfig.json` extends a file
-inside the package.
+`vendor/project-platform` is a **git submodule** (the project-platform monorepo) supplying `@platform/ui`
+at `portfolio-home/packages/platform-ui` (a `file:` dependency). Missing, `npm install` fails outright and
+so does `typecheck` — `tsconfig.json` extends a file inside the package.
 
 ## Commands
 
@@ -31,7 +31,7 @@ npm start           # tsx src/server/index.ts
 npm run serve       # build && start
 npm run typecheck   # tsc --noEmit
 npm run lint        # biome check src
-npm test            # vitest run  (13 files)
+npm test            # vitest run  (14 files)
 ```
 
 **Static gates:** `npm run lint` (Biome — import sorting + formatting) and `npm run typecheck`
@@ -39,7 +39,7 @@ npm test            # vitest run  (13 files)
 
 ## The cards/ directory — the whole point of the app
 
-- **10 section decks**, `a-…` through `j-…`. Section order is filename order.
+- **15 section decks**, `a-…` through `o-…`. Section order is filename order.
 - **Files starting with `_` are not loaded.** `_diagrams.yaml` is a map of inline SVGs that cards
   reference by key; `_example-pack.yaml` is a reference deck demonstrating every card type — copy it
   to `cards/<letter>-<name>.yaml` to activate it.
@@ -63,11 +63,11 @@ npm test            # vitest run  (13 files)
   whose assets all 404. It is a Docker **build arg AND a runtime env var** for exactly this reason.
 - **`serveClient()` must stay last** in `src/server/index.ts` — it ends in a `/*` catch-all that
   would shadow `/api/cards.json` and `/print.html`.
-- **`npm run dev` defaults to port 80**, not 3000 (`vite.config.ts` reads `PORT` and falls back to
-  80), which needs privileges. The README's "http://localhost:3000" is wrong. Use `PORT=3000 npm run
-  dev`.
-- **The server is never compiled** — it runs via `tsx`, a devDependency, which is why the runtime
-  image deliberately keeps dev deps (`npm ci --include=dev`).
+- **`npm run dev` defaults to port 80** (`vite.config.ts` reads `PORT`, falls back to 80), which needs
+  privilege. Use `PORT=3000 npm run dev`. (`npm start`/Express defaults to 3000.)
+- **Locally the server is not compiled** — `npm start` runs it via `tsx`, a devDependency. The
+  container is different: the Dockerfile esbuild-bundles the server into one `dist/server/index.mjs`
+  and strips npm/node_modules, so the runtime carries only the node binary, the bundle, and the cards.
 - The health endpoint (`/api/health`) lives in the **vendored `@platform/ui` package**, not in this
   repo's server file.
 
@@ -79,8 +79,10 @@ npm test            # vitest run  (13 files)
   source of truth for which modes a card supports, derived from its fields — used by mode selection,
   deck-direction filtering, and the render fallback).
 - `src/client/garden/` — the reward system (autotiler, economy, sprites, particles).
-- `src/server/index.ts` — the only server file. `CARDS_DIR` is a **constant** here (`<repo>/cards`),
-  not an env var.
+- `src/server/index.ts` — the entrypoint: serves cards/print/version, mounts progress. `CARDS_DIR` is
+  a **constant** here (`<repo>/cards`), not an env var.
+- `src/server/progress.ts` — optional server-side progress sync (Postgres + JWT via `@platform/ui`).
+  OFF unless both `DATABASE_URL` and `AUTH_JWKS_URI` are set; otherwise the quiz is browser-only.
 - `src/print/build-print.ts` — the printable sheet (8 cards/page, duplex), built once at startup from
   the same payload as the API.
 

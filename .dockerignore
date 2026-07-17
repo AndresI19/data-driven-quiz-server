@@ -10,11 +10,7 @@ test/
 .github/
 .vite/
 
-# The @platform/ui package lives inside the portfolio-home submodule. npm resolves
-# `file:vendor/project-platform/portfolio-home/packages/platform-ui` against it, so that path MUST be in the context —
-# but nothing else in portfolio-home is needed here. Excluding the rest keeps the whole home page
-# (its own src, its 1MB garden GIF, its résumé) out of the quiz's image.
-# @platform/ui now lives in the project-platform MONOREPO submodule, at
+# @platform/ui lives in the project-platform MONOREPO submodule, at
 # vendor/project-platform/portfolio-home/packages/platform-ui. The monorepo also contains the whole
 # home page and the auth service — none of which the quiz build needs — so this whittles the context
 # down to just that one package. A negation only takes effect if every parent directory is first

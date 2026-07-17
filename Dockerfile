@@ -7,15 +7,16 @@
 # the card YAML. Slim + `apt-get upgrade` (not distroless — distroless cannot patch its OS packages),
 # then npm stripped, collapses the CVE surface to node + the OS.
 #
-# The shared @platform/ui package lives in portfolio-home, a git submodule at vendor/portfolio-home,
-# so `docker build .` works with no flags. Clone with --recurse-submodules or vendor/ is empty.
+# The shared @platform/ui package lives in the project-platform submodule at vendor/project-platform
+# (under portfolio-home/packages/platform-ui), so `docker build .` works with no flags. Clone with
+# --recurse-submodules or vendor/ is empty.
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 # URL prefix the app is mounted under behind a reverse proxy. Baked into the client at build time.
 ARG BASE_PATH=/
 ENV BASE_PATH=$BASE_PATH
-# The lockfile resolves @platform/ui to file:vendor/platform-ui, so the submodule has to be present
-# before `npm ci` runs.
+# The lockfile resolves @platform/ui to file:vendor/project-platform/portfolio-home/packages/platform-ui,
+# so the submodule has to be present before `npm ci` runs.
 COPY package*.json ./
 COPY vendor ./vendor
 RUN npm ci

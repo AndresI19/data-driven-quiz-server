@@ -1,6 +1,6 @@
 import type { GameCard } from '../../shared/card-schema.js';
-// The seven quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
-// inverse (IV), and label-the-YAML (DM).
+// The nine quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
+// inverse (IV), label-the-YAML (DM), read-the-code (CW), and select-lines (CS).
 //
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so

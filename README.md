@@ -1,8 +1,9 @@
 # Cloud Developer Quiz
 
 A flashcard quiz for cloud and system-design interview prep, with an isometric garden you grow by
-answering correctly. Vanilla TypeScript, Vite, and a small Express server — no framework, no database,
-no accounts. A player's progress lives in their own browser's `localStorage`.
+answering correctly. Vanilla TypeScript, Vite, and a small Express server — no framework. Progress
+lives in the browser's `localStorage`; signing in syncs it server-side when the platform's auth and
+database are configured (both optional — with neither set, the app is browser-only).
 
 **The quiz is data.** You do not write code to add questions. You drop a YAML file into
 [`cards/`](cards/), and the app grows a new section, works out what *kinds* of question each card can
@@ -16,20 +17,17 @@ be asked as, and wires it into the study deck, the printable sheet, and the rewa
 git clone --recurse-submodules https://github.com/AndresI19/data-driven-quiz-server.git
 cd data-driven-quiz-server
 npm install
-npm run dev            # http://localhost:3000
+PORT=3000 npm run dev  # http://localhost:3000 (bare `npm run dev` binds port 80)
 ```
 
-> **`--recurse-submodules` matters.** The shared design system, `@platform/ui`, lives in
-> [portfolio-home](https://github.com/AndresI19/portfolio-home) — that repo is its source of truth —
-> and is vendored here as a submodule at `vendor/portfolio-home`. `npm install` resolves the
-> dependency from `vendor/portfolio-home/packages/platform-ui`. Already cloned without it?
-> `git submodule update --init --recursive`
->
-> Only `packages/` is used; the image does not carry the rest of the home page (see `.dockerignore`).
+> **`--recurse-submodules` matters.** The shared design system `@platform/ui` is vendored as the
+> [project-platform](https://github.com/AndresI19/project-platform) submodule at `vendor/project-platform`;
+> `npm install` resolves it from `vendor/project-platform/portfolio-home/packages/platform-ui`. Already
+> cloned without it? `git submodule update --init --recursive`
 
 ```bash
 npm run build && npm start     # production build, served by Express
-npm test                       # 115 tests
+npm test                       # 230 tests
 npm run typecheck
 ```
 
@@ -75,6 +73,8 @@ one at random each time the card comes up. Author more fields, earn more ways to
 | `manifest:` | **label the YAML** — drag labels into the blanks of a manifest |
 | `inverse: true` | **name it** — given the definition, recall the term |
 | `mc:` | hand-written wrong answers for *identify*, instead of ones the app picks for you |
+| `code:` | **read the code** — shown a block, pick what it does |
+| `code:` + `codeselect:` | **select the lines** — tick every line that does X |
 | `recall: true` | forces **recall only** — opts the card out of every machine-graded mode |
 
 Two things fall out of this for free:
@@ -86,7 +86,7 @@ Two things fall out of this for free:
   payload, and a correct answer pays coins into the garden economy, priced per mode.
 
 [`cards/_schema.md`](cards/_schema.md) is the full field reference;
-[`cards/_example-pack.yaml`](cards/_example-pack.yaml) is a copyable example of all eight card types.
+[`cards/_example-pack.yaml`](cards/_example-pack.yaml) is a copyable example of every card type.
 
 ### When edits are picked up
 
@@ -157,6 +157,7 @@ docker run -e BASE_PATH=/cloud-developer-quiz/ -p 8080:80 quiz
 |---|---|
 | `GET /` | the app (client-routed: `/home`, `/quiz`, `/garden` are deep-linkable) |
 | `GET /api/cards.json` | the validated, transformed payload the client boots from |
+| `GET /version` | `{"version": "…"}` — the running image's version (`"snapshot"` in a dev checkout) |
 | `GET /api/health` | `{"ok":true}` |
 | `GET /print.html` | printable 8-per-page duplex card sheet |
 
@@ -169,28 +170,28 @@ All of them sit beneath `BASE_PATH` when one is set.
 ```
 cards/                 the quiz, as data — one YAML file per section
   _schema.md             every authorable field
-  _example-pack.yaml     a worked example of all eight card types (not loaded)
+  _example-pack.yaml     a worked example of every card type (not loaded)
   _diagrams.yaml         inline SVGs a card can reference by name
 public/assets/         sprites: tiles, critters, decor, tools
 src/
   shared/                load + validate + transform YAML → the card payload (pure, tested)
   client/
-    quiz/                  the seven question modes, grading, the session
+    quiz/                  the nine question modes, grading, the session
     garden/                the isometric garden: catalog, autotiler, sprites, economy
     runtime/               router, persisted store, shared state
     pages/                 home, review, favorites, export
   print/                 the printable sheet
   server/                Express: serves the payload, the print sheet and the built client
-vendor/portfolio-home/ submodule — supplies @platform/ui (shared tokens, base stylesheet, client middleware)
+vendor/project-platform/ submodule — supplies @platform/ui (tokens, base stylesheet, gate, client middleware)
 ```
 
 ## Tests
 
 ```bash
-npm test       # 115 tests, Vitest + happy-dom
+npm test       # 230 tests, Vitest + happy-dom
 ```
 
-The pure core is covered directly: the card transform, the two answer graders, the garden autotiler,
-and the reward economy. The seven question modes are covered by characterization tests that assert on
-the HTML each one renders — so they survive a refactor of *how* that HTML is built, and fail if what
-the player sees changes.
+The pure core is covered directly: the card transform, the answer graders, the garden autotiler, and
+the reward economy. The nine question modes are covered by characterization tests that assert on the
+HTML each one renders — so they survive a refactor of *how* that HTML is built, and fail if what the
+player sees changes.
