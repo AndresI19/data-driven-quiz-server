@@ -70,11 +70,10 @@ app.get(`${B}/api/cards.json`, (_req, res) => {
   res.send(cardsJson);
 });
 
-// The version this image was built from. Baked into /app/VERSION by the Dockerfile, which
-// k8s/deploy.sh stamps from the repo's latest git tag (suffixed -snapshot when the source differs
-// from main). Read ONCE at startup, like the cards: it cannot change without a new image, so
-// re-reading it per request would be a syscall to learn a constant. Absent in a dev checkout, which
-// is why the fallback is "snapshot" rather than "unknown" — an untagged build is not a release.
+// The version this image was built from. Baked into /app/VERSION by the Dockerfile, which k8s/deploy.sh
+// stamps from the latest git tag (suffixed -snapshot when the source differs from main). Read ONCE at
+// startup like the cards — it can't change without a new image. Absent in a dev checkout, so the
+// fallback is "snapshot" (an untagged build is not a release), not "unknown".
 const VERSION = ((): string => {
   try {
     return readFileSync(resolve(ROOT, 'VERSION'), 'utf8').trim() || 'snapshot';
@@ -91,9 +90,8 @@ app.get(`${B}/print.html`, (_req, res) => {
   res.send(printHtml);
 });
 
-// The built client, its cache policy, the health probe and the SPA fallback — all shared with the
-// home page. Mounted LAST: it ends in a catch-all, so the cards and print routes above must be
-// registered first or they would be shadowed by index.html.
+// The built client, cache policy, health probe, and SPA fallback — all shared with the home page.
+// Mounted LAST: its catch-all would shadow the cards and print routes above if they weren't first.
 serveClient(app, { clientDir: CLIENT_DIR, base: BASE, appName: 'data-driven-quiz-server' });
 
 app.listen(PORT, () => {

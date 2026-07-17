@@ -2,9 +2,9 @@
 // the original generator. Pure data + a couple of pure helpers — no game state.
 import { pick } from '../runtime/util.js';
 
-// ---- Sprite garden: assets under <base>assets/ (public/assets → served at <base>assets/) ----
-// import.meta.env.BASE_URL is the URL prefix Vite baked in (trailing-slashed; '/' at root), so
-// asset URLs resolve correctly whether the app is at '/' or behind a proxy at '/cloud-developer-quiz/'.
+// ---- Sprite garden: assets under <base>assets/ ----
+// BASE_URL is Vite's baked-in prefix (trailing-slashed; '/' at root), so asset URLs resolve whether
+// the app is at '/' or behind a proxy path.
 export const ASSET = `${import.meta.env.BASE_URL}assets/`;
 export const TIMG = (i: number): string => `${ASSET}tiles/tile_${String(i).padStart(3, '0')}.png`;
 
@@ -30,9 +30,8 @@ export const WATER_MAP: Record<number, number> = {
 export const WATER_OPEN = 104; // interior (no land edges)
 
 // ---- Board dimensions ----
-// The board is a square grid stored row-major in a flat array. These are the single source for its
-// size; the row/col helpers turn a flat index back into grid coordinates. Everything that walks the
-// board (rendering, autotiling, value, splashes) reads these instead of open-coding 10 / 100.
+// Square grid, row-major in a flat array. Single source for its size; everything that walks the board
+// (rendering, autotiling, value, splashes) reads these instead of open-coding 10 / 100.
 export const BOARD_W = 10; // cells per row (the board is BOARD_W × BOARD_W)
 export const BOARD_CELLS = BOARD_W * BOARD_W; // total cells per layer
 export const rowOf = (i: number): number => (i / BOARD_W) | 0;
@@ -47,14 +46,9 @@ export interface Block {
   buyable?: boolean;
 }
 /**
- * Every block, once.
- *
- * `grass` is here even though it cannot be bought — it is made by watering dirt (WATER_COST). It has
- * to be in the table anyway, because its name and its value are needed all the same: they used to be
- * kept in two OTHER places (a `BLOCK_VALUE` map and an inline name map in sprites.ts), which is three
- * tables that had to agree about four blocks and silently didn't have to about the fifth.
- *
- * `buyable: false` is what keeps it out of the shop, rather than its absence from the table.
+ * Every block, once. `grass` is here though unbuyable (made by watering dirt) because its name and
+ * value are needed anyway — they once lived in two OTHER tables (BLOCK_VALUE, an inline map in
+ * sprites.ts) that had to agree. `buyable: false`, not absence, is what keeps it out of the shop.
  */
 export const BLOCKS: Record<string, Block> = {
   dirt: { name: 'Dirt', price: 14, pool: DIRT_V },
@@ -252,8 +246,8 @@ export const APPLY_COST = 200; // cost to apply an owned background/effect
 export const BG_URL = (id: string): string => `${ASSET}backgrounds/${id}.png`;
 
 // ---- Economy tunables ----
-// The remaining scattered garden-value/cost numbers, gathered next to the shop prices above so the
-// whole economy reads in one place (economy.ts imports these rather than open-coding them).
+// The remaining garden-value/cost numbers, gathered next to the shop prices so the economy reads in
+// one place (economy.ts imports these rather than open-coding them).
 export const DECOR_VALUE = 200; // 🏆 each applied background/effect adds to a garden's value
 export const NEW_GARDEN_COST = 3000; // coins to buy an unlocked garden slot
 export const GARDEN_STEP = 1500; // total-value increment that unlocks each new garden slot
@@ -292,10 +286,9 @@ export const BACKGROUNDS: Background[] = [
 export const ANIM_BY_ID: Record<string, Animal> = {};
 ANIMALS.forEach((a) => (ANIM_BY_ID[a.id] = a));
 
-// Coins for a correct card, by mode. `fb` is absent on purpose — it is self-graded, so paying for it
-// would pay the honour system. Every machine-graded mode must appear here: `iv` was missing, so a
-// correct inverse-recall card silently paid nothing and did not advance the combo, and `dm` used to
-// borrow `ma`'s entry (same value, but it read as a typo rather than a decision).
+// Coins for a correct card, by mode. `fb` is absent on purpose (self-graded — paying it would pay the
+// honour system). Every machine-graded mode must appear: `iv` was once missing, so inverse-recall paid
+// nothing and didn't advance the combo; `dm` borrowed `ma`'s entry, reading as a typo not a decision.
 export const REWARD_BASE: Record<string, number> = {
   bf: 20,
   cz: 24,
@@ -319,40 +312,31 @@ export const ISO_W = 80,
   ISO_OX = (BOARD_W - 1) * ISO_HX;
 
 /**
- * The board's pixel WIDTH — derived here, not restated wherever it is needed.
- *
- * cellPos() puts a cell at x = (c - r) * ISO_HX + ISO_OX. c-r runs from -(BOARD_W-1) to +(BOARD_W-1),
- * so ISO_OX is exactly the term that slides that range to start at 0, and the span is
- * (BOARD_W-1) * 2 * ISO_HX wide plus one tile. It comes to 800.
- *
- * That 800 was previously hardcoded into game.css with nothing linking it back, and ISO_OX was written
- * as `9 * ISO_HX` — where 9 is silently BOARD_W-1. Two derived constants, both spelled as literals, in
- * two files that had to agree. The garden's fit divides by this, so it now divides by the same number
- * the projection is drawn with, and changing BOARD_W moves both together.
+ * The board's pixel WIDTH — derived, not restated where needed. cellPos() puts a cell at
+ * x = (c-r)*ISO_HX + ISO_OX; c-r spans -(BOARD_W-1)..+(BOARD_W-1), ISO_OX slides that to start at 0,
+ * so the span is (BOARD_W-1)*2*ISO_HX + one tile = 800. That 800 was hardcoded in game.css and ISO_OX
+ * written as `9 * ISO_HX` (9 = BOARD_W-1). The garden's fit now divides by the same number the
+ * projection is drawn with, so changing BOARD_W moves both together.
  */
 export const BOARD_PX_W = (BOARD_W - 1) * 2 * ISO_HX + ISO_W;
 
 // ---- Elevation layers ----
-// The board has stacked editing layers. Layer 0 is the ground; each layer above is an elevation plane
-// lifted one more cube body (ISO_LIFT === the cube's 20px front face), so each stacks flush on the one
-// below with no floating gap — see catalog tiles, whose body is 8px of a 32px sprite. Adding another
-// layer is just bumping LAYERS: the data model, rendering, and placement all read this constant.
+// Layer 0 is the ground; each layer above is lifted one cube body (ISO_LIFT = the 20px front face) so
+// it stacks flush with no floating gap. Adding a layer is just bumping LAYERS — data model, rendering,
+// and placement all read it.
 export const ISO_LIFT = ISO_HY;
 export const LAYERS = 3; // ground + two elevation layers
-// Depth is sorted by grid footprint first, layer only as a tiebreak: z = Z_STEP*(col+row) + layer.
-// Sorting by footprint (not by layer) is what lets a tall tree correctly sit BEHIND an elevated tile
-// in front of it and IN FRONT OF one behind it, with no per-object hoisting. Z_STEP leaves exactly
-// enough room for every layer to slot between two footprint steps.
+// Depth sorts by grid footprint first, layer only as tiebreak: z = Z_STEP*(col+row) + layer. Sorting
+// by footprint (not layer) lets a tall tree sit BEHIND an elevated tile in front of it and IN FRONT OF
+// one behind, with no per-object hoisting. Z_STEP leaves room for every layer between two footprint steps.
 export const Z_STEP = LAYERS;
 
 /**
- * Can an elevated tile stand on the cell directly beneath it (the layer below)? Only over solid,
- * unoccupied support: there must BE a tile beneath it, and it cannot bridge water or a spire (both
- * would leave the platform floating on a surface nothing can key into). Anything STANDING on that
- * cell — a feature (tree/bush/flower) or an animal — refuses it too: the object would be buried, the
- * one adjacency the footprint depth-sort cannot draw. `dig it first` is the fix, not a render trick.
- * The same predicate governs every elevation layer: layer N keys onto layer N-1. (Animals were once
- * missed here, which let a deer get buried while trees and flowers were correctly blocked.)
+ * Can an elevated tile stand on the cell directly below? Only over solid, unoccupied support: a tile
+ * must exist there, and it cannot bridge water or a spire (the platform would float on nothing it can
+ * key into). Anything STANDING on the cell — feature or animal — refuses it too: the object would be
+ * buried, the one adjacency the footprint depth-sort cannot draw. Layer N keys onto layer N-1.
+ * (Animals were once missed here, letting a deer get buried while trees/flowers were correctly blocked.)
  */
 export function supportsUpper(below: GardenCell | null): boolean {
   return !!below && below.block !== 'water' && below.block !== 'spire' && !below.feature && !below.animal;
@@ -372,9 +356,7 @@ export function newBoard(): (GardenCell | null)[] {
   return cells;
 }
 
-// ---------------------------------------------------------------------------------------------
-// Board geometry. These live next to WATER_MAP because they are what produces the key into it.
-// ---------------------------------------------------------------------------------------------
+// Board geometry. These live next to WATER_MAP because they produce the key into it.
 
 /** Land = a non-water block. Water, empty and off-board are all "not land", so they grow no rim. */
 export function isLand(cell: GardenCell | null): boolean {
@@ -382,12 +364,9 @@ export function isLand(cell: GardenCell | null): boolean {
 }
 
 /**
- * The autotile key for the water cell at `i`: one bit per land-facing edge.
- * NE=1 (r-1,c) · NW=2 (r,c-1) · SE=4 (r,c+1) · SW=8 (r+1,c).
- *
- * This is the index into WATER_MAP, and it used to be computed in two places — the autotiler and
- * the debug tile-id overlay — which meant the overlay could disagree with the tile it was labelling.
- * That is the one thing an overlay exists not to do.
+ * The autotile key (index into WATER_MAP) for the water cell at `i`: one bit per land-facing edge.
+ * NE=1 (r-1,c) · NW=2 (r,c-1) · SE=4 (r,c+1) · SW=8 (r+1,c). Computed here only — it was once also in
+ * the debug tile-id overlay, which could then disagree with the tile it labelled.
  */
 export function waterMask(cells: (GardenCell | null)[], i: number): number {
   const r = rowOf(i);

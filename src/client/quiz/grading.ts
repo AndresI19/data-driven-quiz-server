@@ -18,15 +18,10 @@ export function czOK(val: string, cz: Cloze): boolean {
 }
 
 /**
- * Grade an inverse-recall answer: the player is shown a definition and types the topic back.
- *
- * Exact match wins outright. Otherwise it is a keyword vote — the "significant" words of the topic
- * (>3 characters, so "the"/"of" cannot carry a pass), of which at least 60% must appear in the
- * answer. That tolerance is why "load balancer" scores against "a load balancer" but not against
- * "balancer" alone in a longer topic.
- *
- * Lived inside renderIV, which meant the one piece of grading logic in this app that is pure and
- * worth testing was the one piece that could not be imported.
+ * Grade an inverse-recall answer (definition shown, player types the topic back). Exact match wins;
+ * otherwise a keyword vote — ≥60% of the topic's "significant" words (>3 chars, so "the"/"of" can't
+ * carry a pass) must appear. That tolerance is why "load balancer" scores against "a load balancer"
+ * but not "balancer" alone. Extracted from renderIV so this pure grading logic can be tested.
  */
 export function ivOK(val: string, topic: string): boolean {
   const v = norm(val);
@@ -40,9 +35,8 @@ export function ivOK(val: string, topic: string): boolean {
   return hits >= Math.ceil(significant.length * 0.6);
 }
 /**
- * Grade a "select the lines" answer: the picked line indices must be EXACTLY the correct set — every
- * correct line chosen, and no incorrect line chosen. Order-independent. Extracted (like czOK/ivOK) so
- * the all-correct-and-nothing-extra rule can be unit-tested apart from the DOM.
+ * Grade a "select the lines" answer: picked indices must be EXACTLY the correct set (every correct
+ * line, no incorrect one), order-independent. Extracted so the rule can be unit-tested apart from DOM.
  */
 export function codeSelectOK(picked: number[], answer: number[]): boolean {
   const want = new Set(answer);
@@ -71,9 +65,8 @@ const STOP = new Set(
 );
 /** The significant words of a string: lowercased, punctuation-stripped, stopwords and stubs dropped. */
 export function toks(s: unknown): string[] {
-  // norm() already lowercases, collapses every run of non-alphanumerics to ONE space, and trims —
-  // so the string it returns can only be separated by single spaces. This used to re-implement
-  // norm() and then split on /\s+/, a regex that could never match anything but a single space.
+  // norm() already lowercases, collapses non-alphanumeric runs to ONE space, and trims, so its output
+  // splits on a single space. This used to re-implement norm() then split on /\s+/ — never more than one.
   return norm(s)
     .split(' ')
     .filter((w) => w.length > 2 && !STOP.has(w));
@@ -86,14 +79,12 @@ function simWith(a: Set<string>, b: string): number {
   return n;
 }
 export function distractors(card: GameCard, n: number): GameCard[] {
-  // The answer's own tokens, built ONCE. This used to be rebuilt inside sim() on every call, and
-  // sim() was called twice per candidate — once to filter and once to score — so a 120-card deck
-  // re-tokenised the same topic ~240 times per multiple-choice card. It is now tokenised once, and
-  // each candidate is measured once, with the measurement reused for the score.
+  // The answer's own tokens, built ONCE. Once rebuilt inside sim() on every call, and sim() ran twice
+  // per candidate (filter + score), so a 120-card deck re-tokenised the same topic ~240 times per MC
+  // card. Now tokenised once; each candidate measured once, the measurement reused for the score.
   const answer = new Set(toks(card.topic));
 
-  // Blacklist NEAR-DUPLICATE topics: a candidate sharing 2+ significant words with the answer
-  // is too-similar context and makes the choice ambiguous.
+  // Blacklist NEAR-DUPLICATE topics: a candidate sharing 2+ significant words is ambiguously similar.
   const pool = CARDS.filter((c) => c.id !== card.id && c.topic !== card.topic)
     .map((c) => ({ c, shared: simWith(answer, c.topic) }))
     .filter((x) => x.shared < 2)

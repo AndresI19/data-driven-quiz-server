@@ -37,12 +37,11 @@ async function boot(): Promise<void> {
   // (buggy) map self-corrects on load — recomputeAutotile otherwise only runs on edits.
   recomputeAutotile();
 
-  // INVARIANT: only an admin may have infinite currency. A document could carry infinite=true from
-  // an admin who synced it, from the old default that shipped true, or from a hand-edited backup —
-  // so it is enforced here, on every load, rather than trusted. An admin keeps whatever they set via
-  // the debug menu; everyone else is corrected to false. This runs BEFORE pull() adopts a synced
-  // document too (see below), and pull() calls saveDB which re-triggers this through the guard in
-  // economy, so a freshly-adopted admin document is not stripped.
+  // INVARIANT: only an admin may have infinite currency. A document could carry infinite=true from a
+  // synced admin, the old default that shipped true, or a hand-edited backup — so it is enforced here
+  // every load, not trusted. Admins keep what they set via the debug menu; everyone else → false.
+  // pull() adopts synced documents later and calls saveDB, which re-triggers economy's guard, so a
+  // freshly-adopted admin document is not stripped.
   if (!isAdmin() && DB.infinite) DB.infinite = false;
 
   saveDB();
@@ -54,27 +53,24 @@ async function boot(): Promise<void> {
     wm.textContent = '⚙ DEV MODE';
     document.body.appendChild(wm);
   }
-  // The debug menu is an ADMIN tool: it can grant coins, unlock gardens and rewrite the document.
-  // Anyone could open it before. Hidden for everyone else now — and "hidden" is the honest word: it
-  // is a client-side check, so it stops a curious player, not a determined one. The debug menu only
-  // edits data the player already owns, so that is the right level of protection for it. Nothing that
-  // touches the SERVER is defended this way (see vMCP's admin guard, which is server-side).
+  // The debug menu is an ADMIN tool (grants coins, unlocks gardens, rewrites the document). "Hidden"
+  // is the honest word — a client-side check stops a curious player, not a determined one, which is
+  // the right level since it only edits data the player already owns. Nothing touching the SERVER is
+  // defended this way (see vMCP's server-side admin guard).
   if (isAdmin()) mountDebug();
   mountParticles();
   mountScreenBg();
 
-  // Sync on every save. saveDB is the ONE write point in this app, so this is the one hook needed —
-  // and it is debounced, because answering a card writes the document and we do not need to write the
-  // document to the network on every card. A guest never reaches the network at all: that is the
-  // promise the gate makes, and schedulePush is where it is kept.
+  // Sync on every save. saveDB is the ONE write point, so this is the only hook needed — debounced,
+  // since answering a card writes the document but need not hit the network each time. A guest never
+  // reaches the network: the gate's promise, kept in schedulePush.
   onSaved(() => schedulePush());
 
-  // The account FAB replaces the old blocking gate — the same behaviour as the home page. That gate
-  // was a decision about where your progress lives, but a wall over the game on arrival scares more
-  // players off than it converts: a first visitor is now defaulted to guest (silently, inside
-  // mountAccountFab) and the FAB wears a one-time red nudge to create a real account. Creating or
-  // signing in opens the original three-option chooser; its onDone syncs and re-routes. No greetUrl:
-  // the greeting belongs to the home page, and account creation stays two pages.
+  // The account FAB replaces the old blocking gate (same as the home page): a wall over the game on
+  // arrival scared off more players than it converted. A first visitor is defaulted to guest (silently,
+  // inside mountAccountFab) with a one-time red nudge to create a real account. Creating or signing in
+  // opens the three-option chooser; its onDone syncs and re-routes. No greetUrl — the greeting belongs
+  // to the home page.
   mountAccountFab({
     nudgeGuest: true,
     onUpgrade: () =>
@@ -86,14 +82,13 @@ async function boot(): Promise<void> {
           }),
       }),
   });
-  // Identity is settled now (a first visitor was just defaulted to guest above). Scope the document to
-  // it BEFORE pull(): a doc left by a different signed-in user is discarded here so it neither renders
-  // as, nor uploads into, this identity. Runs on every load, so a sign-out (which reloads) lands a
-  // fresh slate for the guest or next user that follows.
+  // Identity is settled now. Scope the document to it BEFORE pull(): a doc left by a different
+  // signed-in user is discarded here so it neither renders as nor uploads into this identity. Runs
+  // every load, so a sign-out (which reloads) lands a fresh slate for whoever follows.
   reconcileOwner();
-  // A returning signed-in player picks up whatever another browser did since last time. A conflict is
-  // handled inside pull() by keeping BOTH copies — never by overwriting one in silence. A guest has
-  // nothing to pull; route() at the end of boot renders either way.
+  // A returning signed-in player picks up what another browser did since. A conflict is handled inside
+  // pull() by keeping BOTH copies, never overwriting in silence. A guest has nothing to pull; route()
+  // at the end of boot renders either way.
   if (isSignedIn())
     void pull().then(() => {
       ensureLoginGrant(); // after pull(), so a server 'claimed' state is not reset to 'pending'

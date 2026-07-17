@@ -1,6 +1,5 @@
-// Pure port of the Python generator's card transforms (gen_flashcards.py).
-// Each function mirrors its Python counterpart 1:1 so the produced game payload is
-// byte-identical to the original. Kept free of I/O so it can be unit-tested directly.
+// Pure port of the Python generator's card transforms (gen_flashcards.py): each function mirrors its
+// counterpart 1:1 for a byte-identical payload. No I/O, so it unit-tests directly.
 import type { AuthoredCard, Code, GameCard, Manifest } from './card-schema.js';
 
 /** Split an authored code block (one literal string) into lines, dropping any single trailing newline. */
@@ -16,11 +15,9 @@ export interface RawCard extends AuthoredCard {
   desc: string; // required once loaded (schema fills empty string if omitted)
 }
 
-/** Python's html.escape(s, quote=True): & < > " ' — in that order. */
-// Escapes the same five characters Python's html.escape() does. One pass over the string, not five —
-// and, more to the point, the ordering hazard disappears: chaining .replace() calls only worked
-// because `&` was escaped first, and a future edit that moved it would have double-escaped the rest.
-// A single character class cannot be got wrong that way.
+/** Escapes the five characters Python's html.escape(s, quote=True) does: & < > " ' */
+// One character-class pass, not five chained .replace() calls — which only worked while `&` went
+// first, so a reordering edit would double-escape the rest. A char class can't be got wrong that way.
 const ESC_MAP: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -126,17 +123,10 @@ export function match(c: RawCard): [string, string][] | null {
 }
 
 /**
- * Multi-select member names: an explicit `multi:` list, or — for the older cards that predate the
- * field — inferred from a list card's `items`.
- *
- * The explicit branch is the one that was missing. `multi:` has always been in the schema and the
- * author docs ("Explicit multi-select member names"), but this function only ever looked at `items`,
- * and then only when the TOPIC happened to contain the word "framework" or "core k8s objects". So a
- * card that authored a perfectly good `multi:` list silently got no select-all mode, and the feature
- * worked purely by accident of how a topic was named. Every other authorable field (match, cloze,
- * manifest, mc) is honoured when given; this one was not.
- *
- * The inference is kept, because ten cards across three sections rely on it today.
+ * Multi-select member names: an explicit `multi:` list, else inferred from `items` for older cards.
+ * The explicit branch was once missing — `multi:` was in the schema but only `items` was read, and
+ * only when the topic contained "framework"/"core k8s objects", so an authored list silently got no
+ * select-all. The inference is kept: ten cards across three sections still rely on it.
  */
 export function multi(c: RawCard): string[] | null {
   if (c.multi && c.multi.length >= 3) return c.multi.slice();
