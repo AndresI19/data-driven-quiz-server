@@ -1,7 +1,7 @@
 // Progress sync. IDENTITY comes from @platform/ui, shared with every front end, so a sign-out means
 // the same thing here as on the home page. What IS here: reconciling a player's document with the server.
 
-import { authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
+import { type Identity, authFetch, current, isAdmin, isSignedIn, setIdentity } from '@platform/ui/auth';
 import { DB, repairDB, resetDoc, saveDB } from './db.js';
 
 // The mount prefix (Vite's baked-in base, trailing-slashed; '/' at root) — NOT location.pathname.
@@ -45,6 +45,22 @@ export function reconcileOwner(): void {
 }
 
 /**
+ * Adopt a server document into DB: replace it, repair it, tag it as this account's, re-enforce the
+ * admin-only infinite-money invariant, persist, and record the identity's new version.
+ *
+ * Shared by both branches of pull() where "the server copy wins" — they differ only in whether the
+ * outgoing local document is stashed as a backup first, which the caller does before calling this.
+ */
+function adoptServerDoc(id: Identity, data: Record<string, unknown>, version: number): void {
+  Object.assign(DB, data);
+  repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
+  DB.owner = id.username; // the adopted doc belongs to this account
+  if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
+  saveDB();
+  setIdentity({ ...id, version });
+}
+
+/**
  * Reconcile on sign-in — the moment a garden can be lost, so the moment to be careful.
  *   server empty   → upload the browser's document. The migration: a guest who signs up keeps it all.
  *   local empty    → adopt the server. A new browser for an existing account.
@@ -72,12 +88,7 @@ export async function pull(): Promise<PullOutcome> {
   }
 
   if (localIsEmpty()) {
-    Object.assign(DB, data);
-    repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
-    DB.owner = id.username; // the adopted doc belongs to this account
-    if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
-    saveDB();
-    setIdentity({ ...id, version });
+    adoptServerDoc(id, data, version);
     return { kind: 'adopted-server' };
   }
 
@@ -87,12 +98,7 @@ export async function pull(): Promise<PullOutcome> {
   } catch {
     /* out of quota — proceed; the server copy is the one being kept */
   }
-  Object.assign(DB, data);
-  repairDB(); // the adopted document gets the same backfill/migration as a local one (see db.ts)
-  DB.owner = id.username; // the adopted doc belongs to this account
-  if (!isAdmin() && DB.infinite) DB.infinite = false; // the invariant survives a synced document
-  saveDB();
-  setIdentity({ ...id, version });
+  adoptServerDoc(id, data, version);
   return { kind: 'kept-both', backupKey };
 }
 

@@ -44,3 +44,9 @@ export function fmtSpeed(v: number): string {
 
 export const cssVar = (n: string): string =>
   (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+
+/** Distance between two touch points, for a pinch gesture's scale ratio. Was written out twice
+    (the garden board and the home-screen garden preview each pinch-zoom their own way, but both
+    need this same two-finger distance). */
+export const touchDist = (t: TouchList): number =>
+  Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
