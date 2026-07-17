@@ -8,7 +8,7 @@ import { app } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
-import { setKey } from '../runtime/util.js';
+import { setKey, touchDist } from '../runtime/util.js';
 import {
   ANIMALS,
   APPLY_COST,
@@ -31,6 +31,7 @@ import {
   TOOL_IMG,
   TREE_COLORS,
   TREE_PRICE,
+  TREE_SWATCH_FRAME,
   WATER_COST,
   WATER_OPEN,
   colOf,
@@ -148,6 +149,14 @@ function layerTabs(): string {
   return h;
 }
 
+/** Cost label for a decor item (background or effect): already applied, an apply price if owned but
+    not the active one, or the lock + one-time unlock price if not owned at all. Shared by palBg and
+    palFx below, which differ only in what the swatch itself looks like. */
+function decorCostLabel(active: boolean, owned: boolean): string {
+  if (active) return 'active';
+  return owned ? `${COIN}${APPLY_COST} apply` : `\u{1F512} ${COIN}${BG_PRICE}`;
+}
+
 /**
  * Enter the garden editor from elsewhere (router, home button). Distinct from gardenPage(), which is
  * also the in-place re-render after every edit: entering drops you on the ground layer, but a
@@ -188,8 +197,7 @@ export function gardenPage(): void {
   };
   const palTree = (cc: [string, string]): string => {
     const [COLOR, name] = cc;
-    const tfw = 74;
-    const tfh = 128;
+    const { fw: tfw, fh: tfh } = TREE_SWATCH_FRAME;
     const ts = Math.min(46 / tfw, 46 / tfh);
     const th = Math.round(tfh * ts);
     const thumb = `<span class="paltree" style="width:${Math.round(tfw * ts)}px;height:${th}px;background-image:url(${ASSET}decor/tree/spruce_${COLOR}.png);background-size:auto ${th}px;background-position:0 0"></span>`;
@@ -202,7 +210,7 @@ export function gardenPage(): void {
     const items = BACKGROUNDS.map((bg) => {
       const owned = !!DB.ownedBg[bg.id];
       const active = G.bg === bg.id;
-      const cost = active ? 'active' : owned ? `${COIN}${APPLY_COST} apply` : `\u{1F512} ${COIN}${BG_PRICE}`;
+      const cost = decorCostLabel(active, owned);
       return `<button class="palbtn bgbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-bg="${bg.id}"><span class="palbgthumb" style="background-image:url(${BG_URL(bg.id)})"></span><span class="pallab">${bg.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
     }).join('');
     return none + items;
@@ -212,7 +220,7 @@ export function gardenPage(): void {
     const items = EFFECTS.map((e: Effect) => {
       const owned = !!DB.ownedFx[e.id];
       const active = G.fx === e.id;
-      const cost = active ? 'active' : owned ? `${COIN}${APPLY_COST} apply` : `\u{1F512} ${COIN}${BG_PRICE}`;
+      const cost = decorCostLabel(active, owned);
       const th = 34;
       const preview = `<span class="palfxthumb" style="width:${e.fw}px;height:${e.fh}px;background-image:url(${FX_URL(e.id)});animation:fx-spin-${e.id} ${e.dur}s steps(${e.n}) infinite;transform:scale(${(th / e.fw).toFixed(2)})"></span>`;
       return `<button class="palbtn fxbtn${active ? ' sel' : ''}${owned ? '' : ' locked'}" data-fx="${e.id}"><span class="palimgwrap">${preview}</span><span class="pallab">${e.name}</span><span class="palcost${owned ? '' : ' prem'}">${cost}</span></button>`;
@@ -294,15 +302,13 @@ export function gardenPage(): void {
   // touches fall through to the scroller (pan) and to tap-to-place, untouched.
   const wrap = app.querySelector<HTMLElement>('.boardwrap');
   if (wrap) {
-    const dist = (t: TouchList): number =>
-      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
     let startDist = 0;
     let startZoom = 1;
     wrap.addEventListener(
       'touchstart',
       (e) => {
         if (e.touches.length === 2) {
-          startDist = dist(e.touches);
+          startDist = touchDist(e.touches);
           startZoom = S.gardenZoom;
         }
       },
@@ -320,7 +326,7 @@ export function gardenPage(): void {
         const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - wrap.getBoundingClientRect().left;
         const z0 = S.gardenZoom;
         const sl0 = wrap.scrollLeft;
-        S.gardenZoom = startZoom * (dist(e.touches) / startDist);
+        S.gardenZoom = startZoom * (touchDist(e.touches) / startDist);
         applyBoard(); // clamps to [fit, 1]
         wrap.scrollLeft = (sl0 + focalX) * (S.gardenZoom / z0) - focalX;
       },

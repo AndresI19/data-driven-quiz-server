@@ -15,7 +15,7 @@ import { CARDS, CATCOL, CATS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
-import { esc, fmtClock, fmtSpeed, setKey } from '../runtime/util.js';
+import { esc, fmtClock, fmtSpeed, setKey, touchDist } from '../runtime/util.js';
 import { exportPage } from './export.js';
 import { favoritesPage } from './favorites.js';
 import { reviewSession } from './review.js';
@@ -385,15 +385,13 @@ export function setup(): void {
 
       // Two-finger pinch zooms about the finger midpoint — the same focal maths as the editor board,
       // expressed on the transform rather than a scroller's scrollLeft.
-      const gap = (t: TouchList): number =>
-        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
       let pinchGap = 0;
       let pinchScale = 1;
       frame.addEventListener(
         'touchstart',
         (e) => {
           if (e.touches.length === 2) {
-            pinchGap = gap(e.touches);
+            pinchGap = touchDist(e.touches);
             pinchScale = scale;
             moved = true; // a pinch is not a tap — keep it from entering the garden
           }
@@ -409,7 +407,7 @@ export function setup(): void {
           const fx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
           const fy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
           const s0 = scale;
-          scale = Math.max(fit, Math.min(1, pinchScale * (gap(e.touches) / pinchGap)));
+          scale = Math.max(fit, Math.min(1, pinchScale * (touchDist(e.touches) / pinchGap)));
           const k = scale / s0; // keep the content under the midpoint fixed as it scales
           panX = fx - (fx - panX) * k;
           panY = fy - (fy - panY) * k;

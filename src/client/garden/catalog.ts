@@ -175,6 +175,11 @@ const TREE_TYPES = [
   { t: 'pine', name: 'Pine', fw: 53, fh: 96, n: 16, price: 28 },
   { t: 'spruce', name: 'Spruce', fw: 74, fh: 128, n: 25, price: 36 },
 ];
+/** The frame size of the swatch shown per colour in the shop — always the spruce shape (an arbitrary
+    but consistent choice of the two), derived so the shop's thumbnail geometry can't drift from the
+    sprite it is actually a crop of. Was restated as a literal 74×128 where the swatch is built. */
+const SPRUCE_TYPE = TREE_TYPES.find((t) => t.t === 'spruce')!;
+export const TREE_SWATCH_FRAME: { fw: number; fh: number } = { fw: SPRUCE_TYPE.fw, fh: SPRUCE_TYPE.fh };
 // 6 colours (per the tree pack). The shop shows one button per colour; placing a tree picks a
 // random tree TYPE of that colour (see interact.ts).
 export const TREE_COLORS: [string, string][] = [
