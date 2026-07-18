@@ -42,7 +42,7 @@ export function fmtSpeed(v: number): string {
   return v > 0 ? `${v.toFixed(1)}×` : 'off';
 }
 
-export const cssVar = (n: string): string =>
+const cssVar = (n: string): string =>
   (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
 
 /** A CSS custom property's value, or `fallback` when the variable is unset/empty. */
