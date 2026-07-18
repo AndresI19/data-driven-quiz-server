@@ -1,6 +1,6 @@
 // Pure port of the Python generator's card transforms (gen_flashcards.py): each function mirrors its
 // counterpart 1:1 for a byte-identical payload. No I/O, so it unit-tests directly.
-import type { AuthoredCard, Code, GameCard, Manifest } from './card-schema.js';
+import type { AuthoredCard, Code, GameCard } from './card-schema.js';
 
 /** Split an authored code block (one literal string) into lines, dropping any single trailing newline. */
 export function codeLines(c: RawCard): Code | null {
@@ -210,5 +210,3 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
     codeselect: recall ? null : (c.codeselect ?? null),
   };
 }
-
-export type { Manifest };
