@@ -41,6 +41,10 @@ export function warn(msg: string): void {
   }
   sndWrong();
 }
+/** The one "you can't afford this" warning — shown by every placement that fails its coin check. */
+function tooPoor(): void {
+  warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+}
 export function applyBrush(i: number): void {
   const layer = S.layer; // active editing layer
   const cells = layerCells(DB.garden, layer); // the cells the brush actually edits
@@ -58,7 +62,7 @@ export function applyBrush(i: number): void {
   };
   if (b.type === 'tool' && b.id === 'water') {
     if (!cell || cell.block !== 'dirt') return warn('Watering only works on a DIRT tile.');
-    if (!afford(WATER_COST)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+    if (!afford(WATER_COST)) return tooPoor();
     spend(WATER_COST);
     cell.block = 'grass';
     cell.v = pick(GRASS_V);
@@ -119,7 +123,7 @@ export function applyBrush(i: number): void {
         return warn('Nothing to build on — the tile below is empty, water, a spire, or occupied.');
     }
     const spec = BLOCKS[b.id];
-    if (!afford(spec.price)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+    if (!afford(spec.price)) return tooPoor();
     spend(spec.price);
     if (b.id === 'water') {
       cells[i] = { block: 'water', v: WATER_OPEN };
@@ -138,7 +142,7 @@ export function applyBrush(i: number): void {
     if (!cell) return warn(`Put a block there first — ${f.name} needs ${f.on.join('/')}.`);
     if (cell.feature) return warn('That tile already has a feature — dig it first.');
     if (f.on.indexOf(cell.block) < 0) return warn(`${f.name} goes on ${f.on.join('/')}, not ${cell.block}.`);
-    if (!afford(f.price)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+    if (!afford(f.price)) return tooPoor();
     spend(f.price);
     cell.feature = f.id;
     sndPlant();
@@ -151,7 +155,7 @@ export function applyBrush(i: number): void {
     if (cell.feature) return warn('That tile already has a feature — dig it first.');
     if (cell.block !== 'grass' && cell.block !== 'dirt')
       return warn(`Trees go on grass or dirt, not ${cell.block}.`);
-    if (!afford(TREE_PRICE)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+    if (!afford(TREE_PRICE)) return tooPoor();
     spend(TREE_PRICE);
     cell.feature = `tr_${pick(TREE_TYPE_IDS)}_${b.id}`;
     sndPlant();
@@ -167,7 +171,7 @@ export function applyBrush(i: number): void {
     }
     if (cell.animal) return warn('There is already an animal on that tile.');
     const a = ANIM_BY_ID[b.id];
-    if (!afford(a.price)) return warn(`Not enough ${COIN} ${CURRENCY.many} — answer cards to earn more.`);
+    if (!afford(a.price)) return tooPoor();
     spend(a.price);
     cell.animal = a.id;
     sndPlant();

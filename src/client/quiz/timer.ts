@@ -47,12 +47,17 @@ export function stopTicker(): void {
   }
   unbind();
 }
-export function startTicker(): void {
+/** Run one immediate tick, then keep ticking at 4Hz. Shared by startTicker (which first resets the
+ *  card clock) and resumeTicking (which keeps it, so a resumed card carries on where it paused). */
+function beginTicking(): void {
   stopTicker();
-  S.cardStart = Date.now();
-  S.answeredAt = 0;
   tick();
   S.ticker = setInterval(tick, 250);
+}
+export function startTicker(): void {
+  S.cardStart = Date.now();
+  S.answeredAt = 0;
+  beginTicking();
 }
 /**
  * The clock's view. tick() runs four times a second for the whole quiz and used to re-query all five
@@ -119,7 +124,5 @@ export function tick(): void {
   }
 }
 export function resumeTicking(): void {
-  stopTicker();
-  tick();
-  S.ticker = setInterval(tick, 250);
+  beginTicking();
 }
