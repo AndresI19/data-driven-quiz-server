@@ -240,7 +240,7 @@ export async function exportGardenGif(): Promise<void> {
             }
             ctx.drawImage(sheet, sx, 0, it.fw!, it.fh!, dx, dy, dw, dh);
           }
-        } catch (e) {}
+        } catch {}
       }
       // Particle effect on top of the scene (mirrors the .fxlayer z-index above the board).
       if (fx && fxSheet) {
@@ -258,7 +258,7 @@ export async function exportGardenGif(): Promise<void> {
           const frame = Math.min(fx.n - 1, Math.floor(sp * fx.n));
           try {
             ctx.drawImage(fxSheet, frame * fx.fw, 0, fx.fw, fx.fh, x, y, dw, dh);
-          } catch (e) {}
+          } catch {}
         }
       }
     };

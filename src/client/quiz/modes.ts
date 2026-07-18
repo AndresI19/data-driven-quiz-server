@@ -8,7 +8,7 @@ import type { GameCard } from '../../shared/card-schema.js';
 import { ACCENT_FALLBACK, MULTIPOOL, app } from '../runtime/data.js';
 import { DB } from '../runtime/db.js';
 import type { Session } from '../runtime/state.js';
-import { cssVar, esc, setKey, shuffle } from '../runtime/util.js';
+import { cssVarOr, esc, setKey, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, endGraded, modeKeys, score, typedFeedback } from './card.js';
 import { navKey } from './engine.js';
 import { codeSelectOK, czOK, distractors, ivOK, record } from './grading.js';
@@ -17,6 +17,11 @@ import { answeredNow } from './timer.js';
 
 /** Delay before focusing a freshly-rendered input, letting innerHTML settle first. */
 const FOCUS_DELAY = 30;
+
+/** Focus a freshly-rendered field once its innerHTML has settled. */
+function focusSoon(el: HTMLElement): void {
+  setTimeout(() => el.focus(), FOCUS_DELAY);
+}
 
 /** Recall: show the topic, type from memory, then self-grade against the answer. */
 export function renderFB(c: GameCard): void {
@@ -32,7 +37,7 @@ export function renderFB(c: GameCard): void {
       <div class="actions" id="act">${DB.settings.hints && c.hint ? `<button class="btn ghost" id="hintbtn">Hint</button>` : ''}<button class="btn primary" id="reveal">Reveal answer &nbsp;<kbd>Ctrl+Enter</kbd></button></div>`,
   );
   const ta = app.querySelector('#recall') as HTMLTextAreaElement;
-  setTimeout(() => ta.focus(), FOCUS_DELAY);
+  focusSoon(ta);
 
   const hb = app.querySelector('#hintbtn') as HTMLButtonElement | null;
   if (hb)
@@ -214,12 +219,12 @@ export function renderCZ(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
   );
   const inp = app.querySelector('#blank') as HTMLInputElement;
-  setTimeout(() => inp.focus(), FOCUS_DELAY);
+  focusSoon(inp);
 
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    const ok = timedOut ? false : czOK(inp.value, cz);
+    const ok = !timedOut && czOK(inp.value, cz);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
     score(c, ok, 'cz');
@@ -298,7 +303,7 @@ export function renderMA(c: GameCard): void {
       h += path(dot(Lb(li), 'r'), dot(Rb(assign[+li]), 'l'), PAL[i % PAL.length], false);
     });
     if (drag) {
-      h += path(dot(Lb(drag.li), 'r'), { x: drag.x, y: drag.y }, cssVar('--accent') || ACCENT_FALLBACK, true);
+      h += path(dot(Lb(drag.li), 'r'), { x: drag.x, y: drag.y }, cssVarOr('--accent', ACCENT_FALLBACK), true);
     }
     svg.innerHTML = h;
     app.querySelectorAll('.mitem').forEach((x) => {
@@ -382,7 +387,7 @@ export function renderMA(c: GameCard): void {
         h += path(
           dot(lb, 'r'),
           dot(Rb(assign[li]), 'l'),
-          good ? cssVar('--good') || '#12a150' : cssVar('--bad') || '#e11d48',
+          good ? cssVarOr('--good', '#12a150') : cssVarOr('--bad', '#e11d48'),
           false,
         );
       }
@@ -459,6 +464,25 @@ function gradeCheckboxes(
   }
 }
 
+/**
+ * The key handler shared by the two multi-pick modes: a number key toggles the option it addresses
+ * (by clicking it, so the toggle logic stays in one place), and Enter submits. `selector` is the
+ * option class — `.choice` for multi-select, `.cl-btn` for select-lines.
+ */
+function checkboxKeys(selector: string, ses: Session, check: (timedOut: boolean) => void): void {
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll(selector)[idx];
+      if (b) (b as HTMLElement).click();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      check(false);
+    }
+  });
+}
+
 /** Multi-select: tick every member of a set. One wrong pick fails the card. */
 export function renderMS(c: GameCard): void {
   const nCorrect = Math.min(4, c.multi!.length);
@@ -497,17 +521,7 @@ export function renderMS(c: GameCard): void {
   ses._onTimeout = () => check(true);
   app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
 
-  modeKeys((e) => {
-    if (ses.answered) return;
-    const idx = choiceIndex(e);
-    if (idx >= 0) {
-      const b = app.querySelectorAll('.choice')[idx];
-      if (b) (b as HTMLElement).click();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      check(false);
-    }
-  });
+  checkboxKeys('.choice', ses, check);
 }
 
 /** Inverse recall: show the (topic-masked) definition, name the concept. Machine-graded by ivOK. */
@@ -521,12 +535,12 @@ export function renderIV(c: GameCard): void {
       <div class="actions" id="act"><button class="btn primary" id="submit">Check &nbsp;<kbd>Enter</kbd></button></div>`,
   );
   const inp = app.querySelector('#blank') as HTMLInputElement;
-  setTimeout(() => inp.focus(), FOCUS_DELAY);
+  focusSoon(inp);
 
   function finish(timedOut: boolean): void {
     if (ses.answered) return;
     answeredNow();
-    const ok = timedOut ? false : ivOK(inp.value, c.topic);
+    const ok = !timedOut && ivOK(inp.value, c.topic);
     inp.disabled = true;
     inp.classList.add(ok ? 'correct' : 'wrong');
     const ansEl = app.querySelector('#ivdef');
@@ -762,15 +776,5 @@ export function renderCS(c: GameCard): void {
   ses._onTimeout = () => check(true);
   app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
 
-  modeKeys((e) => {
-    if (ses.answered) return;
-    const idx = choiceIndex(e);
-    if (idx >= 0) {
-      const b = app.querySelectorAll('.cl-btn')[idx];
-      if (b) (b as HTMLElement).click();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      check(false);
-    }
-  });
+  checkboxKeys('.cl-btn', ses, check);
 }

@@ -95,7 +95,7 @@ export const DB: DBShape = (() => {
   try {
     const v = JSON.parse(localStorage.getItem(K) || 'null');
     if (v) return v as DBShape;
-  } catch (e) {}
+  } catch {}
   return { stats: {}, active: null } as unknown as DBShape;
 })();
 /**
@@ -177,11 +177,11 @@ export function repairDB(): void {
   }
   if (!DB.settings) DB.settings = {} as Settings;
   {
-    const Sset = DB.settings;
-    if (Sset.volume == null) Sset.volume = 50;
-    if (Sset.muted == null) Sset.muted = false;
-    if (Sset.timeSpeed == null) Sset.timeSpeed = 1;
-    if (Sset.hints == null) Sset.hints = true;
+    const settings = DB.settings;
+    if (settings.volume == null) settings.volume = 50;
+    if (settings.muted == null) settings.muted = false;
+    if (settings.timeSpeed == null) settings.timeSpeed = 1;
+    if (settings.hints == null) settings.hints = true;
   }
 }
 
@@ -212,7 +212,7 @@ export function onSaved(fn: () => void): void {
 export function saveDB(): void {
   try {
     localStorage.setItem(K, JSON.stringify(DB));
-  } catch (e) {}
+  } catch {}
   for (const fn of savedHooks) fn();
 }
 export function stamp(): string {
@@ -223,7 +223,7 @@ export function stamp(): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch (e) {
+  } catch {
     return '';
   }
 }

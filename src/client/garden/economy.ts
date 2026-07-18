@@ -49,7 +49,7 @@ export function grantReward(mode: string): void {
   let coins = base;
   if (S.curLimit > 0) {
     const usedSec = ((S.answeredAt || Date.now()) - S.cardStart) / 1000;
-    const speed = S.ses?.timeSpeed ? S.ses.timeSpeed : 1;
+    const speed = S.ses?.timeSpeed || 1;
     coins += Math.round(base * Math.max(0, (S.curLimit - usedSec) / S.curLimit) * speed);
   }
   coins = Math.round(coins * comboMult());

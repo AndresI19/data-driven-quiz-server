@@ -45,6 +45,9 @@ export function fmtSpeed(v: number): string {
 export const cssVar = (n: string): string =>
   (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
 
+/** A CSS custom property's value, or `fallback` when the variable is unset/empty. */
+export const cssVarOr = (n: string, fallback: string): string => cssVar(n) || fallback;
+
 /** Distance between two touch points, for a pinch gesture's scale ratio. Was written out twice
     (the garden board and the home-screen garden preview each pinch-zoom their own way, but both
     need this same two-finger distance). */

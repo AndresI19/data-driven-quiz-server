@@ -21,6 +21,8 @@ export const CATS: Record<string, string> = {};
 export const CATCOL: Record<string, string> = {};
 /** Category accent used when a card's category has no colour of its own. */
 export const ACCENT_FALLBACK = '#5a67f2';
+/** A card's category accent, falling back to ACCENT_FALLBACK — the single source of that rule. */
+export const catAccent = (c: GameCard): string => CATCOL[c.cat] || ACCENT_FALLBACK;
 export const byId: Record<string, GameCard> = {};
 export const MULTIPOOL: Record<string, string[]> = {};
 export const DIAGRAMS: Record<string, string> = {};

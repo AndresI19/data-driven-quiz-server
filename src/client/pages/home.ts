@@ -85,6 +85,7 @@ export function setup(): void {
       ${sess
         .map((s, i) => {
           const rc = reviewIds(s).length;
+          const retryTimer = s.timeSpeed ?? 1;
           return `
         <details class="sess" data-id="${s.id}">
           <summary>
@@ -98,7 +99,7 @@ export function setup(): void {
             </div>
           </summary>
           <div class="sess-body">
-            ${s.missedIds.length ? `<div class="rowmini"><span class="tiny">Retry timer</span><input type="range" class="vol mini sess-speed" min="0" max="5" step="0.1" value="${s.timeSpeed == null ? 1 : s.timeSpeed}"><span class="tiny sess-speednum">${fmtSpeed(s.timeSpeed == null ? 1 : s.timeSpeed)}</span></div>` : ''}
+            ${s.missedIds.length ? `<div class="rowmini"><span class="tiny">Retry timer</span><input type="range" class="vol mini sess-speed" min="0" max="5" step="0.1" value="${retryTimer}"><span class="tiny sess-speednum">${fmtSpeed(retryTimer)}</span></div>` : ''}
             <div class="actions" style="margin:10px 0 0;flex-wrap:wrap">
               ${rc ? `<button class="btn ghost sm" data-sact="review">Notes / review (${rc})</button>` : `<span class="tiny">Nothing to review</span>`}
               ${s.missedIds.length ? `<button class="btn ghost sm" data-sact="retry">Retry missed (${s.missedIds.length})</button>` : ''}

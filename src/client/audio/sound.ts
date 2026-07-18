@@ -8,7 +8,7 @@ export function setVolume(): void {
   if (master) {
     try {
       master.gain.value = (DB.settings.volume / 100) * 1.8;
-    } catch (e) {}
+    } catch {}
   }
 }
 export function audioInit(): void {
@@ -21,7 +21,7 @@ export function audioInit(): void {
       master = AC.createGain();
       master.connect(AC.destination);
       setVolume();
-    } catch (e) {
+    } catch {
       AC = null;
       return;
     }
@@ -29,7 +29,7 @@ export function audioInit(): void {
   if (AC && AC.state === 'suspended') {
     try {
       AC.resume();
-    } catch (e) {}
+    } catch {}
   }
 }
 function blip(freqs: number[], dur: number, type?: OscillatorType, peak?: number): void {

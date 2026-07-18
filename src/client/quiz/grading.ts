@@ -110,7 +110,8 @@ export function record(c: GameCard, ok: boolean): void {
   if (!ok) s.missed++;
   if (ok) ses.correct++;
   else if (!ses.missed.includes(c.id)) ses.missed.push(c.id);
-  ok ? sndCorrect() : sndWrong();
+  if (ok) sndCorrect();
+  else sndWrong();
   persist();
 }
 export function dispute(c: GameCard, inp: HTMLInputElement | null): void {
