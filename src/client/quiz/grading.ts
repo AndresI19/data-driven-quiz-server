@@ -45,6 +45,15 @@ export function codeSelectOK(picked: number[], answer: number[]): boolean {
   for (const i of got) if (!want.has(i)) return false;
   return true;
 }
+/**
+ * Grade an "order" answer: the player's sequence must match the correct one position-for-position.
+ * Order MATTERS here (unlike codeSelectOK), so it's a straight elementwise compare, not a set test.
+ * Pure, so the sequencing rule can be unit-tested apart from the drag UI.
+ */
+export function orderOK(current: string[], answer: string[]): boolean {
+  if (current.length !== answer.length) return false;
+  return answer.every((step, i) => current[i] === step);
+}
 export function rate(c: GameCard): number {
   const s = DB.stats[c.id];
   return s?.seen ? s.missed / s.seen : 0.9;

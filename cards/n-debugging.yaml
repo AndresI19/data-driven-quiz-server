@@ -211,3 +211,35 @@ cards:
       - ["p99 latency spikes under load, database idle", "connection-pool exhaustion"]
       - ["A bug that clears on refresh but recurs at random", "stale in-memory state or an orphaned singleton"]
       - ["CrashLoopBackOff during a long startup", "the liveness probe firing before startup finishes"]
+
+  - topic: "Kubernetes triage: where to start (symptom → first check)"
+    desc: "The first diagnostic move for each cluster symptom — reach for the command that names the cause instead of guessing."
+    table:
+      - ["Symptom", "Where to start"]
+      - ["Pod stuck Pending", "kubectl describe pod — read the Events (the scheduling reason)"]
+      - ["CrashLoopBackOff", "kubectl logs -p — the previous container's exit output"]
+      - ["ImagePullBackOff", "kubectl describe pod — image / registry / secret in the Events"]
+      - ["Service reachable by name but 503 / empty", "kubectl get endpoints <svc>"]
+      - ["Resolves by IP but not by name", "nslookup from a pod, then check CoreDNS"]
+      - ["403 Forbidden from the API", "kubectl auth can-i --as the ServiceAccount"]
+      - ["TLS error to a service", "openssl s_client -connect host:443 -servername host"]
+    extras:
+      - label: Method
+        text: "Always: get → describe (read Events) → logs → then connectivity (endpoints, DNS, NetworkPolicy). Narrate it out loud in an interview."
+    hint: "For each symptom, the single command that names the cause."
+
+  - topic: "Kubernetes triage: possible causes (symptom → usual root cause)"
+    desc: "The most common root cause behind each cluster symptom — the second guess, once you've read the Events."
+    table:
+      - ["Symptom", "Usual root cause"]
+      - ["ImagePullBackOff", "wrong tag, a private registry needing an imagePullSecret, or an air-gapped node"]
+      - ["Pending", "requests exceed node allocatable, an untolerated taint, or an unbound PVC"]
+      - ["CrashLoopBackOff", "the app exits — a missing env / ConfigMap / Secret, or bad config"]
+      - ["Service has no endpoints", "the Service selector labels don't match the pod labels"]
+      - ["Connection hangs / times out", "a NetworkPolicy with no matching allow rule"]
+      - ["Connection refused", "targetPort ≠ container port, or the app binds 127.0.0.1 not 0.0.0.0"]
+      - ["Resolves by IP but not name", "CoreDNS is down, or a wrong-namespace FQDN"]
+    extras:
+      - label: Pairs with
+        text: "The 'where to start' card is the command to run; this is what that command usually reveals."
+    hint: "For each symptom, the usual culprit."

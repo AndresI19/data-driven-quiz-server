@@ -491,3 +491,63 @@ cards:
         text: "Two services reading one schema couples them at the worst layer — you get the operational cost of microservices with the coupling of a monolith."
       - label: Nuance
         text: "Sharing a database SERVER (one Postgres pod, several databases) is fine — that's resource consolidation. Sharing a SCHEMA is the coupling to avoid."
+
+  - topic: "Establishing an HTTPS connection, in order"
+    desc: "How a browser goes from a URL to encrypted HTTP — resolve, connect, negotiate TLS, then send the request."
+    order:
+      - "DNS resolves the hostname to an IP address"
+      - "TCP three-way handshake (SYN → SYN-ACK → ACK)"
+      - "Client sends the TLS ClientHello — its cipher suites and the SNI hostname"
+      - "Server responds with its certificate (public key + identity, CA-signed)"
+      - "Client verifies the cert chains to a trusted CA and matches the hostname (SAN)"
+      - "Both derive a shared symmetric session key via ephemeral Diffie-Hellman"
+      - "Encrypted HTTP request/response flows over the established session"
+    extras:
+      - label: Say
+        text: "\"DNS, then TCP, then the TLS handshake authenticates the server and agrees a key — only then does encrypted HTTP flow.\""
+      - label: Trap
+        text: "The TCP handshake and the TLS handshake are DISTINCT round-trips — don't conflate them. The DNS lookup and the SNI hostname travel in the clear."
+    hint: "Four layers in sequence: name → transport → TLS → HTTP."
+
+  - topic: "DNS resolution: the resolver path, in order"
+    desc: "How a name becomes an IP when nothing is cached — the recursive resolver walks the hierarchy from the root down."
+    order:
+      - "Check the browser / OS cache (and the hosts file) for the name"
+      - "Ask the recursive resolver (your ISP's, or 1.1.1.1 / 8.8.8.8)"
+      - "Resolver queries a ROOT nameserver → it returns the TLD nameserver"
+      - "Resolver queries the TLD nameserver (e.g. .com) → returns the authoritative nameserver"
+      - "Resolver queries the AUTHORITATIVE nameserver → returns the A / AAAA record"
+      - "Resolver caches the answer for its TTL and hands the IP back to the client"
+    extras:
+      - label: e.g.
+        text: "'Recursive' = the resolver does the walking for you; the root / TLD / authoritative servers each answer only their own level (iterative referrals)."
+      - label: Trap
+        text: "A long or stale TTL is why a DNS change 'hasn't propagated' — you're being served a cached answer, not the new record."
+    hint: "Cache → recursive resolver → root → TLD → authoritative."
+
+  - topic: "HSTS (HTTP Strict Transport Security)"
+    desc: "A response header — Strict-Transport-Security — that tells the browser to only ever reach this domain over HTTPS for a set max-age. It defeats SSL-stripping / downgrade attacks by removing plain HTTP as something the browser will even attempt."
+    extras:
+      - label: Trap
+        text: "A plain http→https redirect still exposes that FIRST request in cleartext; HSTS closes the gap on every visit after the first."
+      - label: e.g.
+        text: "Strict-Transport-Security: max-age=63072000; includeSubDomains; preload — the preload list bakes the rule in BEFORE the first visit ever happens."
+    cloze:
+      text: "The {} response header tells a browser to reach a domain over HTTPS only, defeating SSL-strip downgrade attacks."
+      answer: "HSTS"
+      alts:
+        - "Strict-Transport-Security"
+        - "Strict Transport Security"
+    hint: "The header that makes a browser refuse plain HTTP for your domain."
+
+  - topic: "Mixed content"
+    desc: "An HTTPS page that loads a sub-resource — a script, stylesheet, image, or iframe — over plain http://. Because one insecure resource can undermine the whole page, browsers BLOCK active mixed content (scripts, iframes, XHR) and warn on passive (images)."
+    extras:
+      - label: Fix
+        text: "Load every resource over https (or use upgrade-insecure-requests). A single http script on an https page is enough to get it blocked."
+      - label: Why
+        text: "Anyone who can tamper with the plaintext http resource can inject code into the 'secure' page — so the padlock would be a lie."
+    cloze:
+      text: "An HTTPS page pulling a script over plain http is called {} content, and browsers block the active kind."
+      answer: "mixed"
+    hint: "What you call an https page loading an http resource."

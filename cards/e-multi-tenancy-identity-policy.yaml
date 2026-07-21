@@ -258,3 +258,33 @@ cards:
         text: "Holding no PII shrinks the blast radius of a breach to near nothing and sidesteps most privacy/consent obligations — a good fit when the data is low-stakes (a game profile), a bad fit for anything real."
       - label: Public vs secret
         text: "Keep the PUBLIC identifier (a display handle, safe to show anywhere) separate from the CREDENTIAL — never print the thing that proves who you are."
+
+  - topic: "Debugging a 403 from the Kubernetes API (kubectl auth can-i)"
+    desc: "A pod's app gets 403 Forbidden calling the API — it authenticated fine (the API knew who it was) but RBAC denied the action. Confirm it in one command: `kubectl auth can-i <verb> <resource> --as=system:serviceaccount:<ns>:<sa>` replays the check AS that ServiceAccount and answers yes/no, so you reproduce the denial without the pod."
+    extras:
+      - label: How
+        text: "Fix path: a (Cluster)Role grants the verb on the resource; a (Cluster)RoleBinding binds that Role to the pod's ServiceAccount. Missing EITHER → 403. Namespaced Role+RoleBinding for one namespace; ClusterRole+ClusterRoleBinding for cluster-wide."
+      - label: Contrast
+        text: "401 Unauthorized = the API didn't believe WHO you are (bad or absent token). 403 Forbidden = it knows who you are but the ROLE lacks the permission. `can-i` diagnoses the 403 case."
+      - label: Say
+        text: "\"I'd run kubectl auth can-i as the pod's ServiceAccount to confirm it's RBAC, then check that a Role grants the verb AND a RoleBinding actually binds it to that ServiceAccount.\""
+    cloze:
+      text: "To check whether a ServiceAccount may perform an action, run kubectl auth {} <verb> <resource> --as=system:serviceaccount:<ns>:<sa>."
+      answer: "can-i"
+    hint: "The pod authenticated but the action was refused — which command replays the permission check as that ServiceAccount?"
+
+  - topic: "OAuth2 / OIDC authorization-code flow, in order"
+    desc: "How an app signs a user in through an external identity provider WITHOUT ever seeing their password — the code flow, the default for web apps."
+    order:
+      - "The app redirects the user to the authorization server's /authorize endpoint"
+      - "The user authenticates and consents at the authorization server"
+      - "The auth server redirects back to the app with a one-time authorization CODE"
+      - "The app's backend POSTs the code (+ client secret / PKCE verifier) to /token"
+      - "The auth server returns an ID token and an access token"
+      - "The app verifies the ID token's signature and claims, then establishes the session"
+    extras:
+      - label: Why a code, not the token
+        text: "The code returns via the browser redirect (exposed) but is useless without the client secret / PKCE verifier the backend holds — so a leaked code alone grants nothing."
+      - label: e.g.
+        text: "PKCE (Proof Key for Code Exchange) protects public clients — SPAs and mobile apps that can't keep a secret — with a per-request verifier in the secret's place."
+    hint: "redirect → consent → code → back-channel token exchange → verify."

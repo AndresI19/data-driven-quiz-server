@@ -12,13 +12,14 @@ export const MODE_REQUIRES: Record<string, (c: GameCard) => boolean> = {
   ms: (c) => !!c.multi,
   iv: (c) => !!c.inverse,
   dm: (c) => !!c.manifest,
+  or: (c) => !!c.order,
   cw: (c) => !!c.code,
   cs: (c) => !!(c.code && c.codeselect),
 };
 
 // The field-gated modes in canonical order (matches session.pickDir's original push order, which the
 // dashboard and the mixed-mode random pick depend on).
-const GATED_MODES = ['cz', 'ma', 'ms', 'iv', 'dm', 'cw', 'cs'] as const;
+const GATED_MODES = ['cz', 'ma', 'ms', 'iv', 'dm', 'or', 'cw', 'cs'] as const;
 
 /** The modes available for a card under the 'mixed' direction: fb + bf always, plus each gated mode
  *  the card's fields enable. */

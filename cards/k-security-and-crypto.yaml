@@ -109,3 +109,20 @@ cards:
       - salt
       - slow KDF
       - pepper
+
+  - topic: "TLS handshake & the x509 'valid for X, not Y' error"
+    desc: "In the handshake the server presents a CERTIFICATE (its public key + identity, signed by a CA). The client accepts it only if TWO checks pass: the signature chains up to a CA it trusts, AND the hostname it dialed appears in the cert's SAN (Subject Alternative Name). `x509: certificate is valid for api.foo.com, not api.bar.com` is the SECOND check failing — the cert is genuine, just issued for a different name."
+    extras:
+      - label: How
+        text: "Inspect what's actually presented: `openssl s_client -connect host:443 -servername host` shows the chain; `openssl x509 -noout -text` shows the SANs, issuer, and validity dates. The fix is a cert whose SAN lists the name you're calling (or dial the name the cert was issued for)."
+      - label: Trap
+        text: "The legacy Common Name (CN) is IGNORED for hostname matching by modern clients — only the SAN counts. A cert with the right CN but no matching SAN entry still fails."
+      - label: Other x509 failures
+        text: "'certificate has expired' (bad dates, or client clock skew) and 'unknown authority' (the server didn't send the intermediate CA, or a private/self-signed CA isn't in the client's trust store)."
+    cloze:
+      text: "A client trusts a server cert only if the chain is signed by a trusted CA AND the dialed hostname is listed in the certificate's {}."
+      answer: "SAN"
+      alts:
+        - "Subject Alternative Name"
+        - "subject alternative name"
+    hint: "Two checks — the signing chain, and whether the hostname you dialed is on the cert. Which one does 'valid for X, not Y' fail?"

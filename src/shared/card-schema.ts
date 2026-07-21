@@ -52,6 +52,7 @@ export interface AuthoredCard {
   recall?: boolean;
   inverse?: boolean;
   manifest?: Manifest;
+  order?: string[]; // steps in their CORRECT sequence → enables "put in order" (or)
   code?: CodeSource; // a code block → enables "what is this doing?" (cw)
   codeselect?: CodeSelect; // + a block → enables "select the lines" (cs)
 }
@@ -73,6 +74,7 @@ export interface GameCard {
   recall: boolean;
   inverse: boolean;
   manifest: Manifest | null;
+  order: string[] | null; // correct step sequence, or null when the card has none
   code: Code | null;
   codeselect: CodeSelect | null;
 }
