@@ -23,6 +23,7 @@ import {
   renderIV,
   renderMA,
   renderMS,
+  renderOR,
 } from './modes.js';
 import { closeZoom, dismissTransients } from './pause.js';
 import { advance, begin, finalize, persist } from './session.js';
@@ -50,6 +51,7 @@ const RENDERERS: Record<string, (c: GameCard) => void> = {
   ma: renderMA,
   iv: renderIV,
   dm: renderDM,
+  or: renderOR,
   cw: renderCW,
   cs: renderCS,
   ms: renderMS,

@@ -208,3 +208,19 @@ test('an explicit list wins over the inference', () => {
   };
   assert.deepEqual(multi(c as never), ['Only', 'These', 'Three']);
 });
+
+test('an authored order: list renders as an ordered list and reaches the game card', () => {
+  const c = raw({ topic: 'TLS handshake', desc: 'setup', order: ['ClientHello', 'Certificate', 'Key exchange'] });
+  const body = backBody(c, {});
+  // Rendered as <ol> in sequence, so the answer body IS the canonical order.
+  assert.match(body, /<ol class="ol-steps"><li>ClientHello<\/li><li>Certificate<\/li><li>Key exchange<\/li><\/ol>/);
+  const gc = toGameCard(c, {});
+  assert.deepEqual(gc.order, ['ClientHello', 'Certificate', 'Key exchange']);
+  // The step text counts toward the content length that drives the timer.
+  assert.ok(chars(c) > 'TLS handshake'.length + 'setup'.length);
+});
+
+test('order is suppressed on recall-only cards', () => {
+  const c = raw({ topic: 'x', desc: 'y', recall: true, order: ['a', 'b', 'c'] });
+  assert.equal(toGameCard(c, {}).order, null);
+});

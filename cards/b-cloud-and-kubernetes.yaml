@@ -508,3 +508,33 @@ cards:
     match:
       - ["liveness probe", "is it broken? — fail restarts the pod"]
       - ["readiness probe", "can it serve yet? — fail pulls it from the Service"]
+
+  - topic: "Pod stuck Pending — reading why it won't schedule"
+    desc: "Pending means the scheduler accepted the pod but can't place it on any node yet — so before logs (there's no running container to log), run `kubectl describe pod <p>` and READ THE EVENTS at the bottom, which name the exact reason."
+    extras:
+      - label: How
+        text: "The Events line IS the answer: 'Insufficient cpu/memory' (requests exceed every node's allocatable), 'node(s) had untolerated taint' (needs a toleration), 'didn't match node selector/affinity', or 'unbound PersistentVolumeClaim' (no PV to bind)."
+      - label: Contrast
+        text: "Pending = not yet scheduled — a PLACEMENT problem (nodes, resources, taints, PVC). CrashLoopBackOff = scheduled and started, but the container keeps exiting — an APP/CONFIG problem you read from logs."
+      - label: Say
+        text: "\"I'd describe the pod and read the Events — Pending is almost always resource requests too big for the nodes, a taint with no toleration, a nodeSelector mismatch, or an unbound PVC.\""
+    match:
+      - ["Insufficient cpu/memory", "requests exceed every node's allocatable"]
+      - ["untolerated taint", "the node is fenced off; the pod needs a matching toleration"]
+      - ["no nodes matched selector/affinity", "nodeSelector or affinity rules exclude every node"]
+      - ["unbound PersistentVolumeClaim", "no PersistentVolume satisfies the claim, so it can't mount"]
+    hint: "There's no container to log yet — which command names the scheduling reason, and where in its output do you read it?"
+
+  - topic: "Where HTTPS terminates in Kubernetes (terminate / re-encrypt / passthrough)"
+    desc: "The ingress / edge decides WHERE the client's TLS is decrypted, and that decision governs whether traffic inside the cluster is encrypted."
+    table:
+      - ["Mode", "What happens on the edge → pod hop"]
+      - ["Edge termination", "decrypt at the ingress; plain HTTP to the pod — simplest, but internal traffic is unencrypted"]
+      - ["Re-encryption", "decrypt at the ingress, then open a NEW TLS connection to the pod — inspect AND stay encrypted inside"]
+      - ["Passthrough", "the ingress does NOT decrypt; raw TLS goes straight to the pod, which holds the cert — needed for mTLS / client-cert / true end-to-end"]
+    extras:
+      - label: Say
+        text: "\"Terminate at the edge for simplicity, re-encrypt when the internal hop must stay encrypted, passthrough when the pod itself must see the TLS — client certs or mTLS.\""
+      - label: Tie-in
+        text: "cert-manager issues the cert into a kubernetes.io/tls Secret the Ingress references; SNI in the ClientHello is how one ingress IP serves many hostnames' certs."
+    hint: "Three answers to 'where does the client's TLS actually get decrypted?'"

@@ -45,6 +45,12 @@ export function backBody(c: RawCard, diagrams: Record<string, string>, fold = fa
     const lis = c.items.map((it) => `<li>${esc(it)}</li>`).join('');
     parts.push(`<ul class="items">${lis}</ul>`);
   }
+  if (c.order?.length) {
+    // Rendered as an ordered list so the answer body IS the canonical sequence — the reveal after an
+    // "order" question and the print sheet both show the steps numbered in their correct order.
+    const lis = c.order.map((it) => `<li>${esc(it)}</li>`).join('');
+    parts.push(`<ol class="ol-steps">${lis}</ol>`);
+  }
   if (c.table?.length) {
     const rows = c.table;
     const head = rows[0].map((h) => `<th>${esc(h)}</th>`).join('');
@@ -81,6 +87,7 @@ export function clozeObj(c: RawCard): { pre: string; post: string; answer: strin
 export function chars(c: RawCard): number {
   let n = c.topic.length + c.desc.length;
   for (const it of c.items ?? []) n += it.length;
+  for (const it of c.order ?? []) n += it.length;
   for (const { label, text } of c.extras ?? []) n += label.length + text.length;
   for (const row of c.table ?? []) for (const cell of row) n += cell.length;
   n += c.code?.text.length ?? 0;
@@ -179,6 +186,7 @@ export function backMasked(c: RawCard, diagrams: Record<string, string>): string
     ...c,
     desc: maskText(c.desc, words),
     items: (c.items ?? []).map((it) => maskText(it, words)),
+    order: c.order ? c.order.map((it) => maskText(it, words)) : undefined,
     extras: (c.extras ?? []).map((e) => ({ label: e.label, text: maskText(e.text, words) })),
   };
   if (c.table) {
@@ -206,6 +214,7 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
     recall,
     inverse: Boolean(c.inverse) && !recall,
     manifest: recall ? null : (c.manifest ?? null),
+    order: recall ? null : (c.order ?? null),
     code: codeLines(c),
     codeselect: recall ? null : (c.codeselect ?? null),
   };

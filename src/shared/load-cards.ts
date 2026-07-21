@@ -41,6 +41,7 @@ const AuthoredCardSchema = z
     recall: z.boolean().optional(),
     inverse: z.boolean().optional(),
     manifest: ManifestSchema.optional(),
+    order: z.array(z.string()).min(2).optional(),
     code: CodeSchema.optional(),
     codeselect: CodeSelectSchema.optional(),
   })

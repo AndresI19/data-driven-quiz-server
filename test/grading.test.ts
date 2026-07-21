@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { czOK, ivOK } from '../src/client/quiz/grading.js';
+import { czOK, ivOK, orderOK } from '../src/client/quiz/grading.js';
 
 // The two graders decide whether a player was right, which makes them the highest-consequence pure
 // functions in the app — and until now the only completely untested ones. These are characterization
@@ -79,5 +79,30 @@ describe('ivOK — inverse recall (definition shown, topic typed back)', () => {
 
   test('rejects blank', () => {
     expect(ivOK('', 'Anything')).toBe(false);
+  });
+});
+
+describe('orderOK — arrange in sequence', () => {
+  const answer = ['DNS resolve', 'TCP connect', 'TLS handshake', 'HTTP request'];
+
+  test('accepts the exact correct sequence', () => {
+    expect(orderOK(['DNS resolve', 'TCP connect', 'TLS handshake', 'HTTP request'], answer)).toBe(true);
+  });
+
+  test('rejects any transposition — order matters', () => {
+    expect(orderOK(['TCP connect', 'DNS resolve', 'TLS handshake', 'HTTP request'], answer)).toBe(false);
+  });
+
+  test('rejects a wrong-length sequence', () => {
+    expect(orderOK(['DNS resolve', 'TCP connect', 'TLS handshake'], answer)).toBe(false);
+  });
+
+  test('a single adjacent swap fails the whole card', () => {
+    expect(orderOK(['DNS resolve', 'TCP connect', 'HTTP request', 'TLS handshake'], answer)).toBe(false);
+  });
+
+  test('repeated step labels grade by position, not identity', () => {
+    // Two identical steps: any arrangement whose text matches position-for-position passes.
+    expect(orderOK(['open', 'work', 'work', 'close'], ['open', 'work', 'work', 'close'])).toBe(true);
   });
 });

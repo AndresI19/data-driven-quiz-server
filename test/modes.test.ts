@@ -43,6 +43,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   recall: true,
   inverse: true,
   manifest: null,
+  order: null,
   code: null,
   codeselect: null,
   ...over,

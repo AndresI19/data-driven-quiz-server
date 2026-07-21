@@ -1,6 +1,6 @@
 import type { GameCard } from '../../shared/card-schema.js';
-// The nine quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
-// inverse (IV), label-the-YAML (DM), read-the-code (CW), and select-lines (CS).
+// The ten quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
+// inverse (IV), label-the-YAML (DM), order (OR), read-the-code (CW), and select-lines (CS).
 //
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
@@ -11,7 +11,7 @@ import type { Session } from '../runtime/state.js';
 import { cssVarOr, esc, setKey, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, endGraded, modeKeys, score, typedFeedback } from './card.js';
 import { navKey } from './engine.js';
-import { codeSelectOK, czOK, distractors, ivOK, record } from './grading.js';
+import { codeSelectOK, czOK, distractors, ivOK, orderOK, record } from './grading.js';
 import { advance } from './session.js';
 import { answeredNow } from './timer.js';
 
@@ -777,4 +777,85 @@ export function renderCS(c: GameCard): void {
   app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
 
   checkboxKeys('.cl-btn', ses, check);
+}
+
+/** Order: arrange the shuffled steps into the correct sequence with ▲/▼, then check. */
+export function renderOR(c: GameCard): void {
+  const answer = c.order!;
+  const n = answer.length;
+  // Work with stable ids 0..n-1 (id i ⇒ answer[i]); `cur` is the displayed order of those ids, so a
+  // move is a swap of two ids and grading is a text compare that stays correct even if steps repeat.
+  // Reshuffle a few times if the shuffle lands already-solved — likely for small n, and a pre-solved
+  // card is no question at all.
+  let cur = shuffle(answer.map((_, i) => i));
+  for (let t = 0; t < 8 && cur.every((id, p) => answer[id] === answer[p]); t++) {
+    cur = shuffle(answer.map((_, i) => i));
+  }
+
+  const ses = drawCard(
+    c,
+    'order',
+    `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
+      <div class="ptip">Put the steps in the correct order — use ▲ ▼ to move each one, then Check.</div>
+      <div class="orderlist" id="orderlist"></div>
+      <div class="actions" id="act"><button class="btn primary" id="ocheck">Check &nbsp;<kbd>Enter</kbd></button></div>`,
+  );
+
+  function draw(): void {
+    const list = app.querySelector('#orderlist');
+    if (!list) return;
+    list.innerHTML = cur
+      .map(
+        (id, p) =>
+          `<div class="oitem" data-p="${p}"><span class="onum">${p + 1}</span><span class="otxt">${esc(answer[id])}</span><span class="omove"><button class="obtn" data-dir="up"${p === 0 ? ' disabled' : ''} title="move up" aria-label="move up">▲</button><button class="obtn" data-dir="down"${p === n - 1 ? ' disabled' : ''} title="move down" aria-label="move down">▼</button></span></div>`,
+      )
+      .join('');
+    list.querySelectorAll('.obtn').forEach((b) =>
+      b.addEventListener('click', () => {
+        if (ses.answered) return;
+        const p = +((b as HTMLElement).closest('.oitem') as HTMLElement).dataset.p!;
+        const q = (b as HTMLElement).dataset.dir === 'up' ? p - 1 : p + 1;
+        if (q < 0 || q >= n) return;
+        [cur[p], cur[q]] = [cur[q], cur[p]];
+        draw();
+      }),
+    );
+  }
+  draw();
+
+  function check(timedOut: boolean): void {
+    if (ses.answered) return;
+    answeredNow();
+    const current = cur.map((id) => answer[id]);
+    const allRight = !timedOut && orderOK(current, answer);
+    // Tint each row: green where the step already sits in its correct position, red otherwise, and
+    // lock the ▲/▼ controls. The full correct sequence follows from endGraded's reveal (c.back).
+    app.querySelectorAll('.oitem').forEach((el) => {
+      const p = +(el as HTMLElement).dataset.p!;
+      el.classList.add(answer[cur[p]] === answer[p] ? 'ogood' : 'obad');
+      el.querySelectorAll('.obtn').forEach((b) => {
+        (b as HTMLButtonElement).disabled = true;
+      });
+    });
+    score(c, allRight, 'or');
+
+    endGraded(
+      c,
+      allRight,
+      timedOut,
+      '✓ correct order!',
+      '✗ green rows were placed right — the full order is below',
+      { reveal: true },
+    );
+  }
+
+  ses._onTimeout = () => check(true);
+  app.querySelector('#ocheck')!.addEventListener('click', () => check(false));
+
+  modeKeys((e) => {
+    if (!ses.answered && e.key === 'Enter') {
+      e.preventDefault();
+      check(false);
+    }
+  });
 }
