@@ -154,6 +154,11 @@ cards:
       - "Add more application replicas behind the load balancer"
       - "Move reads to a database read replica"
       - "Increase the client request timeout"
+    cloze:
+      text: "Add an {} timeout so a connection leak fails fast instead of hanging under load."
+      answer: "acquisition"
+      alts:
+        - "acquire"
 
   - topic: "Exponential backoff with jitter, capped attempts, and a circuit breaker"
     desc: "Diagnosis: a downstream blip triggers synchronized tight-loop retries that keep it from recovering. The fix is to space retries with exponentially increasing delays plus random jitter, cap the number of attempts, and add a breaker that stops calling a failing dependency so it can heal."

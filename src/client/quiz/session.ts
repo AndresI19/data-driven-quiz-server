@@ -38,7 +38,7 @@ export function persist(): void {
   saveDB();
 }
 export function pickDir(dir: string, c: GameCard): string {
-  if (c.recall) return 'fb';
+  if (c.recall) return 'bf'; // recall-only cards fall back to identify now that fb is gone
   if (dir === 'mixed') {
     const m = availableModes(c);
     return m[Math.floor(Math.random() * m.length)];
@@ -139,7 +139,6 @@ export function finalize(): void {
   saveDB();
 }
 const DIRECTION_LABELS: Record<string, string> = {
-  fb: 'recall',
   bf: 'choice',
   cz: 'fill-in',
   ma: 'match',
@@ -153,7 +152,7 @@ const DIRECTION_LABELS: Record<string, string> = {
 };
 
 /** The cards a scope selects, before mode-filtering: favourites, a set of sections, or everything. */
-function scopedCards(scope: Scope): GameCard[] {
+export function scopedCards(scope: Scope): GameCard[] {
   if (scope === 'fav') return CARDS.filter((c) => DB.favorites[c.id]);
   if (Array.isArray(scope)) return CARDS.filter((c) => scope.includes(c.cat));
   return CARDS.slice();

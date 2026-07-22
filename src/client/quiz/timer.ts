@@ -33,7 +33,7 @@ export function baseSeconds(c: GameCard, mode: string): number {
   } else {
     chars = c.chars || 200;
   }
-  const cps = mode === 'fb' ? 11 : mode === 'cz' ? 8 : 22;
+  const cps = mode === 'cz' ? 8 : 22;
   return Math.max(6, chars / cps);
 }
 export function answeredNow(): void {

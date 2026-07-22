@@ -19,6 +19,12 @@ cards:
     extras:
       - label: e.g.
         text: on-site you notice every customer hand-writes the same policy; you prototype a reusable template and feed it back to product as a feature.
+    order:
+      - "Notice a pattern repeated across customers on-site"
+      - "Prototype a reusable solution in the field to unblock them"
+      - "Ship it to the customer as a one-off"
+      - "Feed the gap back to product as a proposed feature"
+      - "Product generalizes it into the core"
     hint: The forward-deploy feedback loop — a field insight becomes a product feature.
   - topic: Enterprise deployment constraints
     desc: VPC / air-gapped / on-prem realities, compliance (SOC2), and change-management friction.
@@ -125,3 +131,9 @@ cards:
         text: "Asked to 'reset the DB to make admin creds', you check and find admin is an env-var list, not a DB row — so the reset was never needed. Looking first saved real data."
       - label: Cheap insurance
         text: "Take a backup before an irreversible change (pg_dump), even when you're confident. 'Irreversible' becomes 'reversible' for the price of one command."
+    order:
+      - "Look at what you're about to destroy — row counts, and what depends on it"
+      - "Compare it against the description you were given"
+      - "If what you find contradicts the plan, surface that instead of proceeding"
+      - "Take a backup (e.g. pg_dump) even when you're confident"
+      - "Only then perform the irreversible action"

@@ -152,6 +152,13 @@ cards:
         text: "implemented as an interceptor in the tool-call path (proxy / sidecar / SDK hook): every action routes through it, is checked against policy + a risk model, then allowed / blocked / modified in-line and logged for audit."
       - label: e.g.
         text: an agent's delete_database call is intercepted, scored high-risk, and blocked before it runs.
+    cloze:
+      text: "Runtime enforcement runs as an {} in the tool-call path — proxy, sidecar, or SDK hook — checking each action against policy before it executes."
+      answer: "interceptor"
+    mc:
+      - "Static analysis — scanning code before it runs"
+      - "Rate limiting — capping request volume"
+      - "Audit logging — recording actions after the fact"
     hint: Inspect agent actions in-flight and block or score the risky ones.
   - topic: "SSO: OIDC vs SAML"
     desc: Both are federation protocols for Single Sign-On — log in once at an Identity Provider (IdP), reach many apps. SAML = older, XML, browser-POST, entrenched in enterprise. OIDC (OpenID Connect) = modern, JSON/JWT, built on OAuth2 — better for APIs, SPAs, mobile.

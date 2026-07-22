@@ -65,6 +65,17 @@ cards:
       - label: "e.g."
         text: "A static analysis tool (CodeQL) flags this; you either fix it or dismiss it as an accepted risk WITH justification."
     inverse: true
+    cloze:
+      text: "Storing a secret {} where it can be read back — a token in localStorage, creds in logs — is CWE-312."
+      answer: "unencrypted"
+      alts:
+        - "in clear text"
+        - "clear-text"
+        - "in cleartext"
+    mc:
+      - "CWE-79: cross-site scripting (XSS)"
+      - "CWE-89: SQL injection"
+      - "CWE-352: cross-site request forgery (CSRF)"
 
   - topic: "JWT signing: HS256 vs RS256"
     desc: "HS256 is SYMMETRIC — one shared secret both signs and verifies, so every service that can CHECK a token can also FORGE one. RS256 is ASYMMETRIC — the issuer holds the private key and signs; everyone else fetches the PUBLIC key (via a JWKS endpoint) and can only verify. Compromise a verifier and it still cannot mint tokens."

@@ -19,6 +19,7 @@ import { esc, fmtClock, fmtSpeed, setKey, touchDist } from '../runtime/util.js';
 import { exportPage } from './export.js';
 import { favoritesPage } from './favorites.js';
 import { reviewSession } from './review.js';
+import { studyPage } from './study.js';
 
 /**
  * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
@@ -122,7 +123,7 @@ export function setup(): void {
     <div class="homecol homeleft">
     ${resumeHtml}
     <div class="panel">
-      <div class="panelsub">${CARDS.length} cards · recall, multiple-choice & fill-in-the-blank. <span class="tiny">${lifetime()}</span>${Object.keys(DB.stats).length ? ` <button class="linkbtn" id="resetstats">reset</button>` : ''} <button class="linkbtn" id="exportbtn">export</button></div>
+      <div class="panelsub">${CARDS.length} cards · multiple-choice, fill-in, match & drag-to-order. <span class="tiny">${lifetime()}</span>${Object.keys(DB.stats).length ? ` <button class="linkbtn" id="resetstats">reset</button>` : ''} <button class="linkbtn" id="exportbtn">export</button></div>
       <div class="row"><div class="lab">Sections</div>
         <div class="secchips" id="secchips">
           <button class="secchip all" data-sec="all">All (${CARDS.length})</button>
@@ -151,12 +152,11 @@ export function setup(): void {
           <span class="tiny" id="tspeednum"></span>
           <span class="tiny" style="opacity:.7">· scales with card length · 0 = off</span>
         </div></div>
-      <div class="row"><div class="lab">Recall hints</div>
-        <div class="sndrow"><label class="snd-toggle"><input type="checkbox" id="hints"> Show a starting-point hint on recall cards</label></div></div>
       <div class="startbar">
-        <span class="tiny"><kbd>Ctrl+Enter</kbd>/<kbd>Space</kbd> submit · <kbd>1</kbd>–<kbd>8</kbd> grade</span>
+        <span class="tiny"><kbd>Enter</kbd> start · <kbd>1</kbd>–<kbd>8</kbd> pick · <kbd>Enter</kbd> check</span>
         <button class="btn primary" id="start">Start quiz →</button>
       </div>
+      <button class="btn ghost studybtn" id="studybtn">📖 Study mode — read every card in full →</button>
     </div>
     ${favHtml}
     ${sessHtml}
@@ -212,6 +212,7 @@ export function setup(): void {
         if (!S.cfg.scope.length) S.cfg.scope = 'all';
       }
       refreshSecs();
+      syncLen(); // the selection changed — retune the length slider's ceiling to it
     }),
   );
   app.querySelector('#start')!.addEventListener('click', () => start());
@@ -240,12 +241,7 @@ export function setup(): void {
     tspeednum.textContent = fmtSpeed(DB.settings.timeSpeed);
     saveDB();
   });
-  const hints = app.querySelector('#hints') as HTMLInputElement;
-  hints.checked = DB.settings.hints;
-  hints.addEventListener('change', () => {
-    DB.settings.hints = hints.checked;
-    saveDB();
-  });
+  app.querySelector('#studybtn')!.addEventListener('click', studyPage);
   const qf = app.querySelector('#quizfav');
   if (qf)
     qf.addEventListener('click', () => {
@@ -315,16 +311,28 @@ export function setup(): void {
   const len = app.querySelector('#len') as HTMLInputElement;
   const lennum = app.querySelector('#lennum') as HTMLElement;
   if (typeof S.cfg.count !== 'number') S.cfg.count = 20;
-  const setLen = (): void => {
-    const v = Number.parseInt(len.value, 10);
-    lennum.textContent = v >= CARDS.length ? `All (${CARDS.length})` : `${v} cards`;
+  // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer sections has to
+  // shrink the max, or "length" could exceed how many cards the selection actually contains.
+  const scopeCount = (): number => {
+    const sc = S.cfg.scope;
+    if (sc === 'fav') return CARDS.filter((c) => DB.favorites[c.id]).length;
+    if (Array.isArray(sc)) return CARDS.filter((c) => sc.includes(c.cat)).length;
+    return CARDS.length;
   };
-  len.value = String(Math.min(S.cfg.count, CARDS.length));
-  setLen();
-  len.addEventListener('input', () => {
-    S.cfg.count = Number.parseInt(len.value, 10);
-    setLen();
-  });
+  const syncLen = (): void => {
+    const cnt = scopeCount();
+    const max = Math.max(5, cnt);
+    len.max = String(max);
+    let v = Number.parseInt(len.value, 10);
+    if (!Number.isFinite(v)) v = S.cfg.count;
+    if (v > max) v = max;
+    len.value = String(v);
+    S.cfg.count = v;
+    lennum.textContent = v >= cnt ? `All (${cnt})` : `${v} cards`;
+  };
+  len.value = String(Math.min(S.cfg.count, Math.max(5, scopeCount())));
+  syncLen();
+  len.addEventListener('input', syncLen);
   const rs = app.querySelector('#resetstats');
   if (rs)
     rs.addEventListener('click', () => {

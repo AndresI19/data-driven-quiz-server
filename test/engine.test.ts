@@ -28,7 +28,6 @@ vi.mock('../src/client/audio/sound.js', () => ({
  */
 
 const DIR: Record<string, string> = {
-  fb: 'recall',
   bf: 'identify',
   cz: 'fill in',
   ma: 'match',
@@ -135,12 +134,12 @@ afterEach(() => {
 describe('renderQ — mode-fallback chain', () => {
   // [requested mode, card id, expected resolved mode]
   const CASES: [string, string, string][] = [
-    ['cz', 'NO_CLOZE', 'fb'], // cz without cloze → fb
+    ['cz', 'NO_CLOZE', 'bf'], // cz without cloze → bf (recall removed)
     ['cz', 'HAS_CLOZE', 'cz'], // cz kept
     ['ma', 'NO_MATCH', 'bf'], // ma without match → bf
     ['ma', 'HAS_MATCH', 'ma'], // ma kept
     ['ms', 'NO_MULTI', 'bf'], // ms without multi → bf
-    ['iv', 'NO_INV', 'fb'], // iv without inverse → fb
+    ['iv', 'NO_INV', 'bf'], // iv without inverse → bf (recall removed)
     ['iv', 'HAS_INV', 'iv'], // iv kept
     ['dm', 'DM_NO_MAN_MATCH', 'ma'], // dm without manifest but with match → ma
     ['dm', 'DM_NO_MAN_NO_MATCH', 'bf'], // dm without manifest, no match → bf
@@ -158,7 +157,6 @@ describe('renderQ — mode-fallback chain', () => {
 
 describe('renderQ — modes that already match pass through unchanged', () => {
   test.each([
-    ['fb', 'PLAIN'],
     ['bf', 'PLAIN'],
     ['ms', 'HAS_MULTI'],
   ] as [string, string][])('%s stays %s', (mode, id) => {
