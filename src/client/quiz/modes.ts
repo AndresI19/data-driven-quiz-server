@@ -167,7 +167,7 @@ export function renderMA(c: GameCard): void {
     c,
     'match',
     `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
-      <div class="ptip">Drag an arrow from a left item to its match. Drag again to change it; tap a left item to clear it.</div>
+      <div class="ptip">Drag a line from a left item to its match. Drag again to change it; tap a left item to clear it.</div>
       <div class="match" id="matchbox">
         <svg class="matchsvg" id="matchsvg"></svg>
         <div class="mcol" id="mL">${lefts.map((l, li) => `<div class="mitem" data-li="${li}"><span class="mtxt">${esc(l)}</span><span class="dot r"></span></div>`).join('')}</div>
@@ -182,8 +182,7 @@ export function renderMA(c: GameCard): void {
     app.querySelector(`#mL .mitem[data-li="${li}"]`) as HTMLElement;
   const Rb = (ri: number | string): HTMLElement =>
     app.querySelector(`#mR .mitem[data-ri="${ri}"]`) as HTMLElement;
-  const DEFS =
-    '<defs><marker id="marr" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="context-stroke"/></marker></defs>';
+  const DEFS = ''; // plain lines, no arrowheads — cleaner for a line-matching card
 
   function dot(item: HTMLElement, side: string): { x: number; y: number } {
     const d = item.querySelector(`.dot.${side}`)!.getBoundingClientRect();
@@ -195,8 +194,9 @@ export function renderMA(c: GameCard): void {
     b: { x: number; y: number },
     col: string,
     dashed: boolean,
+    opacity = 1,
   ): string {
-    return `<path d="M${a.x},${a.y} L${b.x},${b.y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" ${dashed ? 'stroke-dasharray="6 5"' : ''} marker-end="url(#marr)"/>`;
+    return `<path d="M${a.x},${a.y} L${b.x},${b.y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round"${dashed ? ' stroke-dasharray="6 5"' : ''}${opacity < 1 ? ` opacity="${opacity}"` : ''}/>`;
   }
   function redraw(drag: { li: number; x: number; y: number } | null): void {
     let h = DEFS;
@@ -277,24 +277,27 @@ export function renderMA(c: GameCard): void {
     if (ses.answered) return;
     answeredNow();
     let allRight = true;
-    let h = DEFS;
+    let h = '';
+    const BLUE = '#3b82f6';
     for (let li = 0; li < pairs.length; li++) {
       const good = assign[li] === correctRi[li];
       if (!good) allRight = false;
       const lb = Lb(li);
       if (lb) lb.classList.add(good ? 'mgood' : 'mbad');
-      if (assign[li] != null) {
-        const rb2 = Rb(assign[li]);
-        if (rb2 && !good) rb2.classList.add('mbad');
-        h += path(
-          dot(lb, 'r'),
-          dot(Rb(assign[li]), 'l'),
-          good ? cssVarOr('--good', '#12a150') : cssVarOr('--bad', '#e11d48'),
-          false,
-        );
+      const correctRb = Rb(correctRi[li]);
+      if (good) {
+        // Right: one solid green line to the target.
+        if (assign[li] != null) {
+          h += path(dot(lb, 'r'), dot(Rb(assign[li]), 'l'), cssVarOr('--good', '#12a150'), false);
+        }
+      } else {
+        // Wrong: FADE the line you drew, then draw the true answer as a solid BLUE line.
+        if (assign[li] != null) {
+          h += path(dot(lb, 'r'), dot(Rb(assign[li]), 'l'), cssVarOr('--bad', '#e11d48'), false, 0.28);
+        }
+        if (correctRb) h += path(dot(lb, 'r'), dot(correctRb, 'l'), BLUE, false);
       }
-      const rb = Rb(correctRi[li]);
-      if (rb) rb.classList.add('mgood');
+      if (correctRb) correctRb.classList.add('mgood');
     }
     svg.innerHTML = h;
     box.classList.add('locked');
@@ -305,7 +308,7 @@ export function renderMA(c: GameCard): void {
       allRight,
       timedOut,
       '✓ all matched!',
-      '✗ red = your wrong link; green marks the right target',
+      '✗ faded = your wrong link; blue shows the correct match',
       { reveal: true },
     );
   }
