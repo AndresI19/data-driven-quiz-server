@@ -317,6 +317,12 @@ cards:
     cloze:
       text: Asymmetric crypto in TLS only authenticates and agrees a key; the data itself is encrypted with a fast {} key.
       answer: symmetric
+    order:
+      - "Client sends ClientHello — its cipher list and the SNI hostname"
+      - "Server replies with ServerHello and its certificate"
+      - "Client verifies the certificate (chain to a trusted CA, hostname / SAN)"
+      - "Both derive a shared SYMMETRIC session key via ephemeral key exchange"
+      - "Encrypted application traffic flows over the session"
     hint: The hello sequence — and which crypto authenticates versus which encrypts.
   - topic: TLS / cert file types (.key .crt .pem .csr)
     desc: "The confusion: .pem/.der are ENCODINGS, while .key/.crt/.csr describe CONTENT — a .pem file can hold a cert, a key, or both. Mental model:"
@@ -446,14 +452,14 @@ cards:
         text: “dig works but my app can't resolve” means the app path (nsswitch, /etc/hosts) differs from dig, which talks straight to a nameserver. Test the app's REAL path with `getent hosts <name>`.
       - label: Say
         text: “The app calls getaddrinfo; nsswitch decides order; /etc/hosts and the stub cache come before any packet leaves the box.”
-    items:
-      - 1. The app calls getaddrinfo("host") — it never speaks DNS itself
-      - 2. libc reads /etc/nsswitch.conf to learn the ORDER of sources to try
-      - 3. /etc/hosts is checked first — a match here wins, with no network at all
-      - 4. Then the stub resolver (127.0.0.53, systemd-resolved) checks its local cache
-      - 5. Cache miss → it asks the upstream RECURSIVE resolver (your router / ISP / 1.1.1.1)
-      - 6. That resolver walks root → TLD → authoritative, caches the answer, returns the IP
-      - 7. Only NOW does the app open a TCP connection to that IP
+    order:
+      - "The app calls getaddrinfo(\"host\") — it never speaks DNS itself"
+      - "libc reads /etc/nsswitch.conf to learn the ORDER of sources to try"
+      - "/etc/hosts is checked first — a match here wins, with no network at all"
+      - "The stub resolver (127.0.0.53, systemd-resolved) checks its local cache"
+      - "Cache miss → it asks the upstream RECURSIVE resolver (router / ISP / 1.1.1.1)"
+      - "That resolver walks root → TLD → authoritative, caches the answer, returns the IP"
+      - "Only NOW does the app open a TCP connection to that IP"
 
   - topic: "Optimistic concurrency control"
     desc: "Let concurrent writers proceed WITHOUT locks, and detect conflicts at write time. Each row carries a VERSION; a client reads version N, and its update says 'set … WHERE version = N'. If someone else wrote first (version is now N+1), the update matches zero rows and you reject with a 409 instead of silently clobbering their change."
