@@ -49,6 +49,15 @@ cards:
     extras:
       - label: e.g.
         text: score send_email low, delete_records high; auto-block or require human approval above a threshold — the core of the governance product.
+    table:
+      - ["Agent action", "Risk tier / handling"]
+      - ["read_document / send_email", "low — allow"]
+      - ["update_record", "medium — log & score"]
+      - ["delete_records / drop_table", "high — block or require approval"]
+      - ["transfer_funds / rotate_credentials", "critical — human approval"]
+    cloze:
+      text: "Actions scoring above a set {} are auto-blocked or routed to a human."
+      answer: "threshold"
     hint: Quantifying how dangerous an agent's proposed action is.
   - topic: PyTorch
     desc: The dominant open-source deep-learning framework (from Meta AI). GPU-accelerated tensors (NumPy-like arrays) + autograd (automatic differentiation) + nn.Module layers — the substrate under Hugging Face transformers, the models vLLM serves, and most fine-tuning.

@@ -113,15 +113,15 @@ describe('baseSeconds — cs (select lines): max(26, lines * 4 + 12)', () => {
 });
 
 describe('baseSeconds — char-budget modes: max(6, chars / cps)', () => {
-  // cps: fb → 11, cz → 8, everything else → 22.
-  test('fb: chars=88 → 88/11 = 8', () => {
-    expect(baseSeconds(card({ chars: 88 }), 'fb')).toBe(8);
+  // cps: cz → 8, everything else → 22. (Recall's fb → 11 budget was removed with the mode.)
+  test('default: chars=220 → 220/22 = 10', () => {
+    expect(baseSeconds(card({ chars: 220 }), 'bf')).toBe(10);
   });
-  test('fb: short content clamps to the 6s floor (chars=11 → 1 → 6)', () => {
-    expect(baseSeconds(card({ chars: 11 }), 'fb')).toBe(6);
+  test('default: short content clamps to the 6s floor (chars=44 → 2 → 6)', () => {
+    expect(baseSeconds(card({ chars: 44 }), 'bf')).toBe(6);
   });
-  test('fb: chars falsy → falls back to 200 → 200/11', () => {
-    expect(baseSeconds(card({ chars: 0 }), 'fb')).toBeCloseTo(18.1818, 4);
+  test('default: chars falsy → falls back to 200 → 200/22', () => {
+    expect(baseSeconds(card({ chars: 0 }), 'bf')).toBeCloseTo(9.0909, 4);
   });
   test('cz WITH cloze: uses pre+post+answer length / 8', () => {
     const cloze = { pre: 'a'.repeat(80), post: 'b'.repeat(8), answer: 'c'.repeat(8), alts: [] };

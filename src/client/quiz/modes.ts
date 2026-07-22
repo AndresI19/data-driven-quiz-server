@@ -1,17 +1,16 @@
 import type { GameCard } from '../../shared/card-schema.js';
-// The ten quiz modes: recall (FB), identify (BF), fill-in (CZ), match (MA), multi-select (MS),
-// inverse (IV), label-the-YAML (DM), order (OR), read-the-code (CW), and select-lines (CS).
+// The nine quiz modes: identify (BF), fill-in (CZ), match (MA), multi-select (MS), inverse (IV),
+// label-the-YAML (DM), order (OR), read-the-code (CW), and select-lines (CS). Open-ended recall was
+// removed — it awarded no points and could not be machine-graded.
 //
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
 // what is left below is the part that genuinely differs between modes.
 import { ACCENT_FALLBACK, MULTIPOOL, app } from '../runtime/data.js';
-import { DB } from '../runtime/db.js';
 import type { Session } from '../runtime/state.js';
-import { cssVarOr, esc, setKey, shuffle } from '../runtime/util.js';
+import { cssVarOr, esc, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, endGraded, modeKeys, score, typedFeedback } from './card.js';
-import { navKey } from './engine.js';
-import { codeSelectOK, czOK, distractors, ivOK, orderOK, record } from './grading.js';
+import { codeSelectOK, czOK, distractors, ivOK, orderOK } from './grading.js';
 import { advance } from './session.js';
 import { answeredNow } from './timer.js';
 
@@ -21,103 +20,6 @@ const FOCUS_DELAY = 30;
 /** Focus a freshly-rendered field once its innerHTML has settled. */
 function focusSoon(el: HTMLElement): void {
   setTimeout(() => el.focus(), FOCUS_DELAY);
-}
-
-/** Recall: show the topic, type from memory, then self-grade against the answer. */
-export function renderFB(c: GameCard): void {
-  const ses = drawCard(
-    c,
-    'recall',
-    `<div class="topic">${esc(c.topic)}</div>
-      <div id="ans">
-        <div class="ptip">Write what you remember, then reveal to compare.</div>
-        <div id="hintbox" class="hintbox" style="display:none"></div>
-        <textarea id="recall" class="recall" placeholder="Type your answer…"></textarea>
-      </div>
-      <div class="actions" id="act">${DB.settings.hints && c.hint ? `<button class="btn ghost" id="hintbtn">Hint</button>` : ''}<button class="btn primary" id="reveal">Reveal answer &nbsp;<kbd>Ctrl+Enter</kbd></button></div>`,
-  );
-  const ta = app.querySelector('#recall') as HTMLTextAreaElement;
-  focusSoon(ta);
-
-  const hb = app.querySelector('#hintbtn') as HTMLButtonElement | null;
-  if (hb)
-    hb.addEventListener('click', () => {
-      const box = app.querySelector('#hintbox') as HTMLElement | null;
-      if (!box) return;
-      if (box.style.display === 'none') {
-        box.textContent = `→ ${c.hint}`;
-        box.style.display = '';
-        hb.textContent = 'Hide hint';
-      } else {
-        box.style.display = 'none';
-        hb.textContent = 'Hint';
-      }
-    });
-
-  function reveal(timedOut: boolean): void {
-    if (ses.answered) return;
-    answeredNow();
-    const mine = ta.value.trim();
-    app.querySelector('#ans')!.innerHTML = `
-      <div class="compare">
-        <div class="col mine"><div class="col-h">Your recall</div><div class="mine-body">${mine ? esc(mine) : '<span class="muted">(left blank)</span>'}</div></div>
-        <div class="col real"><div class="col-h">Answer</div><div class="answer">${c.back}</div></div>
-      </div>`;
-
-    if (!mine) {
-      // Nothing written is nothing to grade — it is simply missed. No payout: recall is honour-graded.
-      record(c, false);
-      const note = timedOut ? '⏱ Timed out (blank) — marked missed' : 'Left blank — marked missed';
-      endCard(c, `<div class="grade-note bad">${note}</div>`);
-      // The card is over, so `→` may now advance — which is why this re-arms the key handler.
-      setKey((e) => {
-        navKey(e, true);
-      });
-      return;
-    }
-
-    // Something was written, so the player grades themselves. Deliberately NOT endCard: there is no
-    // Next button here, because leaving requires choosing satisfied/not — see the `false` passed to
-    // modeKeys below.
-    app.querySelector('#act')!.outerHTML =
-      `${timedOut ? `<div class="grade-note bad" style="margin-bottom:8px">⏱ Time’s up — grade yourself honestly</div>` : ''}<div class="grade">
-        <button class="btn bad" id="miss">Not satisfied <kbd>2</kbd></button>
-        <button class="btn good" id="got">Satisfied <kbd>1</kbd></button></div>`;
-    app.querySelector('#got')!.addEventListener('click', () => {
-      record(c, true);
-      advance();
-    });
-    app.querySelector('#miss')!.addEventListener('click', () => {
-      record(c, false);
-      advance();
-    });
-  }
-
-  ses._onTimeout = () => reveal(true);
-  app.querySelector('#reveal')!.addEventListener('click', () => reveal(false));
-
-  // `() => false`: recall is the one mode where `→` must NOT advance a finished card, because leaving
-  // without pressing satisfied/not-satisfied would skip record() and silently drop the answer.
-  modeKeys(
-    (e) => {
-      if (!ses.answered) {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          reveal(false);
-        }
-        return;
-      }
-      const k = e.key.toLowerCase();
-      if (k === '1' || k === 'g') {
-        record(c, true);
-        advance();
-      } else if (k === '2' || k === 'm') {
-        record(c, false);
-        advance();
-      }
-    },
-    () => false,
-  );
 }
 
 /** The A–H hotkey letters shared by every single-pick choice grid. */
@@ -779,12 +681,12 @@ export function renderCS(c: GameCard): void {
   checkboxKeys('.cl-btn', ses, check);
 }
 
-/** Order: arrange the shuffled steps into the correct sequence with ▲/▼, then check. */
+/** Order: drag the shuffled steps into the correct sequence, then check. */
 export function renderOR(c: GameCard): void {
   const answer = c.order!;
   const n = answer.length;
   // Work with stable ids 0..n-1 (id i ⇒ answer[i]); `cur` is the displayed order of those ids, so a
-  // move is a swap of two ids and grading is a text compare that stays correct even if steps repeat.
+  // move re-splices ids and grading is a text compare that stays correct even if steps repeat.
   // Reshuffle a few times if the shuffle lands already-solved — likely for small n, and a pre-solved
   // card is no question at all.
   let cur = shuffle(answer.map((_, i) => i));
@@ -796,10 +698,13 @@ export function renderOR(c: GameCard): void {
     c,
     'order',
     `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
-      <div class="ptip">Put the steps in the correct order — use ▲ ▼ to move each one, then Check.</div>
+      <div class="ptip">Drag the steps into the correct order, then Check.</div>
       <div class="orderlist" id="orderlist"></div>
       <div class="actions" id="act"><button class="btn primary" id="ocheck">Check &nbsp;<kbd>Enter</kbd></button></div>`,
   );
+
+  // The id currently being dragged (stable across re-renders), or null when nothing is in hand.
+  let dragId: number | null = null;
 
   function draw(): void {
     const list = app.querySelector('#orderlist');
@@ -807,35 +712,62 @@ export function renderOR(c: GameCard): void {
     list.innerHTML = cur
       .map(
         (id, p) =>
-          `<div class="oitem" data-p="${p}"><span class="onum">${p + 1}</span><span class="otxt">${esc(answer[id])}</span><span class="omove"><button class="obtn" data-dir="up"${p === 0 ? ' disabled' : ''} title="move up" aria-label="move up">▲</button><button class="obtn" data-dir="down"${p === n - 1 ? ' disabled' : ''} title="move down" aria-label="move down">▼</button></span></div>`,
+          `<div class="oitem${id === dragId ? ' dragging' : ''}" data-p="${p}"><span class="ohandle" aria-hidden="true">⠿</span><span class="onum">${p + 1}</span><span class="otxt">${esc(answer[id])}</span></div>`,
       )
       .join('');
-    list.querySelectorAll('.obtn').forEach((b) =>
-      b.addEventListener('click', () => {
-        if (ses.answered) return;
-        const p = +((b as HTMLElement).closest('.oitem') as HTMLElement).dataset.p!;
-        const q = (b as HTMLElement).dataset.dir === 'up' ? p - 1 : p + 1;
-        if (q < 0 || q >= n) return;
-        [cur[p], cur[q]] = [cur[q], cur[p]];
-        draw();
-      }),
-    );
+    if (ses.answered) return; // a graded card is inert — no drag handlers
+    list
+      .querySelectorAll('.oitem')
+      .forEach((el) =>
+        el.addEventListener('pointerdown', (ev) =>
+          startDrag(ev as PointerEvent, +(el as HTMLElement).dataset.p!),
+        ),
+      );
   }
+
+  // Move the dragged id to `target`, re-splicing rather than swapping so the list slides like a real
+  // sortable — the items between origin and target shift by one, not just the two endpoints.
+  function moveTo(target: number): void {
+    if (dragId === null || target < 0 || target >= n) return;
+    const from = cur.indexOf(dragId);
+    if (target === from) return;
+    cur.splice(from, 1);
+    cur.splice(target, 0, dragId);
+    draw();
+  }
+  function onMove(e: PointerEvent): void {
+    if (dragId === null) return;
+    e.preventDefault();
+    const row = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest('.oitem');
+    if (row) moveTo(+(row as HTMLElement).dataset.p!);
+  }
+  function endDrag(): void {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', endDrag);
+    dragId = null;
+    draw();
+  }
+  function startDrag(e: PointerEvent, p: number): void {
+    if (ses.answered) return;
+    e.preventDefault();
+    dragId = cur[p];
+    draw();
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', endDrag);
+  }
+
   draw();
 
   function check(timedOut: boolean): void {
     if (ses.answered) return;
+    if (dragId !== null) endDrag(); // settle any in-flight drag before grading
     answeredNow();
     const current = cur.map((id) => answer[id]);
     const allRight = !timedOut && orderOK(current, answer);
-    // Tint each row: green where the step already sits in its correct position, red otherwise, and
-    // lock the ▲/▼ controls. The full correct sequence follows from endGraded's reveal (c.back).
+    draw(); // re-render inert, then tint each row green/red by whether it sits in its correct place
     app.querySelectorAll('.oitem').forEach((el) => {
       const p = +(el as HTMLElement).dataset.p!;
       el.classList.add(answer[cur[p]] === answer[p] ? 'ogood' : 'obad');
-      el.querySelectorAll('.obtn').forEach((b) => {
-        (b as HTMLButtonElement).disabled = true;
-      });
     });
     score(c, allRight, 'or');
 

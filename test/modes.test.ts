@@ -5,7 +5,6 @@ import {
   renderCW,
   renderCZ,
   renderDM,
-  renderFB,
   renderIV,
   renderMA,
   renderMS,
@@ -144,7 +143,6 @@ beforeEach(() => {
 
 // (renderer, the card it needs, the label it prints in .dir)
 const MODES: [string, (c: GameCard) => void, GameCard, string][] = [
-  ['fb', renderFB, card(), 'recall'],
   ['bf', renderBF, card(), 'identify'],
   ['cz', renderCZ, CLOZE, 'fill in'],
   ['ma', renderMA, MATCH, 'match'],
@@ -295,16 +293,4 @@ describe('grading and payout', () => {
     expect(DB.combo).toBe(0);
   });
 
-  test('fb: self-graded recall records the answer but never pays', () => {
-    const c = card();
-    startSession(c, 'fb');
-    renderFB(c);
-
-    (app.querySelector('#recall') as HTMLTextAreaElement).value = 'it spreads traffic';
-    (app.querySelector('#reveal') as HTMLButtonElement).click();
-    (app.querySelector('#got') as HTMLButtonElement).click();
-
-    expect(S.ses!.correct).toBe(1);
-    expect(DB.coins, 'recall is honour-graded, so paying it would pay the honour system').toBe(0);
-  });
 });

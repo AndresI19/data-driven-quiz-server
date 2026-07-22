@@ -474,6 +474,13 @@ cards:
       - label: Diagnose
         text: "`kubectl logs <pod> --previous` (the crashed instance's logs), then `kubectl describe pod` for the exit code and events. Restart count climbing = it never became healthy."
     inverse: true
+    cloze:
+      text: "A container that exits non-zero on startup is restarted by Kubernetes with a growing delay called {} back-off."
+      answer: "exponential"
+    mc:
+      - "ImagePullBackOff — a registry or image-pull-secret problem"
+      - "OOMKilled — the container exceeded its memory limit"
+      - "Evicted — the node came under resource pressure"
 
   - topic: "Declarative apply vs imperative set-image"
     desc: "`kubectl apply -f` is DECLARATIVE — you describe the desired state in manifests and the cluster reconciles toward it. `kubectl set image` (or edit/patch) is IMPERATIVE — a direct one-off change. The imperative change works, but it DRIFTS from your manifests, so the next `apply` reverts it."

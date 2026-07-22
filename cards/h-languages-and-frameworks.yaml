@@ -37,6 +37,13 @@ cards:
     extras:
       - label: e.g.
         text: a FastAPI service wraps a PyTorch model — same language for the API and the ML, with NumPy/pandas/transformers close at hand.
+    table:
+      - ["Tool", "Role"]
+      - ["FastAPI", "the REST API layer"]
+      - ["PyTorch", "define / train the model"]
+      - ["pandas / NumPy", "data wrangling & numerics"]
+      - ["transformers (Hugging Face)", "pretrained models & tokenizers"]
+      - ["Pydantic", "validate request / response schemas"]
     hint: Why one language spans both the API and the ML model.
   - topic: Rust & Go for systems
     desc: Why a control plane picks these — performance, memory safety (Rust), and simple concurrency (Go).

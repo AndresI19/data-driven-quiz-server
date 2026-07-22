@@ -28,6 +28,13 @@ cards:
       - label: Trap
         text: "The failure is SILENT — the tag is created, but the build that should follow never starts. Nothing tells you."
     inverse: true
+    cloze:
+      text: "A workflow authenticated with the default GITHUB_TOKEN cannot {} another workflow — a guard against infinite CI loops."
+      answer: "trigger"
+    multi:
+      - "chain both steps in one workflow via needs:"
+      - "ride the same triggering event in two workflows"
+      - "dispatch with a separate fine-grained token (PAT)"
 
   - topic: "repository_dispatch"
     desc: "A GitHub Actions event that lets one repository (or an external system) trigger a workflow in ANOTHER repo via an authenticated API POST. Used for cross-repo pipelines — e.g. an app repo tells a central deploy repo 'build and ship version X'."

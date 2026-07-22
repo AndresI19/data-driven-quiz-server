@@ -19,7 +19,6 @@ import {
   renderCW,
   renderCZ,
   renderDM,
-  renderFB,
   renderIV,
   renderMA,
   renderMS,
@@ -45,7 +44,6 @@ export function hud(): string {
 // Each resolved mode → its renderer. A data-driven table rather than a nine-arm if/else chain; any
 // mode not listed falls back to renderMS, exactly as the old trailing `else` did.
 const RENDERERS: Record<string, (c: GameCard) => void> = {
-  fb: renderFB,
   bf: renderBF,
   cz: renderCZ,
   ma: renderMA,

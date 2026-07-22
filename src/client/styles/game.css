@@ -2836,7 +2836,13 @@ body.ambient .saved-note {
   border-radius: 11px;
   padding: 10px 12px;
   font-size: 13.5px;
-  transition: border-color .12s, background .12s;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.oitem:active {
+  cursor: grabbing;
 }
 .oitem .onum {
   flex: none;
@@ -2853,28 +2859,21 @@ body.ambient .saved-note {
 .oitem .otxt {
   flex: 1;
 }
-.oitem .omove {
+.oitem .ohandle {
   flex: none;
-  display: flex;
-  gap: 4px;
-}
-.obtn {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--line);
-  background: var(--panel);
   color: var(--ink);
-  border-radius: 8px;
-  font-size: 12px;
+  opacity: 0.4;
+  font-size: 15px;
   line-height: 1;
-  cursor: pointer;
-  transition: border-color .12s, background .12s, opacity .12s;
 }
-.obtn:hover:not(:disabled) {
+.oitem.dragging {
   border-color: var(--accent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 22%, transparent);
+  opacity: 0.92;
+  cursor: grabbing;
 }
-.obtn:disabled {
-  opacity: 0.3;
+.oitem.ogood,
+.oitem.obad {
   cursor: default;
 }
 .oitem.ogood {
@@ -2893,4 +2892,39 @@ body.ambient .saved-note {
 }
 .ol-steps li {
   margin: 3px 0;
+}
+
+/* ---- study mode: read every card in full ---- */
+.studybtn {
+  width: 100%;
+  margin-top: 10px;
+  justify-content: center;
+}
+.study-sec {
+  margin-top: 22px;
+}
+.study-sech {
+  font-weight: 700;
+  font-size: 15px;
+  padding: 6px 0 8px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--cat, var(--accent));
+  color: var(--cat, var(--accent));
+}
+.study-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat, var(--accent));
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.study-topic {
+  font-weight: 650;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.study-id {
+  opacity: 0.5;
+  font-weight: 400;
 }
