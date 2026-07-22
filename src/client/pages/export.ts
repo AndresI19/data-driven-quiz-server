@@ -11,6 +11,8 @@ import { setup } from './home.js';
 /** One flagged card, paired with whatever note explains why it was flagged. */
 interface AuditEntry {
   id: string;
+  /** The quiz mode the flag pertains to (cz, ma, cg, …), or null for a whole-card flag. */
+  variant: string | null;
   deck: string;
   section: string;
   /** Which card in the deck, counting from 1 — the number the id encodes. */
@@ -18,6 +20,12 @@ interface AuditEntry {
   topic: string;
   /** The reason to act on. A flag with no note carries no instruction, so it stays null. */
   note: string | null;
+}
+
+/** A flag key is `id:mode` (a specific variant) or a bare `id` (a whole-card flag from review). */
+function flagCardId(key: string): string {
+  const i = key.lastIndexOf(':');
+  return i > 0 ? key.slice(0, i) : key;
 }
 
 /* The flag audit: the machine-readable half of this page, for pasting into a Claude session that
@@ -31,14 +39,20 @@ interface AuditEntry {
    card without re-deriving the id scheme — and it is a standing warning that editing a card in place
    is safe while inserting, deleting or reordering silently repoints every flag after it. */
 export function buildAudit(flagged: string[], notes: Record<string, string>): string {
-  const entries: AuditEntry[] = flagged.map((id) => ({
-    id,
-    deck: byId[id].cat,
-    section: CATS[byId[id].cat] ?? byId[id].cat,
-    position: Number(id.slice(byId[id].cat.length)),
-    topic: byId[id].topic,
-    note: notes[id]?.trim() || null,
-  }));
+  const entries: AuditEntry[] = flagged.map((key) => {
+    const id = flagCardId(key);
+    const variant = key.length > id.length ? key.slice(id.length + 1) : null;
+    const c = byId[id];
+    return {
+      id,
+      variant,
+      deck: c.cat,
+      section: CATS[c.cat] ?? c.cat,
+      position: Number(id.slice(c.cat.length)),
+      topic: c.topic,
+      note: notes[id]?.trim() || null,
+    };
+  });
   return JSON.stringify({ flagged: entries.length, cards: entries }, null, 2);
 }
 
@@ -63,17 +77,24 @@ export function exportPage(): void {
     }
   }
   const ids = Object.keys(notes).filter((id) => byId[id]);
-  const flagged = Object.keys(DB.flags).filter((id) => byId[id]);
+  const flagged = Object.keys(DB.flags).filter((k) => byId[flagCardId(k)]);
+  const cardFlagged = (cardId: string): boolean => flagged.some((k) => flagCardId(k) === cardId);
   const noteBlock = ids.length
     ? ids
         .map(
           (id) =>
-            `${DB.flags[id] ? '⚑ ' : ''}[${id}] ${byId[id].topic}\n    ${notes[id].replace(/\n/g, '\n    ')}`,
+            `${cardFlagged(id) ? '⚑ ' : ''}[${id}] ${byId[id].topic}\n    ${notes[id].replace(/\n/g, '\n    ')}`,
         )
         .join('\n\n')
     : '(no notes recorded yet)';
   const flagBlock = flagged.length
-    ? `⚑ FLAGGED FOR REVIEW (${flagged.length}):\n${flagged.map((id) => `  [${id}] ${byId[id].topic}${notes[id] ? '' : ' — (no note)'}`).join('\n')}\n\n`
+    ? `⚑ FLAGGED FOR REVIEW (${flagged.length}):\n${flagged
+        .map((k) => {
+          const id = flagCardId(k);
+          const variant = k.length > id.length ? ` · ${k.slice(id.length + 1)}` : '';
+          return `  [${id}${variant}] ${byId[id].topic}${notes[id] ? '' : ' — (no note)'}`;
+        })
+        .join('\n')}\n\n`
     : '';
   const digest = flagBlock + noteBlock;
   // Only an admin can flag (quiz/engine.ts), so only an admin has an audit to export. A player who

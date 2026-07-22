@@ -34,12 +34,18 @@ describe('buildAudit', () => {
     expect(out.flagged).toBe(1);
     expect(out.cards[0]).toEqual({
       id: 'A1',
+      variant: null,
       deck: 'A',
       section: 'Scalability & System Design',
       position: 1,
       topic: 'Stateless vs. stateful applications',
       note: 'the cloze answer is ambiguous',
     });
+  });
+
+  test('parses a variant flag key (id:mode) into id + variant', () => {
+    const out = JSON.parse(buildAudit(['A1:cg'], { A1: 'the cg distractors are wrong' }));
+    expect(out.cards[0]).toMatchObject({ id: 'A1', variant: 'cg', note: 'the cg distractors are wrong' });
   });
 
   // A bare flag says "something is wrong here" without saying what. It must still export — losing it
