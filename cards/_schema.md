@@ -48,6 +48,7 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 | `recall` | bool | Open-recall only — suppresses cloze/match/multi/inverse/fill. |
 | `inverse` | bool | Adds a reverse-recall variant (given the definition, recall the term). |
 | `fill` | `{text, blanks, distractors?, code?}` | Drag labels into a passage's blanks. `text` holds `{0}`,`{1}`,… placeholders; `code: true` renders it as a monospace block (a YAML card is just fill + code). |
+| `categorize` | `{columns: [{header, items}]}` | Sort a pool of items into category columns (many-to-one, unlike match). ≥2 columns; the pool is the union of all `items` — no dummies. Norm: ≤3 columns. |
 | `code` | `{lang?, text}` | A code block (`text` is the whole block). Enables read-the-code (pick what it does). |
 | `codeselect` | `{prompt, answer}` | With `code`: select-the-lines. `answer` is the 0-based indices of the correct lines. |
 

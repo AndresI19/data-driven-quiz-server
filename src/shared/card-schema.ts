@@ -19,6 +19,14 @@ export interface Fill {
   code?: boolean; // render the passage as a monospace code block — a YAML card is just fill + code: true
 }
 
+export interface CatColumn {
+  header: string; // the category label
+  items: string[]; // the pool items that correctly belong under it
+}
+export interface Categorize {
+  columns: CatColumn[]; // ≥2 categories; the pool is the union of all items — no dummies
+}
+
 /** Authored form: the block is a single literal string (YAML `text: |`), split into lines on load. */
 export interface CodeSource {
   lang?: string; // display hint only (dockerfile, yaml, ts, sql, bash, …)
@@ -53,6 +61,7 @@ export interface AuthoredCard {
   recall?: boolean;
   inverse?: boolean;
   fill?: Fill; // drag labels into a passage's blanks (prose, or a code block when code: true) → (fl)
+  categorize?: Categorize; // sort a pool of items into category columns → "categorize" (cg)
   order?: string[]; // steps in their CORRECT sequence → enables "put in order" (or)
   code?: CodeSource; // a code block → enables "what is this doing?" (cw)
   codeselect?: CodeSelect; // + a block → enables "select the lines" (cs)
@@ -75,6 +84,7 @@ export interface GameCard {
   recall: boolean;
   inverse: boolean;
   fill: Fill | null;
+  categorize: Categorize | null;
   order: string[] | null; // correct step sequence, or null when the card has none
   code: Code | null;
   codeselect: CodeSelect | null;

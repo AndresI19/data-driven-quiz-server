@@ -76,6 +76,21 @@ cards:
       - - Ownership
         - compiler frees at compile time, no runtime GC
         - Rust
+    categorize:
+      columns:
+        - header: Garbage collection
+          items:
+            - "Java"
+            - "Go"
+            - "Python"
+            - "C#"
+        - header: Manual (free)
+          items:
+            - "C"
+            - "C++"
+        - header: Ownership
+          items:
+            - "Rust"
     cloze:
       text: Rust frees memory via compile-time {}, avoiding a runtime garbage collector.
       answer: ownership

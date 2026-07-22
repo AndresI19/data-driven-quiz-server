@@ -54,6 +54,15 @@ export function orderOK(current: string[], answer: string[]): boolean {
   if (current.length !== answer.length) return false;
   return answer.every((step, i) => current[i] === step);
 }
+/**
+ * Grade a "categorize" answer: every pool item must sit in its correct column. `placement[i]` is the
+ * column the player dropped item i into (−1 = still in the pool); `correct[i]` is where it belongs.
+ * All-or-nothing, and a still-pooled item can never match a real column, so it fails the card.
+ */
+export function categorizeOK(placement: number[], correct: number[]): boolean {
+  if (placement.length !== correct.length) return false;
+  return correct.every((col, i) => placement[i] === col);
+}
 export function rate(c: GameCard): number {
   const s = DB.stats[c.id];
   return s?.seen ? s.missed / s.seen : 0.9;

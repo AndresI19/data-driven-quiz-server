@@ -214,6 +214,7 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
     recall,
     inverse: Boolean(c.inverse) && !recall,
     fill: recall ? null : (c.fill ?? null),
+    categorize: recall ? null : (c.categorize ?? null),
     order: recall ? null : (c.order ?? null),
     code: codeLines(c),
     codeselect: recall ? null : (c.codeselect ?? null),

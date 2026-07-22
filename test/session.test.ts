@@ -29,6 +29,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   recall: false,
   inverse: false,
   fill: null,
+  categorize: null,
   order: null,
   code: null,
   codeselect: null,
@@ -61,6 +62,7 @@ describe('pickDir — mixed builds a candidate list from the card fields', () =>
     multi: ['a'],
     inverse: true,
     fill: { text: '{0}', blanks: ['x'], distractors: [] },
+    categorize: { columns: [{ header: 'A', items: ['x'] }, { header: 'B', items: ['y'] }] },
     order: ['a', 'b'],
     code: { lang: 'ts', lines: ['x'] },
     codeselect: { prompt: 'p', answer: [0] },
@@ -77,15 +79,16 @@ describe('pickDir — mixed builds a candidate list from the card fields', () =>
   });
 
   test('a fully-featured card offers every objective mode in field order', () => {
-    // m = ['bf','cz','ma','ms','iv','fl','or','cw','cs'] (length 9) — recall (fb) is gone.
+    // m = ['bf','cz','ma','ms','iv','fl','cg','or','cw','cs'] (length 10) — recall (fb) is gone.
     const at = (r: number): string => {
       vi.spyOn(Math, 'random').mockReturnValue(r);
       return pickDir('mixed', full);
     };
     expect(at(0)).toBe('bf'); // index 0
-    expect(at(0.999)).toBe('cs'); // floor(8.99) = 8, last element
-    expect(at(0.5)).toBe('iv'); // floor(4.5) = 4
-    expect(at(1 / 9 + 0.01)).toBe('cz'); // index 1
+    expect(at(0.999)).toBe('cs'); // floor(9.99) = 9, last element
+    expect(at(0.5)).toBe('fl'); // floor(5) = 5
+    expect(at(0.6)).toBe('cg'); // floor(6) = 6
+    expect(at(1 / 10 + 0.01)).toBe('cz'); // index 1
   });
 
   test('cs joins the list only when the card has BOTH code and codeselect', () => {

@@ -145,6 +145,7 @@ const DIRECTION_LABELS: Record<string, string> = {
   ms: 'multi',
   iv: 'inverse',
   fl: 'fill the blanks',
+  cg: 'categorize',
   or: 'order',
   cw: 'read the code',
   cs: 'select lines',

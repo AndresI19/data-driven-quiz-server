@@ -1529,6 +1529,53 @@ kbd {
   pointer-events: none;
   text-decoration: line-through;
 }
+/* ---- categorize: sort a pool of chips into category columns ---- */
+.catcols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.catcol {
+  flex: 1 1 140px;
+  min-width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.cathead {
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  border-bottom: 1px solid var(--line);
+}
+.catdrop {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  min-height: 64px;
+}
+.catpool {
+  margin-top: 14px;
+  min-height: 42px;
+}
+.dchip.cgood {
+  border-color: var(--good);
+  background: var(--good-bg);
+  color: var(--good);
+  opacity: 1;
+}
+.dchip.cbad {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+  color: var(--bad);
+  opacity: 1;
+}
 .cz-ok {
   color: var(--good);
   font-weight: 800;
