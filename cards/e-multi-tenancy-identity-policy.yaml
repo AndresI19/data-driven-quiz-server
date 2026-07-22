@@ -136,6 +136,14 @@ cards:
       answer: PDP
       alts:
         - policy decision point
+    fill:
+      text: "The {0} evaluates policy and answers allow-or-deny; the {1} sits in the request path and enforces that answer."
+      blanks:
+        - "PDP"
+        - "PEP"
+      distractors:
+        - "PAP"
+        - "PIP"
     hint: Two halves — one decides allow/deny, one enforces it in the request path.
   - topic: Secrets management
     desc: Vaulting credentials and keys (HashiCorp Vault, cloud KMS) instead of hardcoding them.

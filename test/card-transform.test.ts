@@ -157,7 +157,7 @@ test('toGameCard suppresses objective modes on recall-only cards', () => {
   assert.equal(gc.cloze, null);
   assert.equal(gc.match, null);
   assert.equal(gc.multi, null);
-  assert.equal(gc.manifest, null);
+  assert.equal(gc.fill, null);
   assert.equal(gc.inverse, false); // inverse is suppressed on recall cards
 });
 

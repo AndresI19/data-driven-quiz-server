@@ -1464,6 +1464,16 @@ kbd {
   overflow-x: auto;
   margin-top: 10px;
 }
+/* prose passage for a non-code fill card — same drop-slots, flowing text instead of a code block */
+.filltext {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 15px;
+  line-height: 2.2;
+  margin-top: 10px;
+}
 .dslot {
   display: inline-block;
   min-width: 104px;

@@ -26,7 +26,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   mc: null,
   recall: false,
   inverse: false,
-  manifest: null,
+  fill: null,
   order: null,
   code: null,
   codeselect: null,
@@ -57,20 +57,20 @@ describe('baseSeconds — ma (match): max(20, min(5, pairs||4) * 8)', () => {
   });
 });
 
-describe('baseSeconds — dm (label the YAML): max(24, blanks * 9)', () => {
+describe('baseSeconds — fl (fill the blanks): max(24, blanks * 9)', () => {
   const withBlanks = (n: number): GameCard =>
-    card({ manifest: { lines: [], blanks: Array(n).fill('x'), distractors: [] } });
+    card({ fill: { text: '{0}', blanks: Array(n).fill('x'), distractors: [] } });
   test('2 blanks → 24 (floor wins over 18)', () => {
-    expect(baseSeconds(withBlanks(2), 'dm')).toBe(24);
+    expect(baseSeconds(withBlanks(2), 'fl')).toBe(24);
   });
   test('3 blanks → 27', () => {
-    expect(baseSeconds(withBlanks(3), 'dm')).toBe(27);
+    expect(baseSeconds(withBlanks(3), 'fl')).toBe(27);
   });
   test('5 blanks → 45', () => {
-    expect(baseSeconds(withBlanks(5), 'dm')).toBe(45);
+    expect(baseSeconds(withBlanks(5), 'fl')).toBe(45);
   });
-  test('no manifest → defaults n=4 → 36', () => {
-    expect(baseSeconds(card({ manifest: null }), 'dm')).toBe(36);
+  test('no fill → defaults n=4 → 36', () => {
+    expect(baseSeconds(card({ fill: null }), 'fl')).toBe(36);
   });
 });
 

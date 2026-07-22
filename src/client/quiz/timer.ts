@@ -11,8 +11,8 @@ export function baseSeconds(c: GameCard, mode: string): number {
     const n = Math.min(5, (c.match || []).length || 4);
     return Math.max(20, n * 8);
   }
-  if (mode === 'dm') {
-    const n = c.manifest?.blanks ? c.manifest.blanks.length : 4;
+  if (mode === 'fl') {
+    const n = c.fill?.blanks ? c.fill.blanks.length : 4;
     return Math.max(24, n * 9);
   }
   if (mode === 'ms') {

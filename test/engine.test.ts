@@ -33,7 +33,7 @@ const DIR: Record<string, string> = {
   ma: 'match',
   ms: 'select all',
   iv: 'name it',
-  dm: 'label the YAML',
+  fl: 'label the config',
   cw: 'read the code',
   cs: 'select lines',
 };
@@ -53,7 +53,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   mc: null,
   recall: false,
   inverse: false,
-  manifest: null,
+  fill: null,
   order: null,
   code: null,
   codeselect: null,
@@ -65,7 +65,7 @@ const MATCH: [string, string][] = [
   ['LB', 'spreads'],
   ['CDN', 'caches'],
 ];
-const MANIFEST = { lines: ['kind: {0}'], blanks: ['Deployment'], distractors: ['Service'] };
+const FILL = { text: 'kind: {0}', blanks: ['Deployment'], distractors: ['Service'], code: true };
 const CODE = { lang: 'dockerfile', lines: ['FROM node', 'RUN x', 'CMD y'] };
 const CODESELECT = { prompt: 'select', answer: [1] };
 
@@ -79,9 +79,9 @@ const CARDS: GameCard[] = [
   card({ id: 'HAS_MULTI', multi: ['a', 'b'] }),
   card({ id: 'NO_INV', inverse: false }),
   card({ id: 'HAS_INV', inverse: true }),
-  card({ id: 'DM_NO_MAN_MATCH', manifest: null, match: MATCH }),
-  card({ id: 'DM_NO_MAN_NO_MATCH', manifest: null, match: null }),
-  card({ id: 'HAS_MAN', manifest: MANIFEST }),
+  card({ id: 'FL_NO_FILL_MATCH', fill: null, match: MATCH }),
+  card({ id: 'FL_NO_FILL_NO_MATCH', fill: null, match: null }),
+  card({ id: 'HAS_FILL', fill: FILL }),
   card({ id: 'NO_CODE', code: null }),
   card({ id: 'CS_NO_CODE', code: null, codeselect: null }),
   card({ id: 'CS_CODE_NO_SEL', code: CODE, codeselect: null }),
@@ -141,9 +141,10 @@ describe('renderQ — mode-fallback chain', () => {
     ['ms', 'NO_MULTI', 'bf'], // ms without multi → bf
     ['iv', 'NO_INV', 'bf'], // iv without inverse → bf (recall removed)
     ['iv', 'HAS_INV', 'iv'], // iv kept
-    ['dm', 'DM_NO_MAN_MATCH', 'ma'], // dm without manifest but with match → ma
-    ['dm', 'DM_NO_MAN_NO_MATCH', 'bf'], // dm without manifest, no match → bf
-    ['dm', 'HAS_MAN', 'dm'], // dm kept
+    ['fl', 'FL_NO_FILL_MATCH', 'bf'], // fl without fill → bf (match is irrelevant, unlike old dm)
+    ['fl', 'FL_NO_FILL_NO_MATCH', 'bf'], // fl without fill → bf
+    ['fl', 'HAS_FILL', 'fl'], // fl kept
+    ['dm', 'HAS_FILL', 'fl'], // legacy dm folds into fill
     ['cw', 'NO_CODE', 'bf'], // cw without code → bf
     ['cs', 'CS_NO_CODE', 'bf'], // cs without code → bf
     ['cs', 'CS_CODE_NO_SEL', 'cw'], // cs with code but no codeselect → cw

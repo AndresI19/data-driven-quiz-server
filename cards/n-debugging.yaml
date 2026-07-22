@@ -181,13 +181,14 @@ cards:
       - "Lower initialDelaySeconds on the liveness probe"
       - "Raise the pod's CPU limit"
       - "Add a preStop lifecycle hook"
-    manifest:
-      lines:
-        - "startupProbe:"
-        - "  httpGet:"
-        - "    path: {0}"
-        - "  failureThreshold: {1}"
-        - "  periodSeconds: 10"
+    fill:
+      code: true
+      text: |
+        startupProbe:
+          httpGet:
+            path: {0}
+          failureThreshold: {1}
+          periodSeconds: 10
       blanks:
         - "/healthz"
         - "30"

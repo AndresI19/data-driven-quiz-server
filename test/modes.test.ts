@@ -4,7 +4,7 @@ import {
   renderCS,
   renderCW,
   renderCZ,
-  renderDM,
+  renderFill,
   renderIV,
   renderMA,
   renderMS,
@@ -41,7 +41,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   mc: null,
   recall: true,
   inverse: true,
-  manifest: null,
+  fill: null,
   order: null,
   code: null,
   codeselect: null,
@@ -65,9 +65,9 @@ const MATCH = card({
   ],
 });
 const MULTI = card({ id: 'A4', multi: ['availability', 'partition tolerance'] });
-const MANIFEST = card({
+const FILL = card({
   id: 'A5',
-  manifest: { lines: ['kind: {0}', 'replicas: {1}'], blanks: ['Deployment', '3'], distractors: ['Service'] },
+  fill: { text: 'kind: {0}\nreplicas: {1}', blanks: ['Deployment', '3'], distractors: ['Service'], code: true },
 });
 const CODE = card({
   id: 'A6',
@@ -106,7 +106,7 @@ const PAYLOAD: CardsPayload = {
     CLOZE,
     MATCH,
     MULTI,
-    MANIFEST,
+    FILL,
     card({ id: 'B1', topic: 'Circuit breaker' }),
     card({ id: 'B2', topic: 'Message queue' }),
     card({ id: 'B3', topic: 'Consistent hashing' }),
@@ -148,7 +148,7 @@ const MODES: [string, (c: GameCard) => void, GameCard, string][] = [
   ['ma', renderMA, MATCH, 'match'],
   ['ms', renderMS, MULTI, 'select all'],
   ['iv', renderIV, card(), 'name it'],
-  ['dm', renderDM, MANIFEST, 'label the YAML'],
+  ['fl', renderFill, FILL, 'label the config'],
   ['cw', renderCW, CODE, 'read the code'],
   ['cs', renderCS, CODESELECT, 'select lines'],
 ];

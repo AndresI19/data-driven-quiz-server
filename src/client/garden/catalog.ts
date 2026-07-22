@@ -300,7 +300,7 @@ export const REWARD_BASE: Record<string, number> = {
   iv: 24,
   ma: 40,
   ms: 34,
-  dm: 40,
+  fl: 40,
   cw: 22,
   cs: 40,
 };

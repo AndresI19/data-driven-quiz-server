@@ -12,7 +12,7 @@ export const MODE_REQUIRES: Record<string, (c: GameCard) => boolean> = {
   ma: (c) => !!c.match,
   ms: (c) => !!c.multi,
   iv: (c) => !!c.inverse,
-  dm: (c) => !!c.manifest,
+  fl: (c) => !!c.fill,
   or: (c) => !!c.order,
   cw: (c) => !!c.code,
   cs: (c) => !!(c.code && c.codeselect),
@@ -20,7 +20,7 @@ export const MODE_REQUIRES: Record<string, (c: GameCard) => boolean> = {
 
 // The field-gated modes in canonical order (matches session.pickDir's original push order, which the
 // dashboard and the mixed-mode random pick depend on).
-const GATED_MODES = ['cz', 'ma', 'ms', 'iv', 'dm', 'or', 'cw', 'cs'] as const;
+const GATED_MODES = ['cz', 'ma', 'ms', 'iv', 'fl', 'or', 'cw', 'cs'] as const;
 
 /** The modes available for a card under the 'mixed' direction: bf (identify) always, plus each gated
  *  mode the card's fields enable. Recall (fb) is intentionally absent so the rotation only ever asks
@@ -35,12 +35,12 @@ export function supportsMode(c: GameCard, mode: string): boolean {
   return !MODE_REQUIRES[mode] || MODE_REQUIRES[mode](c);
 }
 
-/** Downgrade a requested mode to one the card actually supports: dm→ma|bf, cs→cw|bf, everything else
- *  gated→bf. A stale 'fb' (from a resumed pre-removal session) also lands on identify. */
+/** Downgrade a requested mode to one the card actually supports: cs→cw|bf, everything else gated→bf.
+ *  A stale 'fb'/'dm' (from a resumed pre-refactor session) also lands on identify / its replacement. */
 export function resolveMode(requested: string, c: GameCard): string {
   if (requested === 'fb') return 'bf'; // recall removed — resume any old fb card as identify
+  if (requested === 'dm') return c.fill ? 'fl' : 'bf'; // label-the-YAML folded into fill
   if (MODE_REQUIRES[requested] && !MODE_REQUIRES[requested](c)) {
-    if (requested === 'dm') return c.match ? 'ma' : 'bf';
     if (requested === 'cs') return c.code ? 'cw' : 'bf';
     return 'bf';
   }
