@@ -471,26 +471,32 @@ export function renderIV(c: GameCard): void {
   });
 }
 
-/** Label the YAML: drag labels into the blanks of a manifest (or tap a label, then a blank). */
-export function renderDM(c: GameCard): void {
-  const M = c.manifest!;
-  const chips = shuffle(M.blanks.concat(M.distractors || []).map((t) => ({ t })));
+/**
+ * Fill: drag each label into its blank in a passage — prose by default, or a monospace code block
+ * when `fill.code` is set. The generalized form of the old "label the YAML": a YAML card is just a
+ * fill card with `code: true`, so prose concepts and config share one interaction and one renderer.
+ */
+export function renderFill(c: GameCard): void {
+  const F = c.fill!;
+  const chips = shuffle(F.blanks.concat(F.distractors || []).map((t) => ({ t })));
   let sel: HTMLElement | null = null;
-  const codeHtml = M.lines
-    .map((line) =>
-      esc(line).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`),
-    )
-    .join('\n');
+  // esc() leaves the {N} placeholders untouched (they contain no HTML-special chars), so we can swap
+  // them for drop-slots afterwards. Newlines survive too, so a code passage renders inside <pre>.
+  const withSlots = (s: string): string =>
+    esc(s).replace(/\{(\d+)\}/g, (_m, si) => `<span class="dslot" data-si="${si}" tabindex="0"></span>`);
+  const passage = F.code
+    ? `<pre class="dmcode">${withSlots(F.text)}</pre>`
+    : `<div class="filltext">${withSlots(F.text)}</div>`;
   const chipHtml = chips
     .map((o, i) => `<span class="dchip" draggable="true" data-ci="${i}">${esc(o.t)}</span>`)
     .join('');
 
   const ses = drawCard(
     c,
-    'label the YAML',
+    F.code ? 'label the config' : 'fill the terms',
     `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
       <div class="ptip">Drag each label into the right blank — or tap a label, then tap a blank. Fill every blank.</div>
-      <pre class="dmcode">${codeHtml}</pre>
+      ${passage}
       <div class="dmtray" id="dmtray">${chipHtml}</div>
       <div class="actions" id="act"><button class="btn primary" id="dmcheck" disabled>Check</button></div>`,
   );
@@ -582,7 +588,7 @@ export function renderDM(c: GameCard): void {
       const si = +slot.dataset.si!;
       const ci = slot.dataset.ci;
       const got = ci != null && ci !== '' ? chips[+ci].t : null;
-      const want = M.blanks[si];
+      const want = F.blanks[si];
       if (got === want) {
         slot.classList.add('dgood');
       } else {
@@ -592,7 +598,7 @@ export function renderDM(c: GameCard): void {
       }
       slot.classList.add('filled');
     });
-    score(c, allRight, 'dm');
+    score(c, allRight, 'fl');
 
     endGraded(
       c,

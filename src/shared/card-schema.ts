@@ -12,10 +12,11 @@ export interface Cloze {
   alts?: string[];
 }
 
-export interface Manifest {
-  lines: string[]; // lines containing {0}, {1}, … placeholders
+export interface Fill {
+  text: string; // passage with {0}, {1}, … placeholders; newlines allowed (rendered as lines when code)
   blanks: string[]; // correct label for each placeholder, in order
   distractors?: string[];
+  code?: boolean; // render the passage as a monospace code block — a YAML card is just fill + code: true
 }
 
 /** Authored form: the block is a single literal string (YAML `text: |`), split into lines on load. */
@@ -51,7 +52,7 @@ export interface AuthoredCard {
   fold?: boolean;
   recall?: boolean;
   inverse?: boolean;
-  manifest?: Manifest;
+  fill?: Fill; // drag labels into a passage's blanks (prose, or a code block when code: true) → (fl)
   order?: string[]; // steps in their CORRECT sequence → enables "put in order" (or)
   code?: CodeSource; // a code block → enables "what is this doing?" (cw)
   codeselect?: CodeSelect; // + a block → enables "select the lines" (cs)
@@ -73,7 +74,7 @@ export interface GameCard {
   mc: string[] | null;
   recall: boolean;
   inverse: boolean;
-  manifest: Manifest | null;
+  fill: Fill | null;
   order: string[] | null; // correct step sequence, or null when the card has none
   code: Code | null;
   codeselect: CodeSelect | null;

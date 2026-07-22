@@ -360,23 +360,24 @@ cards:
         - URL prefix (Prefix / Exact)
       - - backend.service
         - the Service the path routes to
-    manifest:
-      lines:
-        - "apiVersion: networking.k8s.io/v1"
-        - "kind: Ingress"
-        - "spec:"
-        - "  {0}: nginx"
-        - "  rules:"
-        - "  - {1}: portal.example.com"
-        - "    http:"
-        - "      paths:"
-        - "      - {2}: /api"
-        - "        pathType: Prefix"
-        - "        backend:"
-        - "          service:"
-        - "            {3}: web-svc"
-        - "            port:"
-        - "              number: 80"
+    fill:
+      code: true
+      text: |
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        spec:
+          {0}: nginx
+          rules:
+          - {1}: portal.example.com
+            http:
+              paths:
+              - {2}: /api
+                pathType: Prefix
+                backend:
+                  service:
+                    {3}: web-svc
+                    port:
+                      number: 80
       blanks:
         - ingressClassName
         - host

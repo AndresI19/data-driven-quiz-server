@@ -28,7 +28,7 @@ if (mine.cards.length !== reference.cards.length) {
 }
 const FIELDS: (keyof GameCard)[] = [
   'id', 'cat', 'topic', 'back', 'backMasked', 'cloze', 'chars', 'hint', 'match', 'multi', 'mc',
-  'recall', 'inverse', 'manifest',
+  'recall', 'inverse', 'fill',
 ];
 const n = Math.min(mine.cards.length, reference.cards.length);
 for (let i = 0; i < n; i++) {

@@ -28,7 +28,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   mc: null,
   recall: false,
   inverse: false,
-  manifest: null,
+  fill: null,
   order: null,
   code: null,
   codeselect: null,
@@ -60,7 +60,7 @@ describe('pickDir — mixed builds a candidate list from the card fields', () =>
     match: [['a', 'b']],
     multi: ['a'],
     inverse: true,
-    manifest: { lines: [], blanks: ['x'], distractors: [] },
+    fill: { text: '{0}', blanks: ['x'], distractors: [] },
     order: ['a', 'b'],
     code: { lang: 'ts', lines: ['x'] },
     codeselect: { prompt: 'p', answer: [0] },
@@ -77,7 +77,7 @@ describe('pickDir — mixed builds a candidate list from the card fields', () =>
   });
 
   test('a fully-featured card offers every objective mode in field order', () => {
-    // m = ['bf','cz','ma','ms','iv','dm','or','cw','cs'] (length 9) — recall (fb) is gone.
+    // m = ['bf','cz','ma','ms','iv','fl','or','cw','cs'] (length 9) — recall (fb) is gone.
     const at = (r: number): string => {
       vi.spyOn(Math, 'random').mockReturnValue(r);
       return pickDir('mixed', full);

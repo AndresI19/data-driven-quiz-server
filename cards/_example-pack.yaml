@@ -44,16 +44,18 @@ cards:
       - Isolation
       - Durability
 
-  # 5. Add `manifest:` and it can also be served as label-the-YAML (dm).
+  # 5. Add `fill:` and it can also be served as fill-the-blanks (fl) — drag labels into a passage.
   #    {0}, {1}, … are the blanks; `blanks` is the answer in order; `distractors` are the decoys.
+  #    `code: true` renders the passage as a monospace block (drop it for a prose sentence instead).
   - topic: A Kubernetes Deployment
     desc: The object that manages a replicated, self-healing set of Pods.
-    manifest:
-      lines:
-        - 'apiVersion: apps/v1'
-        - 'kind: {0}'
-        - 'spec:'
-        - '  replicas: {1}'
+    fill:
+      code: true
+      text: |
+        apiVersion: apps/v1
+        kind: {0}
+        spec:
+          replicas: {1}
       blanks:
         - Deployment
         - '3'

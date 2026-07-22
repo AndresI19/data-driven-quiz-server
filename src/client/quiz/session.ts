@@ -144,7 +144,7 @@ const DIRECTION_LABELS: Record<string, string> = {
   ma: 'match',
   ms: 'multi',
   iv: 'inverse',
-  dm: 'label the YAML',
+  fl: 'fill the blanks',
   or: 'order',
   cw: 'read the code',
   cs: 'select lines',

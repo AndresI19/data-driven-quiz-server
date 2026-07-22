@@ -12,11 +12,12 @@ const ExtraSchema = z.object({ label: z.string(), text: z.string() }).strict();
 const ClozeSchema = z
   .object({ text: z.string(), answer: z.string(), alts: z.array(z.string()).optional() })
   .strict();
-const ManifestSchema = z
+const FillSchema = z
   .object({
-    lines: z.array(z.string()),
+    text: z.string(),
     blanks: z.array(z.string()),
     distractors: z.array(z.string()).optional(),
+    code: z.boolean().optional(),
   })
   .strict();
 const CodeSchema = z.object({ lang: z.string().optional(), text: z.string() }).strict();
@@ -40,7 +41,7 @@ const AuthoredCardSchema = z
     fold: z.boolean().optional(),
     recall: z.boolean().optional(),
     inverse: z.boolean().optional(),
-    manifest: ManifestSchema.optional(),
+    fill: FillSchema.optional(),
     order: z.array(z.string()).min(2).optional(),
     code: CodeSchema.optional(),
     codeselect: CodeSelectSchema.optional(),

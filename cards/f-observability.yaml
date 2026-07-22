@@ -11,6 +11,15 @@ cards:
     cloze:
       text: Metrics tell you what broke and traces tell you where; {} tell you why.
       answer: logs
+    fill:
+      text: "{0} tell you the error rate spiked; {1} show the stack trace; {2} show which service in the chain caused it."
+      blanks:
+        - "metrics"
+        - "logs"
+        - "traces"
+      distractors:
+        - "events"
+        - "alerts"
     hint: Three signal types that together explain what broke, why, and where.
   - topic: OpenTelemetry
     desc: The vendor-neutral standard for emitting traces, metrics, and logs.

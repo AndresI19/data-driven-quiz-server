@@ -45,9 +45,9 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 | `cloze` | `{text, answer, alts?}` | Fill-in-the-blank; `text` holds one `{}` placeholder. |
 | `hint` | string | Explicit "where to start" cue (else one is auto-derived from `desc`). |
 | `fold` | bool | Tuck extras/diagram behind a "More detail" disclosure. |
-| `recall` | bool | Open-recall only — suppresses cloze/match/multi/inverse/manifest. |
+| `recall` | bool | Open-recall only — suppresses cloze/match/multi/inverse/fill. |
 | `inverse` | bool | Adds a reverse-recall variant (given the definition, recall the term). |
-| `manifest` | `{lines, blanks, distractors?}` | Drag-labels-onto-a-YAML-block question. |
+| `fill` | `{text, blanks, distractors?, code?}` | Drag labels into a passage's blanks. `text` holds `{0}`,`{1}`,… placeholders; `code: true` renders it as a monospace block (a YAML card is just fill + code). |
 | `code` | `{lang?, text}` | A code block (`text` is the whole block). Enables read-the-code (pick what it does). |
 | `codeselect` | `{prompt, answer}` | With `code`: select-the-lines. `answer` is the 0-based indices of the correct lines. |
 
