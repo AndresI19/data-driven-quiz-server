@@ -12,7 +12,7 @@ import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
 import { esc, fmtClock, setKey, shuffle } from '../runtime/util.js';
-import { resolveMode } from './capabilities.js';
+import { availableModes, resolveMode } from './capabilities.js';
 import {
   renderBF,
   renderCS,
@@ -56,6 +56,16 @@ const RENDERERS: Record<string, (c: GameCard) => void> = {
   cs: renderCS,
   ms: renderMS,
 };
+/** Paint a card in a specific mode: reset the clock, run the renderer, add the chrome. Shared by
+ *  renderQ (the mode the session picked) and the admin variant-review button (a different mode). */
+function paint(c: GameCard, mode: string): void {
+  const ses = S.ses!;
+  S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
+  startTicker();
+  S.running = true;
+  (RENDERERS[mode] ?? renderMS)(c);
+  decorateCard(c, mode);
+}
 export function renderQ(): void {
   const ses = S.ses!;
   setPath('/quiz');
@@ -72,14 +82,9 @@ export function renderQ(): void {
   }
   audioInit();
   sndFlip();
-  const mode = resolveMode(it.d, c);
-  S.curLimit = ses.timeSpeed > 0 ? baseSeconds(c, mode) / ses.timeSpeed : 0;
-  startTicker();
-  S.running = true;
-  (RENDERERS[mode] ?? renderMS)(c);
-  decorateCard(c);
+  paint(c, resolveMode(it.d, c));
 }
-export function addFav(c: GameCard): void {
+export function addFav(c: GameCard, mode?: string): void {
   const qc = app.querySelector('.qcard') as HTMLElement | null;
   if (!qc) return;
   qc.style.setProperty('--cat', catAccent(c));
@@ -105,27 +110,48 @@ export function addFav(c: GameCard): void {
   // determined one. It writes to the player's own document and nothing else, so that is the right
   // level of protection. The export page reads these back (see pages/export.ts).
   if (!isAdmin()) return;
+  // A flag pertains to the VARIANT on screen, not the whole card: each mode is its own question and
+  // one can be broken while the rest are fine. The key is `id:mode` in the quiz; the review page has
+  // no active mode, so it passes none and flags the whole card (key = the bare id). Both forms round-
+  // trip through export.ts's parseFlag.
+  const flagKey = mode ? `${c.id}:${mode}` : c.id;
   const flag = document.createElement('button');
   const setF = (): void => {
-    const on = !!DB.flags[c.id];
+    const on = !!DB.flags[flagKey];
     flag.className = `flagbtn${on ? ' on' : ''}`;
     flag.innerHTML = on ? '⚑' : '⚐';
-    flag.title = on ? 'flagged for review — click to clear' : 'flag this card for review';
+    const what = mode ? `the ${mode} variant` : 'this card';
+    flag.title = on ? `flagged ${what} — click to clear` : `flag ${what} for review`;
   };
   setF();
   flag.addEventListener('click', () => {
-    if (DB.flags[c.id]) delete DB.flags[c.id];
-    else DB.flags[c.id] = true;
+    if (DB.flags[flagKey]) delete DB.flags[flagKey];
+    else DB.flags[flagKey] = true;
     saveDB();
     setF();
   });
   qc.appendChild(flag);
+  // Cycle to another variant (mode) of the SAME card so every alternative can be reviewed and flagged
+  // in one pass. Only in the quiz (mode given) and only when the card actually has >1 variant.
+  if (!mode) return;
+  const modes = availableModes(c);
+  if (modes.length < 2) return;
+  const idx = modes.indexOf(mode);
+  const vbtn = document.createElement('button');
+  vbtn.className = 'varbtn';
+  vbtn.innerHTML = `⟳ ${mode}`;
+  vbtn.title = `variant ${idx + 1}/${modes.length} — click to review the next one (flag each independently)`;
+  vbtn.addEventListener('click', () => {
+    sndFlip();
+    paint(c, modes[(idx + 1) % modes.length]);
+  });
+  qc.appendChild(vbtn);
 }
-export function decorateCard(c: GameCard): void {
+export function decorateCard(c: GameCard, mode?: string): void {
   const ses = S.ses!;
   const qc = app.querySelector('.qcard') as HTMLElement | null;
   if (!qc) return;
-  addFav(c);
+  addFav(c, mode);
   if (S.curLimit > 0) {
     const b = document.createElement('div');
     b.className = 'tbar';
