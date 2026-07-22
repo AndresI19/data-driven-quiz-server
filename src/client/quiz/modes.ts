@@ -1,7 +1,7 @@
 import type { GameCard } from '../../shared/card-schema.js';
-// The nine quiz modes: identify (BF), fill-in (CZ), match (MA), multi-select (MS), inverse (IV),
-// label-the-YAML (DM), order (OR), read-the-code (CW), and select-lines (CS). Open-ended recall was
-// removed — it awarded no points and could not be machine-graded.
+// The ten quiz modes: identify (BF), fill-in (CZ), match (MA), multi-select (MS), inverse (IV), fill
+// the blanks (FL), categorize (CG), order (OR), read-the-code (CW), and select-lines (CS). Open-ended
+// recall was removed — it awarded no points and could not be machine-graded.
 //
 // Each mode owns exactly one thing: how its question is asked and how the answer is read back. The
 // frame around that — the card shell, the scoring, the ending, the key guards — lives in card.ts, so
@@ -10,7 +10,7 @@ import { ACCENT_FALLBACK, MULTIPOOL, app } from '../runtime/data.js';
 import type { Session } from '../runtime/state.js';
 import { cssVarOr, esc, shuffle } from '../runtime/util.js';
 import { choiceIndex, drawCard, endCard, endGraded, modeKeys, score, typedFeedback } from './card.js';
-import { codeSelectOK, czOK, distractors, ivOK, orderOK } from './grading.js';
+import { categorizeOK, codeSelectOK, czOK, distractors, ivOK, orderOK } from './grading.js';
 import { advance } from './session.js';
 import { answeredNow } from './timer.js';
 
@@ -797,6 +797,140 @@ export function renderOR(c: GameCard): void {
     if (!ses.answered && e.key === 'Enter') {
       e.preventDefault();
       check(false);
+    }
+  });
+}
+
+/**
+ * Categorize: drag every pool item into the column it belongs to. Many items per column (the case
+ * one-to-one match can't express), and the pool has no dummies — every item belongs somewhere. Chip
+ * elements move between the pool and the column drop-zones, so a listener bound once survives the move.
+ */
+export function renderCat(c: GameCard): void {
+  const cols = c.categorize!.columns;
+  // Flatten to a shuffled pool; each chip keeps a stable id `i` and the index `ci` of its home column.
+  const pool = shuffle(cols.flatMap((col, ci) => col.items.map((t) => ({ t, ci })))).map((o, i) => ({
+    ...o,
+    i,
+  }));
+  const correctCol = pool.map((o) => o.ci);
+  const placement: number[] = pool.map(() => -1); // -1 = still in the pool
+  let sel: number | null = null; // selected chip id for tap-to-place
+
+  const colHtml = cols
+    .map(
+      (col, ci) =>
+        `<div class="catcol"><div class="cathead">${esc(col.header)}</div><div class="catdrop" data-col="${ci}"></div></div>`,
+    )
+    .join('');
+  const chipHtml = pool
+    .map((o) => `<span class="dchip" draggable="true" data-ci="${o.i}">${esc(o.t)}</span>`)
+    .join('');
+
+  const ses = drawCard(
+    c,
+    'categorize',
+    `<div class="topic" style="font-size:16px">${esc(c.topic)}</div>
+      <div class="ptip">Drag each item into the column it belongs to — or tap an item, then a column. Place them all.</div>
+      <div class="catcols">${colHtml}</div>
+      <div class="dmtray catpool" id="catpool">${chipHtml}</div>
+      <div class="actions" id="act"><button class="btn primary" id="catcheck" disabled>Check</button></div>`,
+  );
+
+  const poolEl = app.querySelector('#catpool') as HTMLElement;
+  const chip = (i: number): HTMLElement | null => app.querySelector(`.dchip[data-ci="${i}"]`);
+  const zoneOf = (col: number): HTMLElement =>
+    col < 0 ? poolEl : (app.querySelector(`.catdrop[data-col="${col}"]`) as HTMLElement);
+
+  function refresh(): void {
+    const b = app.querySelector('#catcheck') as HTMLButtonElement | null;
+    if (b) b.disabled = !placement.every((p) => p >= 0); // enabled once every item is placed
+  }
+  function place(i: number, col: number): void {
+    const ch = chip(i);
+    if (!ch) return;
+    zoneOf(col).appendChild(ch); // moving the element keeps its listeners
+    placement[i] = col;
+    if (sel === i) sel = null;
+    ch.classList.remove('sel');
+    refresh();
+  }
+
+  app.querySelectorAll('.dchip').forEach((chEl) => {
+    const ch = chEl as HTMLElement;
+    const id = +ch.dataset.ci!;
+    ch.addEventListener('dragstart', (ev) => {
+      const e = ev as DragEvent;
+      if (ses.answered) {
+        e.preventDefault();
+        return;
+      }
+      e.dataTransfer!.setData('text/plain', String(id));
+    });
+    ch.addEventListener('click', () => {
+      if (ses.answered) return;
+      if (sel === id) {
+        sel = null;
+        ch.classList.remove('sel');
+      } else {
+        if (sel != null) chip(sel)?.classList.remove('sel');
+        sel = id;
+        ch.classList.add('sel');
+      }
+    });
+  });
+
+  // Drop zones: every column, plus the pool (to send a chip back).
+  [...app.querySelectorAll('.catdrop'), poolEl].forEach((zEl) => {
+    const z = zEl as HTMLElement;
+    const col = z === poolEl ? -1 : +z.dataset.col!;
+    z.addEventListener('dragover', (e) => e.preventDefault());
+    z.addEventListener('drop', (ev) => {
+      const e = ev as DragEvent;
+      e.preventDefault();
+      if (ses.answered) return;
+      const ci = e.dataTransfer!.getData('text/plain');
+      if (ci !== '') place(+ci, col);
+    });
+    z.addEventListener('click', () => {
+      if (!ses.answered && sel != null) place(sel, col);
+    });
+  });
+
+  function check(timedOut: boolean): void {
+    if (ses.answered) return;
+    answeredNow();
+    const allRight = !timedOut && categorizeOK(placement, correctCol);
+    // Snap every chip into its CORRECT column, coloured by whether the player had placed it there.
+    pool.forEach((o) => {
+      const good = placement[o.i] === o.ci;
+      const ch = chip(o.i);
+      zoneOf(o.ci).appendChild(ch!);
+      ch?.classList.remove('sel');
+      ch?.classList.add(good ? 'cgood' : 'cbad');
+    });
+    score(c, allRight, 'cg');
+
+    endGraded(
+      c,
+      allRight,
+      timedOut,
+      '✓ all sorted!',
+      '✗ red = you had it elsewhere; every item is now shown in its correct column',
+      { reveal: true },
+    );
+  }
+
+  ses._onTimeout = () => check(true);
+  app.querySelector('#catcheck')!.addEventListener('click', () => check(false));
+
+  modeKeys((e) => {
+    if (!ses.answered && e.key === 'Enter') {
+      const b = app.querySelector('#catcheck') as HTMLButtonElement | null;
+      if (b && !b.disabled) {
+        e.preventDefault();
+        check(false);
+      }
     }
   });
 }

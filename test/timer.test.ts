@@ -27,6 +27,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   recall: false,
   inverse: false,
   fill: null,
+  categorize: null,
   order: null,
   code: null,
   codeselect: null,

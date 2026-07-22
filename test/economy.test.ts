@@ -22,7 +22,7 @@ import { S } from '../src/client/runtime/state.js';
 
 // Every mode whose answer the machine grades. 'fb' is excluded on purpose — it is self-graded, so
 // paying for it would pay the honour system rather than the answer.
-const MACHINE_GRADED_MODES = ['bf', 'cz', 'iv', 'ma', 'ms', 'fl', 'cw', 'cs'];
+const MACHINE_GRADED_MODES = ['bf', 'cz', 'iv', 'ma', 'ms', 'fl', 'cg', 'cw', 'cs'];
 
 beforeEach(() => {
   DB.coins = 0;

@@ -301,6 +301,7 @@ export const REWARD_BASE: Record<string, number> = {
   ma: 40,
   ms: 34,
   fl: 40,
+  cg: 40,
   cw: 22,
   cs: 40,
 };

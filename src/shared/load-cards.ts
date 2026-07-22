@@ -20,6 +20,11 @@ const FillSchema = z
     code: z.boolean().optional(),
   })
   .strict();
+const CategorizeSchema = z
+  .object({
+    columns: z.array(z.object({ header: z.string(), items: z.array(z.string()).min(1) }).strict()).min(2),
+  })
+  .strict();
 const CodeSchema = z.object({ lang: z.string().optional(), text: z.string() }).strict();
 const CodeSelectSchema = z
   .object({ prompt: z.string(), answer: z.array(z.number().int().nonnegative()) })
@@ -42,6 +47,7 @@ const AuthoredCardSchema = z
     recall: z.boolean().optional(),
     inverse: z.boolean().optional(),
     fill: FillSchema.optional(),
+    categorize: CategorizeSchema.optional(),
     order: z.array(z.string()).min(2).optional(),
     code: CodeSchema.optional(),
     codeselect: CodeSelectSchema.optional(),

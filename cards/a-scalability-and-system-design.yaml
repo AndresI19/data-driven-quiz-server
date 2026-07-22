@@ -195,6 +195,20 @@ cards:
       - - Used by
         - HTTP, TLS, SSH, DBs
         - DNS, VoIP, video, gaming, QUIC
+    categorize:
+      columns:
+        - header: TCP
+          items:
+            - "connection handshake first"
+            - "reliable — retransmits dropped packets"
+            - "in-order byte stream"
+            - "higher overhead (acks + state)"
+        - header: UDP
+          items:
+            - "connectionless — fires datagrams"
+            - "best-effort, may drop"
+            - "no ordering"
+            - "low overhead, fast"
     cloze:
       text: DNS, VoIP, and gaming favor {} because a dropped packet beats a late one.
       answer: UDP

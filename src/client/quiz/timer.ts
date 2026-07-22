@@ -15,6 +15,10 @@ export function baseSeconds(c: GameCard, mode: string): number {
     const n = c.fill?.blanks ? c.fill.blanks.length : 4;
     return Math.max(24, n * 9);
   }
+  if (mode === 'cg') {
+    const n = (c.categorize?.columns ?? []).reduce((s, col) => s + col.items.length, 0) || 6;
+    return Math.max(24, n * 6);
+  }
   if (mode === 'ms') {
     return 30;
   }

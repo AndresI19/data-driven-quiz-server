@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { czOK, ivOK, orderOK } from '../src/client/quiz/grading.js';
+import { categorizeOK, czOK, ivOK, orderOK } from '../src/client/quiz/grading.js';
 
 // The two graders decide whether a player was right, which makes them the highest-consequence pure
 // functions in the app — and until now the only completely untested ones. These are characterization
@@ -104,5 +104,25 @@ describe('orderOK — arrange in sequence', () => {
   test('repeated step labels grade by position, not identity', () => {
     // Two identical steps: any arrangement whose text matches position-for-position passes.
     expect(orderOK(['open', 'work', 'work', 'close'], ['open', 'work', 'work', 'close'])).toBe(true);
+  });
+});
+
+describe('categorizeOK — sort items into columns', () => {
+  const correct = [0, 0, 1, 2]; // items 0,1 → col 0; item 2 → col 1; item 3 → col 2
+
+  test('accepts every item in its correct column', () => {
+    expect(categorizeOK([0, 0, 1, 2], correct)).toBe(true);
+  });
+
+  test('rejects a single misplaced item', () => {
+    expect(categorizeOK([0, 1, 1, 2], correct)).toBe(false);
+  });
+
+  test('a still-pooled item (-1) can never match a column', () => {
+    expect(categorizeOK([0, 0, 1, -1], correct)).toBe(false);
+  });
+
+  test('rejects a wrong-length placement', () => {
+    expect(categorizeOK([0, 0, 1], correct)).toBe(false);
   });
 });

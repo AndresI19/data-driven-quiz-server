@@ -4,6 +4,7 @@ import {
   renderCS,
   renderCW,
   renderCZ,
+  renderCat,
   renderFill,
   renderIV,
   renderMA,
@@ -42,6 +43,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   recall: true,
   inverse: true,
   fill: null,
+  categorize: null,
   order: null,
   code: null,
   codeselect: null,
@@ -68,6 +70,15 @@ const MULTI = card({ id: 'A4', multi: ['availability', 'partition tolerance'] })
 const FILL = card({
   id: 'A5',
   fill: { text: 'kind: {0}\nreplicas: {1}', blanks: ['Deployment', '3'], distractors: ['Service'], code: true },
+});
+const CAT = card({
+  id: 'A7',
+  categorize: {
+    columns: [
+      { header: 'TCP', items: ['reliable', 'ordered'] },
+      { header: 'UDP', items: ['best-effort'] },
+    ],
+  },
 });
 const CODE = card({
   id: 'A6',
@@ -107,6 +118,7 @@ const PAYLOAD: CardsPayload = {
     MATCH,
     MULTI,
     FILL,
+    CAT,
     card({ id: 'B1', topic: 'Circuit breaker' }),
     card({ id: 'B2', topic: 'Message queue' }),
     card({ id: 'B3', topic: 'Consistent hashing' }),
@@ -149,6 +161,7 @@ const MODES: [string, (c: GameCard) => void, GameCard, string][] = [
   ['ms', renderMS, MULTI, 'select all'],
   ['iv', renderIV, card(), 'name it'],
   ['fl', renderFill, FILL, 'label the config'],
+  ['cg', renderCat, CAT, 'categorize'],
   ['cw', renderCW, CODE, 'read the code'],
   ['cs', renderCS, CODESELECT, 'select lines'],
 ];
