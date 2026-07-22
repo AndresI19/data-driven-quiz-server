@@ -110,6 +110,11 @@ cards:
     cloze:
       text: "On merge to main, one workflow cuts the release {} and a second reads it to dispatch the build-and-deploy — merge, tag, deploy, no manual step."
       answer: "tag"
+    order:
+      - "Merge the PR to main (a single push event)"
+      - "The version-tag workflow fires and cuts the release tag"
+      - "The release workflow fires on the same event and reads that tag"
+      - "It dispatches the build-and-deploy to the runner"
     extras:
       - label: Why two workflows
         text: "The recursion guard means the tag can't trigger the deploy, so both ride the push:main event; release WAITS for the tag to land, then reads it — it doesn't recompute the version."

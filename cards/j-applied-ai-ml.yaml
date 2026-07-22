@@ -97,4 +97,9 @@ cards:
     cloze:
       text: Ranking outputs, training a reward model, then fine-tuning the LLM against it is {} (Reinforcement Learning from Human Feedback).
       answer: RLHF
+    order:
+      - "Collect human rankings of model outputs (preference data)"
+      - "Train a reward model to predict those preferences"
+      - "Fine-tune the LLM with RL against the reward model"
+      - "Re-evaluate behavior and iterate"
     hint: Making a model behave as intended (RLHF) — distinct from measuring quality.

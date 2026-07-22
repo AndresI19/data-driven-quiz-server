@@ -81,6 +81,11 @@ cards:
       answer: compensating
       alts:
         - compensation
+    order:
+      - "Reserve the flight"
+      - "Charge the card"
+      - "Book the hotel"
+      - "If a later step fails, run compensating actions to undo the earlier ones"
     hint: Multi-step ops without one big transaction — how do you undo a failed step?
   - topic: Retries, timeouts, circuit breakers
     desc: The resilience patterns that stop one slow dependency from cascading into a full outage.

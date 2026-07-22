@@ -24,6 +24,12 @@ cards:
         - api server
         - apiserver
         - kube apiserver
+    order:
+      - "Authentication — verify WHO is making the request (cert / token)"
+      - "Authorization — RBAC check: is this identity allowed the action?"
+      - "Admission control — mutating, then validating webhooks / policy"
+      - "Schema validation — the object is well-formed"
+      - "Persist the object to etcd (the API server is the only writer)"
     hint: The one component every other component talks to.
   - topic: "Managed K8s: name the three (EKS / GKE / AKS)"
     desc: "The kubectl/YAML API is IDENTICAL on every cloud, so your manifests port unchanged. What does NOT port: provisioning, IAM, networking/CNI, load balancers, and storage classes — each cloud wires those its own way. Step one is just knowing which service is which cloud."
@@ -94,8 +100,13 @@ cards:
         text: "“A control plane is a reconciliation loop: declare desired state and a controller continuously drives reality toward it — level-triggered, so it self-heals after a crash or manual drift.”"
       - label: Trap
         text: "level- vs edge-triggered: K8s reacts to the current STATE, not the event that changed it — so a missed event doesn't break it; the next reconcile still converges."
+    order:
+      - "Observe the DESIRED state (the spec in etcd)"
+      - "Read the ACTUAL cluster state (status)"
+      - "Diff them to find the gap"
+      - "Act to drive actual toward desired"
+      - "Repeat forever — level-triggered, so it self-heals"
     items:
-      - "Loop: observe desired (spec) → diff actual (status) → act to converge → repeat"
       - e.g. the Deployment controller sees spec=3 replicas but only 2 exist → creates 1 more
       - "CRD (Custom Resource Definition) — teach the API server a NEW object type (kind: MyApp)"
       - Operator — a CRD + a custom controller encoding an app's ops knowledge (e.g. a Postgres operator that runs backups / failover)
@@ -274,10 +285,14 @@ cards:
   - topic: Debugging connectivity (503 / empty endpoints)
     desc: "When a Service times out or 503s, the fastest tell is `kubectl get endpoints <svc>`: if it's EMPTY, the Service's label selector matches no READY pod, so it has nowhere to send traffic."
     extras:
-      - label: How
-        text: "decision tree: DNS resolves? (nslookup) → Service has endpoints? (get endpoints) → pods Ready? (readiness probe) → NetworkPolicy blocking? → curl pod-IP vs service-IP to isolate routing."
       - label: e.g.
         text: empty endpoints usually = a selector/label mismatch OR all pods failing readiness.
+    order:
+      - "nslookup — does the Service name resolve? (DNS)"
+      - "kubectl get endpoints <svc> — is it populated?"
+      - "Are the backing pods Ready? (readiness probe passing)"
+      - "Is a NetworkPolicy blocking the traffic?"
+      - "curl pod-IP vs service-IP to isolate routing from selection"
     cloze:
       text: If a Service 503s, an empty result from `kubectl get {}` means its selector matches no ready pod.
       answer: endpoints

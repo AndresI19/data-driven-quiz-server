@@ -208,6 +208,11 @@ cards:
       alts:
         - "package.json and lockfile"
         - "package files"
+    order:
+      - "COPY package.json and the lockfile (the manifest only)"
+      - "RUN the dependency install (npm ci)"
+      - "COPY the rest of the application source"
+      - "RUN the build"
 
   - topic: "Match the production symptom to its usual root cause"
     desc: "Common failure signatures and what they most often point to — the first guess a good on-call makes."

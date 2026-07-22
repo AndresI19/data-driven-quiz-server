@@ -240,6 +240,12 @@ cards:
     cloze:
       text: The classic attack-enumeration checklist — Spoofing, Tampering, Repudiation, Info-disclosure, DoS, Elevation — is {}.
       answer: STRIDE
+    order:
+      - "Diagram the system's data flow"
+      - "Mark the trust boundaries on it"
+      - "Walk each element through STRIDE (Spoofing … Elevation)"
+      - "Rate each threat by impact × likelihood"
+      - "Design mitigations for the high-risk ones"
     hint: Enumerate the attacks before defending — a six-letter checklist.
 
   - topic: "The role comes from the issuer, not the caller"
