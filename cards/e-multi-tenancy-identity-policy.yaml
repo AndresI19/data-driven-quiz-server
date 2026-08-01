@@ -445,7 +445,7 @@ cards:
       text: Relying on every query to remember its tenant filter is fragile; enforcing tenant isolation inside the database uses {} security.
       answer: row-level
     mcq:
-      prompt: One forgotten tenant filter in a single query leaked another customer's rows. Which database feature moves that check out of application code so a missing WHERE clause cannot cross tenants?
+      prompt: One forgotten tenant filter in a single query returned another customer's records. Which database feature moves that check out of application code so a missing WHERE clause cannot cross tenants?
       options:
       - Row-level security
       - A unique index
@@ -497,7 +497,7 @@ cards:
       text: A long-lived database password in an env var is a standing risk; Vault reduces it by issuing short-lived, automatically {} credentials per workload.
       answer: rotated
     mcq:
-      prompt: A leaked static database credential stayed valid for months. Which secrets approach shrinks that window by minting on-demand credentials that expire in minutes?
+      prompt: A leaked static database credential stayed valid for months. Which approach shrinks that window by minting on-demand credentials that expire in minutes?
       options:
       - Dynamic secrets
       - A shared vault file

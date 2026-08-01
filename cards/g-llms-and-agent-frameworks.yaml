@@ -79,7 +79,7 @@ cards:
   - topic: PydanticAI
     desc: A type-safe agent framework from the Pydantic team — 'FastAPI for LLM agents'. You declare a Pydantic model as the agent's result_type and it validates the LLM's output into it; model-agnostic (OpenAI/Anthropic/Gemini), with dependency injection and built-in tracing via Pydantic Logfire.
     cloze:
-      text: "In PydanticAI you declare a Pydantic model as the agent's {} and it validates the LLM output into that type."
+      text: In PydanticAI you declare a Pydantic model as the agent's {} and it validates the LLM output into that shape.
       answer: "result_type"
       alts:
         - "result type"
@@ -248,7 +248,7 @@ cards:
       text: An agent whose conversation outgrows the model's context window silently loses its earliest messages unless it summarizes or {} them into external memory.
       answer: offloads
     mcq:
-      prompt: A long-running agent starts forgetting the task's original goal after many tool calls, because the oldest turns fell out of the context window. Which design keeps the goal available without blowing the token budget?
+      prompt: A long-running agent starts forgetting the task's original goal after many tool calls, because the oldest messages fell out of the context window. Which design keeps the goal available without blowing the token budget?
       options:
       - Summarize older turns
       - Raise the temperature
@@ -274,7 +274,7 @@ cards:
       text: Before an agent runs an irreversible action like deleting production data, a safe design pauses for a human {} step.
       answer: approval
     mcq:
-      prompt: Your agent can both email customers and drop database tables autonomously. Which control lets low-risk actions run freely while gating destructive ones on a person?
+      prompt: Your agent can both email customers and drop database tables autonomously. Which control lets harmless actions run freely while requiring a person to approve destructive ones?
       options:
       - Risk-gated approval
       - Higher rate limits

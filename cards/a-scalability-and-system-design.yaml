@@ -155,7 +155,7 @@ cards:
         - idempotency
     hint: The property that makes a retried request safe to replay.
     mcq:
-      prompt: Stripe requires an Idempotency-Key header so that retrying a 'create charge' after a network timeout does NOT double-charge the customer. Which property does that key guarantee?
+      prompt: Stripe lets a client attach a unique key to a 'create charge' request, so that replaying the same request after a network timeout does not double-charge the customer. Which property does that key provide?
       options:
       - Atomicity
       - Idempotency
@@ -260,7 +260,7 @@ cards:
         - n + 1
     hint: "Three DB mechanics: one speeds reads, one scales them, one guards concurrent writes."
     mcq:
-      prompt: A page lists 50 orders, and your ORM runs 1 query for the list then 50 more — one per order — to load each customer. What is this classic latency anti-pattern called?
+      prompt: A page lists 50 orders; your ORM issues one request for the list, then one extra database round-trip per order to load its customer — 51 in all. What is this classic latency anti-pattern called?
       options:
       - N+1 query
       - Cartesian join
@@ -514,7 +514,7 @@ cards:
         - "bundle: cert + private key in one file (password)"
     hint: "Encodings versus content: which extensions are formats, which describe what's inside."
     mcq:
-      prompt: Of these certificate files, which one holds your PRIVATE key — the piece you must never share and keep off the wire?
+      prompt: Of these certificate-related files, which one holds the PRIVATE half of the pair — the piece you must never share or put on the wire?
       options:
       - .key
       - .crt
@@ -589,8 +589,8 @@ cards:
       options:
       - Encryption
       - Integrity
-      - Authenticity
       - Origin authentication
+      - Authenticated denial of existence
       answerIndex: 0
   - topic: Anycast
     desc: One IP address announced from MANY locations at once; the network routes each client to the NEAREST instance. How CDNs, Cloudflare, and the DNS root servers serve the whole world from a single IP with low latency and built-in DDoS spread.
@@ -713,7 +713,7 @@ cards:
   - topic: "Derived columns: never trust a client-supplied aggregate"
     desc: "When a value can be COMPUTED from data the server already holds (a score, a total, a count), compute it SERVER-SIDE on write — don't accept it from the client. If the client could send both a document and its 'score', it could send a document worth 10 and a score of 10,000, and any leaderboard reading that column would be forgeable."
     cloze:
-      text: "A value that can be computed from data the server already holds should be computed {}-side on write, never trusted from the client."
+      text: A value that can be computed from data the system already holds should be computed {}-side on write, never trusted from the client.
       answer: "server"
       alts:
         - "server-side"

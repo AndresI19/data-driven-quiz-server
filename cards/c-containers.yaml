@@ -143,7 +143,7 @@ cards:
   - topic: Multi-stage builds
     desc: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a multi-stage build that copies only artifacts into a slim final stage.
     cloze:
-      text: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a {} build that copies only artifacts into a slim final stage.
+      text: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a {} build that copies only the compiled artifacts into a slim final image.
       answer: multi-stage
     mcq:
       prompt: Your production image is over a gigabyte because it still contains the JDK and Maven used to compile. Which Dockerfile technique yields a tiny final image holding only the built jar and a JRE?

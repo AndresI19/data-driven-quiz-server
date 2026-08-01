@@ -37,7 +37,7 @@ cards:
       answer: judge
     hint: Measuring output quality — labeled sets, LLM-as-judge, benchmarks.
     mcq:
-      prompt: You score a model's open-ended answers using another LLM with a rubric, rather than measuring n-gram overlap against a reference. Which evaluation method is this?
+      prompt: You score a model's open-ended answers by having a second model apply a grading rubric, rather than measuring n-gram overlap against a reference. Which evaluation method is this?
       options:
       - LLM-as-judge
       - BLEU
