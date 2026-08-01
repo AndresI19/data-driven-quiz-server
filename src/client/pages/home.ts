@@ -354,7 +354,7 @@ export function setup(): void {
     S.cfg.count = v;
     lennum.textContent = v >= cnt ? `All (${cnt})` : `${v} cards`;
     // Rolling pool size: how many cards the current section/role selection contains, live as you toggle.
-    poolnum.textContent = `${cnt} card${cnt === 1 ? '' : 's'} in pool`;
+    poolnum.textContent = `${cnt} total cards`;
   };
   len.value = String(Math.min(S.cfg.count, Math.max(5, scopeCount())));
   syncLen();
