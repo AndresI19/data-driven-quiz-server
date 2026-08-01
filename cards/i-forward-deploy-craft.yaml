@@ -80,6 +80,14 @@ cards:
       text: On a shared branch use git {} to undo a commit with a new commit, never reset --hard.
       answer: revert
     hint: The three-zone flow, then the history-combining and recovery tools.
+    mcq:
+      prompt: You modified and staged a file but now want to discard the uncommitted changes in your working tree, without moving HEAD or touching any commit. Which git command?
+      options:
+      - reset
+      - restore
+      - revert
+      - rebase
+      answerIndex: 1
   - topic: Linux / bash commands (basic → advanced)
     desc: The shell verbs you reach for on any box — inspecting, finding, filtering, and debugging. Roughly basic → advanced.
     extras:
@@ -153,3 +161,81 @@ cards:
       - "If what you find contradicts the plan, surface that instead of proceeding"
       - "Take a backup (e.g. pg_dump) even when you're confident"
       - "Only then perform the irreversible action"
+  - topic: SQL row vs group filtering
+    desc: To keep only the groups whose aggregate meets a condition — filtering AFTER a GROUP BY rather than filtering individual rows first — you use the HAVING clause.
+    cloze:
+      text: To keep only the groups whose aggregate meets a condition — filtering AFTER a GROUP BY rather than filtering individual rows first — you use the {} clause.
+      answer: HAVING
+    mcq:
+      prompt: A query must drop rows BEFORE they are aggregated — for example, ignore refunds before summing revenue per customer. Which clause filters individual rows PRIOR to a GROUP BY?
+      options:
+      - HAVING
+      - QUALIFY
+      - FILTER
+      - WHERE
+      answerIndex: 3
+  - topic: Feature flags decouple deploy from release
+    desc: Shipping code to production dark and turning it on later for a subset of users decouples deploy from release using a feature flag.
+    cloze:
+      text: Shipping code to production dark and turning it on later for a subset of users decouples deploy from release using a feature {}.
+      answer: flag
+    mcq:
+      prompt: You want the new checkout flow deployed now but visible to only five percent of users, reversible instantly with no redeploy. Which mechanism gives that runtime on/off control?
+      options:
+      - A feature flag
+      - A canary node
+      - A blue-green swap
+      - A hotfix branch
+      answerIndex: 0
+  - topic: Expand-and-contract migration
+    desc: To rename a column with zero downtime you add the new one, dual-write, backfill, then drop the old — the expand-and-contract pattern.
+    cloze:
+      text: To rename a column with zero downtime you add the new one, dual-write, backfill, then drop the old — the expand-and-{} pattern.
+      answer: contract
+    mcq:
+      prompt: A single statement that renames a column would break the still-running old app version mid-deploy. Which migration approach keeps old and new code working simultaneously?
+      options:
+      - Expand then contract
+      - Big-bang cutover
+      - Drop and recreate
+      - Lock the table
+      answerIndex: 0
+  - topic: Chunked backfills
+    desc: A migration that updates fifty million rows in one statement locks the table and takes the site down; a safe backfill runs in rate-limited batches.
+    cloze:
+      text: A migration that updates fifty million rows in one statement locks the table and takes the site down; a safe backfill runs in rate-limited {}.
+      answer: batches
+    mcq:
+      prompt: A one-shot UPDATE across a huge table holds a lock long enough to break production. Which technique updates the same rows without a long-held lock?
+      options:
+      - Chunked batched updates
+      - One big UPDATE
+      - A bigger instance
+      - A read replica
+      answerIndex: 0
+  - topic: Idempotent deploy scripts
+    desc: A deploy script you can safely re-run after a mid-way failure — landing the same end state whether run once or three times — is idempotent.
+    cloze:
+      text: A deploy script you can safely re-run after a mid-way failure — landing the same end state whether run once or three times — is {}.
+      answer: idempotent
+    mcq:
+      prompt: Your deploy failed halfway and re-running it now errors with 'resource already exists'. Which property should the script have so a retry converges instead of erroring?
+      options:
+      - Idempotency
+      - Atomicity
+      - Concurrency
+      - Durability
+      answerIndex: 0
+  - topic: Reproduce before you fix
+    desc: The surest way to fix a hard-to-reproduce production bug is a failing test that pins the exact input from the logs before you change the code.
+    cloze:
+      text: The surest way to fix a hard-to-reproduce production bug is a failing {} that pins the exact input from the logs before you change the code.
+      answer: test
+    mcq:
+      prompt: A customer hits a crash you cannot reproduce locally. Which first move most reliably turns their report into something you can fix and prove fixed?
+      options:
+      - Write a repro test
+      - Restart their pod
+      - Add logging and wait
+      - Raise the timeout
+      answerIndex: 0

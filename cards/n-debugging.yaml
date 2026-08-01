@@ -162,6 +162,14 @@ cards:
     codeselect:
       prompt: "Select the line that fires one query per user"
       answer: [2]
+    mcq:
+      prompt: An endpoint's latency grows linearly with the number of rows returned, and the connection pool drains under load. The code fetches a list, then queries each row's children inside the loop. Root cause?
+      options:
+      - A missing child index
+      - Parent-table lock contention
+      - An N+1 query pattern
+      - A cartesian-product join
+      answerIndex: 2
 
   - topic: "The deploy job runs before build because it declares no dependency"
     desc: "In this workflow the deploy job has no `needs:` on build, so the two jobs start in parallel. Deploy can try to push an image that build has not produced yet, causing intermittent image-not-found failures that pass on a re-run."
@@ -294,3 +302,42 @@ cards:
       - label: Pairs with
         text: "The 'where to start' card is the command to run; this is what that command usually reveals."
     hint: "For each symptom, the usual culprit."
+  - topic: Thread-pool starvation
+    desc: A handler that blocks on another call served by the SAME fixed thread pool can deadlock when every thread waits on a task that itself needs a thread — pool starvation.
+    cloze:
+      text: A handler that blocks on another call served by the SAME fixed thread pool can deadlock when every thread waits on a task that itself needs a thread — pool {}.
+      answer: starvation
+    mcq:
+      prompt: Under load a service hangs completely though CPU is idle, and every worker thread is blocked calling an internal endpoint served by the same pool. Which failure is this?
+      options:
+      - Thread-pool starvation
+      - A memory leak
+      - Cache stampede
+      - Clock skew
+      answerIndex: 0
+  - topic: Memory leak vs undersized limit
+    desc: A process whose memory climbs steadily for hours and never plateaus, then dies, points to a memory leak rather than a too-low limit.
+    cloze:
+      text: A process whose memory climbs steadily for hours and never plateaus, then dies, points to a memory {} rather than a too-low limit.
+      answer: leak
+    mcq:
+      prompt: A pod is fine for six hours, then OOMKills, and its memory graph is a straight upward line with no plateau. Which root cause fits better than an undersized limit?
+      options:
+      - A memory leak
+      - A traffic spike
+      - A GC pause
+      - A noisy neighbor
+      answerIndex: 0
+  - topic: Heisenbug from a race
+    desc: A bug that vanishes when you add logging or attach a debugger — because the timing changed — is usually a race condition.
+    cloze:
+      text: A bug that vanishes when you add logging or attach a debugger — because the timing changed — is usually a {} condition.
+      answer: race
+    mcq:
+      prompt: A counter is occasionally wrong under concurrency, but adding print statements makes it always correct. Which class of bug does that timing-sensitivity signal?
+      options:
+      - A race condition
+      - An off-by-one
+      - A null dereference
+      - A type coercion
+      answerIndex: 0

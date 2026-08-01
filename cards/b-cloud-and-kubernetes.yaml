@@ -39,6 +39,14 @@ cards:
       - "Schema validation — the object is well-formed"
       - "Persist the object to etcd (the API server is the only writer)"
     hint: The one component every other component talks to.
+    mcq:
+      prompt: Which control-plane component is the ONLY one that reads and writes etcd, so every other component must go through it?
+      options:
+      - kube-apiserver
+      - kube-scheduler
+      - kubelet
+      - kube-controller-manager
+      answerIndex: 0
   - topic: "Managed K8s: name the three (EKS / GKE / AKS)"
     desc: "The kubectl/YAML API is IDENTICAL on every cloud, so your manifests port unchanged. What does NOT port: provisioning, IAM, networking/CNI, load balancers, and storage classes — each cloud wires those its own way. Step one is just knowing which service is which cloud."
     extras:
@@ -271,6 +279,14 @@ cards:
       - dependency update — fetch subchart deps into charts/
       - package <chart> · push <tgz> <repo> — build and publish a chart
     hint: "The package-manager lifecycle: install, upgrade, roll back."
+    mcq:
+      prompt: You shipped a bad release and need to revert to the previous working revision. Which helm subcommand does that?
+      options:
+      - rollback
+      - history
+      - uninstall
+      - upgrade
+      answerIndex: 0
   - topic: Infrastructure as Code (Terraform)
     desc: The cloud-agnostic tool most teams use to provision the cloud resources that sit under K8s.
     extras:
@@ -526,6 +542,14 @@ cards:
         - service
         - target
     hint: "The fields to read in order: class, TLS, host, path, backend."
+    mcq:
+      prompt: Which Kubernetes object does host- and path-based HTTP(S) routing at L7, versus a Service that balances at L4?
+      options:
+      - Ingress
+      - Gateway
+      - Service
+      - NetworkPolicy
+      answerIndex: 0
   - topic: Which tool owns each command?
     desc: A cross-check of the DevOps command families — from memory, name the tool each command belongs to (and what that tool's job is).
     extras:
@@ -673,6 +697,14 @@ cards:
       - "ImagePullBackOff — a registry or image-pull-secret problem"
       - "OOMKilled — the container exceeded its memory limit"
       - "Evicted — the node came under resource pressure"
+    mcq:
+      prompt: A pod is in CrashLoopBackOff. Which command shows the CRASHED instance's logs, not the current restarting one?
+      options:
+      - kubectl logs --previous
+      - kubectl logs -f
+      - kubectl describe pod
+      - kubectl get events
+      answerIndex: 0
 
   - topic: "Declarative apply vs imperative set-image"
     desc: "`kubectl apply -f` is DECLARATIVE — you describe the desired state in manifests and the cluster reconciles toward it. `kubectl set image` (or edit/patch) is IMPERATIVE — a direct one-off change. The imperative change works, but it DRIFTS from your manifests, so the next `apply` reverts it."
@@ -761,3 +793,159 @@ cards:
       - label: Tie-in
         text: "cert-manager issues the cert into a kubernetes.io/tls Secret the Ingress references; SNI in the ClientHello is how one ingress IP serves many hostnames' certs."
     hint: "Three answers to 'where does the client's TLS actually get decrypted?'"
+  - topic: kubectl subcommands
+    desc: To stream a running pod's output (and read the previous crash's with --previous) you run kubectl logs.
+    cloze:
+      text: To stream a running pod's output (and read the previous crash's with --previous) you run kubectl {}.
+      answer: logs
+    mcq:
+      prompt: A pod won't start and you want its full state plus the Events log to see WHY. Which kubectl subcommand is the first stop?
+      options:
+      - describe
+      - logs
+      - get
+      - explain
+      answerIndex: 0
+  - topic: PodDisruptionBudget
+    desc: To stop a node drain from taking every replica of a service down at once, you cap simultaneous voluntary evictions with a PodDisruptionBudget.
+    cloze:
+      text: To stop a node drain from taking every replica of a service down at once, you cap simultaneous voluntary evictions with a {}.
+      answer: PodDisruptionBudget
+    mcq:
+      prompt: During a cluster upgrade, draining nodes one by one briefly takes your three-replica service to zero. Which object tells the drain to keep at least two replicas available throughout?
+      options:
+      - PodDisruptionBudget
+      - HorizontalPodAutoscaler
+      - PodAntiAffinity
+      - ResourceQuota
+      answerIndex: 0
+  - topic: Taints and tolerations
+    desc: A GPU node marked so only workloads that explicitly permit it may land there carries a taint; the workload needs a matching toleration.
+    cloze:
+      text: A GPU node marked so only workloads that explicitly permit it may land there carries a {}; the workload needs a matching toleration.
+      answer: taint
+    mcq:
+      prompt: You want to REPEL all pods from a node unless they opt in, rather than attract specific pods to it. Which mechanism expresses 'keep everything off unless it tolerates me'?
+      options:
+      - A taint
+      - Node affinity
+      - A nodeSelector
+      - A topology spread
+      answerIndex: 0
+  - topic: NetworkPolicy default-allow
+    desc: In a namespace with no NetworkPolicy, pod-to-pod traffic is default-allow — every pod can reach every other until the first policy is applied.
+    cloze:
+      text: In a namespace with no NetworkPolicy, pod-to-pod traffic is default-{} — every pod can reach every other until the first policy is applied.
+      answer: allow
+    mcq:
+      prompt: A review flags that any compromised pod can freely reach the database pod. Which object switches a namespace from open to deny-by-default and then permits only named flows?
+      options:
+      - NetworkPolicy
+      - SecurityContext
+      - PodSecurityAdmission
+      - ServiceAccount
+      answerIndex: 0
+  - topic: Rolling update surge and unavailability
+    desc: A Deployment that must never drop below full capacity during a rollout sets maxUnavailable to 0.
+    cloze:
+      text: A Deployment that must never drop below full capacity during a rollout sets maxUnavailable to {}.
+      answer: '0'
+    mcq:
+      prompt: A rollout briefly serves errors because old pods are removed before new ones are Ready. Which Deployment field, raised, forces new pods up before any old pod is taken down?
+      options:
+      - maxSurge
+      - replicas
+      - progressDeadlineSeconds
+      - revisionHistoryLimit
+      answerIndex: 0
+  - topic: Service mesh sidecar mTLS
+    desc: A service mesh injects a proxy sidecar beside each pod so it can encrypt service-to-service traffic with mTLS and collect metrics without app code changes.
+    cloze:
+      text: A service mesh injects a proxy {} beside each pod so it can encrypt service-to-service traffic with mTLS and collect metrics without app code changes.
+      answer: sidecar
+    mcq:
+      prompt: Your team wants automatic mutual TLS and per-request metrics between all services, added transparently without editing any application. Which layer provides that through injected proxies?
+      options:
+      - A service mesh
+      - An API gateway
+      - A load balancer
+      - A CNI plugin
+      answerIndex: 0
+  - topic: Mesh traffic splitting
+    desc: To send five percent of live traffic to a new version at the request level — richer than a plain replica ratio — a service mesh applies a traffic-split rule.
+    cloze:
+      text: To send five percent of live traffic to a new version at the request level — richer than a plain replica ratio — a service mesh applies a {} rule.
+      answer: traffic-split
+    mcq:
+      prompt: You want to route exactly ten percent of production requests to v2 by HTTP header, shifting gradually while watching error rates. Which mesh capability does that weighted routing?
+      options:
+      - Traffic splitting
+      - Sticky sessions
+      - Horizontal autoscaling
+      - DNS round-robin
+      answerIndex: 0
+  - topic: Terraform remote state locking
+    desc: Two engineers running terraform apply at once can corrupt shared state, so a remote backend takes a state lock for the duration of each apply.
+    cloze:
+      text: Two engineers running terraform apply at once can corrupt shared state, so a remote backend takes a state {} for the duration of each apply.
+      answer: lock
+    mcq:
+      prompt: Your team keeps clobbering each other's changes because state lives in one shared file. Which backend feature serializes concurrent applies so only one runs at a time?
+      options:
+      - State locking
+      - A larger plan
+      - Workspaces
+      - Provider pinning
+      answerIndex: 0
+  - topic: Terraform configuration drift
+    desc: When someone edits a resource in the cloud console, Terraform's view goes stale; the next terraform plan surfaces that difference as changes to reconcile.
+    cloze:
+      text: When someone edits a resource in the cloud console, Terraform's view goes stale; the next terraform {} surfaces that difference as changes to reconcile.
+      answer: plan
+    mcq:
+      prompt: A security group was edited by hand in the console, so it no longer matches the code. What is this mismatch between real infrastructure and declared state called?
+      options:
+      - Configuration drift
+      - State locking
+      - A tainted resource
+      - A partial apply
+      answerIndex: 0
+  - topic: 'Cloud cost: spot & rightsizing'
+    desc: The cheapest way to run fault-tolerant, interruptible batch work in the cloud is on deeply discounted spot instances.
+    cloze:
+      text: The cheapest way to run fault-tolerant, interruptible batch work in the cloud is on deeply discounted {} instances.
+      answer: spot
+    mcq:
+      prompt: A cluster's nodes sit at fifteen percent CPU yet the bill is huge. Which FinOps action most directly removes that waste, versus buying commitments?
+      options:
+      - Rightsize the nodes
+      - Buy reserved capacity
+      - Add more replicas
+      - Enable autoscaling logs
+      answerIndex: 0
+  - topic: Cost allocation tags / showback
+    desc: To tell which team or product is driving cloud spend, you attach cost-allocation tags to resources and break the bill down by them.
+    cloze:
+      text: To tell which team or product is driving cloud spend, you attach cost-allocation {} to resources and break the bill down by them.
+      answer: tags
+    mcq:
+      prompt: Finance asks you to attribute last month's cloud bill to each product line, but everything bills to one account. Which FinOps practice makes per-team spend visible?
+      options:
+      - Tag-based showback
+      - Reserved instances
+      - A spending cap
+      - Single sign-on
+      answerIndex: 0
+  - topic: Golden paths / internal developer platform
+    desc: An internal developer platform gives teams a paved golden path — a supported, opinionated default route to ship — so they don't reinvent CI, infra, and observability each time.
+    cloze:
+      text: An internal developer platform gives teams a paved {} — a supported, opinionated default route to ship — so they don't reinvent CI, infra, and observability each time.
+      answer: golden path
+    mcq:
+      prompt: Every squad wires up its own bespoke pipeline and infra, so nothing is consistent or supportable. Which platform-engineering idea offers a self-service, opinionated default most teams should just adopt?
+      options:
+      - A golden path
+      - A shared mutex
+      - A service mesh
+      - A monorepo
+      answerIndex: 0

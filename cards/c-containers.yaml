@@ -127,3 +127,68 @@ cards:
       - docker create
       - docker exec
       answerIndex: 0
+  - topic: Namespaces vs cgroups (see vs use)
+    desc: A kernel namespace isolates what a process can SEE — its own network stack, PID tree, or filesystem view.
+    cloze:
+      text: A kernel {} isolates what a process can SEE — its own network stack, PID tree, or filesystem view.
+      answer: namespace
+    mcq:
+      prompt: A container's MEMORY limit — and the OOMKill when it's exceeded — is enforced by which kernel feature?
+      options:
+      - cgroups
+      - namespaces
+      - capabilities
+      - seccomp
+      answerIndex: 0
+  - topic: Multi-stage builds
+    desc: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a multi-stage build that copies only artifacts into a slim final stage.
+    cloze:
+      text: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a {} build that copies only artifacts into a slim final stage.
+      answer: multi-stage
+    mcq:
+      prompt: Your production image is over a gigabyte because it still contains the JDK and Maven used to compile. Which Dockerfile technique yields a tiny final image holding only the built jar and a JRE?
+      options:
+      - Multi-stage builds
+      - Layer caching
+      - Base-image pinning
+      - Build arguments
+      answerIndex: 0
+  - topic: Running as non-root
+    desc: By default a container process runs as UID 0, so a breakout inherits host root; the hardening step sets a non-root runAsUser in the securityContext.
+    cloze:
+      text: By default a container process runs as UID 0, so a breakout inherits host root; the hardening step sets a non-root {} in the securityContext.
+      answer: runAsUser
+    mcq:
+      prompt: A CVE lets an attacker escape a container onto the node, and the blast radius is worst because the process ran as UID 0. Which single change most reduces that blast radius?
+      options:
+      - Run as a non-root user
+      - Add a readiness probe
+      - Pin the image tag
+      - Enable a liveness probe
+      answerIndex: 0
+  - topic: Layer-cache ordering
+    desc: Placing `COPY . .` before the dependency install in a Dockerfile busts the install layer on every source edit; the fix is to copy the lockfile first.
+    cloze:
+      text: Placing `COPY . .` before the dependency install in a Dockerfile busts the install layer on every source edit; the fix is to copy the {} first.
+      answer: lockfile
+    mcq:
+      prompt: Every one-line code change triggers a full dependency reinstall in CI, because the install step sits after the step that copies all source. Which reordering restores cache hits?
+      options:
+      - Copy manifests before source
+      - Copy source before manifests
+      - Merge both COPY steps
+      - Move install to the top
+      answerIndex: 0
+  - topic: PID 1 signal handling
+    desc: A shell-form CMD makes your app a child of /bin/sh, which swallows SIGTERM, so Kubernetes must SIGKILL it after the grace period; run it as PID 1 with exec-form instead.
+    cloze:
+      text: A shell-form CMD makes your app a child of /bin/sh, which swallows SIGTERM, so Kubernetes must SIGKILL it after the grace period; run it as PID {} with exec-form instead.
+      answer: '1'
+    mcq:
+      prompt: Your pods always take the full termination grace period and are then force-killed, because SIGTERM reaches the shell wrapping your process, not the process. Which Dockerfile change delivers the signal to the app directly?
+      options:
+      - Use exec-form CMD
+      - Set STOPSIGNAL SIGKILL
+      - Raise terminationGracePeriod
+      - Add a postStart hook
+      answerIndex: 0

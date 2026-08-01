@@ -811,3 +811,42 @@ cards:
       text: "An HTTPS page pulling a script over plain http is called {} content, and browsers block the active kind."
       answer: "mixed"
     hint: "What you call an https page loading an http resource."
+  - topic: Read replicas & replication lag
+    desc: Spreading reads across copies of a primary can serve a read that predates the newest write, an artifact called replication lag.
+    cloze:
+      text: Spreading reads across copies of a primary can serve a read that predates the newest write, an artifact called replication {}.
+      answer: lag
+    mcq:
+      prompt: A user saves their profile, is redirected, and the page shows the OLD value because the redirect's read hit a copy the write hadn't reached yet. Which technique routes that immediate read to the primary to avoid it?
+      options:
+      - Read-your-writes
+      - Round-robin reads
+      - Write-through cache
+      - Connection pinning
+      answerIndex: 0
+  - topic: Latency vs throughput
+    desc: Batching and parallelism can raise total requests handled per second even as each individual request gets slower — improving throughput at the cost of latency.
+    cloze:
+      text: Batching and parallelism can raise total requests handled per second even as each individual request gets slower — improving {} at the cost of latency.
+      answer: throughput
+    mcq:
+      prompt: After adding batching, a pipeline processes ten times more messages per second, yet each single message now takes longer end to end. Which pair of metrics moved in opposite directions?
+      options:
+      - Throughput up, latency up
+      - Latency down, throughput down
+      - Both down together
+      - Both up equally
+      answerIndex: 0
+  - topic: Cache-Control for shared vs private responses
+    desc: 'A response a shared cache must never reuse for another user — a per-account page — is sent with Cache-Control: private.'
+    cloze:
+      text: 'A response a shared cache must never reuse for another user — a per-account page — is sent with Cache-Control: {}.'
+      answer: private
+    mcq:
+      prompt: You want a content-hashed JS bundle cached for a year with no revalidation, because its URL changes whenever its bytes do. Which Cache-Control directive states it will never change?
+      options:
+      - immutable
+      - no-cache
+      - must-revalidate
+      - private
+      answerIndex: 0

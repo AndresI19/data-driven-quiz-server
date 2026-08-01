@@ -208,3 +208,68 @@ cards:
       - Port forwarding
       - A firewall exception
       answerIndex: 1
+  - topic: Two-phase commit blocking
+    desc: Two-phase commit gives cross-service atomicity but blocks every participant if the coordinator crashes after the prepare phase, which is why sagas are preferred at scale.
+    cloze:
+      text: Two-phase commit gives cross-service atomicity but blocks every participant if the {} crashes after the prepare phase, which is why sagas are preferred at scale.
+      answer: coordinator
+    mcq:
+      prompt: A cross-service transaction leaves rows locked for minutes when one node dies mid-commit, because all participants wait on a single decision-maker. Which protocol has this blocking failure mode?
+      options:
+      - Two-phase commit
+      - Gossip protocol
+      - Vector clocks
+      - Leader election
+      answerIndex: 0
+  - topic: Idempotent consumer for effective exactly-once
+    desc: True exactly-once delivery is impossible over an unreliable network, so systems approximate it by pairing at-least-once delivery with an idempotent consumer.
+    cloze:
+      text: True exactly-once delivery is impossible over an unreliable network, so systems approximate it by pairing at-least-once delivery with an idempotent {}.
+      answer: consumer
+    mcq:
+      prompt: Your payment worker sometimes receives the same message twice and can never lose one. Rather than chase exactly-once delivery, which design makes double-processing harmless?
+      options:
+      - A dedup key on writes
+      - A larger consumer group
+      - A shorter retention window
+      - Synchronous acknowledgements
+      answerIndex: 0
+  - topic: Logical clocks vs wall-clock ordering
+    desc: Ordering events across machines by wall-clock time is unsafe because clocks drift; distributed systems order causally-related events with logical clocks instead.
+    cloze:
+      text: Ordering events across machines by wall-clock time is unsafe because clocks drift; distributed systems order causally-related events with {} clocks instead.
+      answer: logical
+    mcq:
+      prompt: Two datacenters disagree on which of two writes came first, because their NTP-synced clocks still differ by milliseconds. Which mechanism captures 'happened-before' without trusting wall time?
+      options:
+      - Vector clocks
+      - Unix timestamps
+      - GPS receivers
+      - Sequence gaps
+      answerIndex: 0
+  - topic: Kafka consumer-group parallelism
+    desc: In Kafka, the unit of consumer parallelism is the partition, so adding more consumers than partitions in a group leaves the extras idle.
+    cloze:
+      text: In Kafka, the unit of consumer parallelism is the partition, so adding more consumers than {} in a group leaves the extras idle.
+      answer: partitions
+    mcq:
+      prompt: Your consumer group has twelve members but only eight partitions, and four consumers do nothing. Which fact explains why the extra consumers cannot help?
+      options:
+      - One partition per consumer max
+      - Brokers cap consumers
+      - Offsets are shared
+      - Topics limit threads
+      answerIndex: 0
+  - topic: Partition key and ordering
+    desc: Kafka guarantees order only within a single partition, so events that must stay ordered — one account's transactions — must share a partition key.
+    cloze:
+      text: Kafka guarantees order only within a single partition, so events that must stay ordered — one account's transactions — must share a partition {}.
+      answer: key
+    mcq:
+      prompt: Two updates for the same user were processed out of order because they landed on different partitions. Which choice guarantees a given user's events keep their produced order?
+      options:
+      - Key by user id
+      - Add more partitions
+      - Increase replication
+      - Shorten retention
+      answerIndex: 0
