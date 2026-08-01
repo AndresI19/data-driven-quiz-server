@@ -1137,10 +1137,19 @@ select.opt {
     transparent
   );
 }
-.favbtn {
+/* Shared card toolbar, top-right. row-reverse keeps the star pinned in the corner while the flag and
+   the variable-width variant pill line up to its left — so nothing overlaps the card content. */
+.cardtools {
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+}
+.favbtn {
   background: none;
   border: none;
   font-size: 22px;
@@ -1161,9 +1170,6 @@ select.opt {
   text-shadow: 0 0 7px color-mix(in srgb, var(--gold) 24%, transparent);
 }
 .flagbtn {
-  position: absolute;
-  top: 12px;
-  right: 40px;
   background: none;
   border: none;
   font-size: 17px;
@@ -1182,9 +1188,6 @@ select.opt {
 }
 /* admin-only: cycle to another variant (mode) of the same card to review + flag each */
 .varbtn {
-  position: absolute;
-  top: 13px;
-  right: 66px;
   background: color-mix(in srgb, var(--accent) 10%, var(--panel));
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1322,8 +1325,8 @@ select.opt {
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(4, auto);
-  grid-auto-flow: column;
+  /* Row flow (not the old fixed 4-row column flow) so any option count fills BALANCED rows:
+     6 → three even rows of 2, 4 → 2×2, 8 → 4×2. The old column flow left a ragged short column. */
   gap: 9px;
   margin-top: 18px;
 }

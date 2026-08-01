@@ -90,6 +90,11 @@ export function addFav(c: GameCard, mode?: string): void {
   const qc = app.querySelector('.qcard') as HTMLElement | null;
   if (!qc) return;
   qc.style.setProperty('--cat', catAccent(c));
+  // One shared toolbar in the card's top-right corner: star, then (admin) flag + variant-cycle button
+  // all live here so the variable-width variant pill can no longer overlap the card's own content.
+  const tools = document.createElement('div');
+  tools.className = 'cardtools';
+  qc.appendChild(tools);
   const fav = document.createElement('button');
   const set = (): void => {
     const on = !!DB.favorites[c.id];
@@ -104,7 +109,7 @@ export function addFav(c: GameCard, mode?: string): void {
     saveDB();
     set();
   });
-  qc.appendChild(fav);
+  tools.appendChild(fav);
   // Flagging is an ADMIN tool, unlike the star beside it. A favourite is something a player wants
   // again; a flag says "this card is wrong, edit the deck" — an instruction only the deck's author
   // can act on, and noise on the card chrome for everyone else. Hidden the same way the debug menu
@@ -132,7 +137,7 @@ export function addFav(c: GameCard, mode?: string): void {
     saveDB();
     setF();
   });
-  qc.appendChild(flag);
+  tools.appendChild(flag);
   // Cycle to another variant (mode) of the SAME card so every alternative can be reviewed and flagged
   // in one pass. Only in the quiz (mode given) and only when the card actually has >1 variant.
   if (!mode) return;
@@ -147,7 +152,7 @@ export function addFav(c: GameCard, mode?: string): void {
     sndFlip();
     paint(c, modes[(idx + 1) % modes.length]);
   });
-  qc.appendChild(vbtn);
+  tools.appendChild(vbtn);
 }
 export function decorateCard(c: GameCard, mode?: string): void {
   const ses = S.ses!;
