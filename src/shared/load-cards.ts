@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import { z } from 'zod';
-import type { CardsPayload, GameCard } from './card-schema.js';
+import type { CardsPayload, GameCard, Group } from './card-schema.js';
 import { type RawCard, toGameCard } from './card-transform.js';
 
 const ExtraSchema = z.object({ label: z.string(), text: z.string() }).strict();
@@ -69,6 +69,11 @@ const SectionFileSchema = z.object({ section: SectionSchema, cards: z.array(Auth
 
 const DiagramsSchema = z.record(z.string(), z.string());
 
+const GroupSchema = z
+  .object({ key: z.string(), name: z.string(), color: z.string(), sections: z.array(z.string()).min(1) })
+  .strict();
+const GroupsFileSchema = z.object({ groups: z.array(GroupSchema) }).strict();
+
 /** A validated section file plus its source filename (for stable ordering + errors). */
 interface LoadedSection {
   file: string;
@@ -88,6 +93,31 @@ function readDiagrams(dir: string): Record<string, string> {
   const parsed = DiagramsSchema.safeParse(yaml.load(readFileSync(p, 'utf8')) ?? {});
   if (!parsed.success) fail('_diagrams.yaml', parsed.error);
   return parsed.data;
+}
+
+/**
+ * Read + validate cards/_groups.yaml (the role buckets). Returns [] when absent (backward
+ * compatible). Every referenced section key must exist and belong to at most one group — a typo
+ * would otherwise silently drop a section from the UI, so it is a hard error, like a bad card.
+ */
+function readGroups(dir: string, sectionKeys: Set<string>): Group[] {
+  const p = resolve(dir, '_groups.yaml');
+  if (!existsSync(p)) return [];
+  const parsed = GroupsFileSchema.safeParse(yaml.load(readFileSync(p, 'utf8')) ?? {});
+  if (!parsed.success) fail('_groups.yaml', parsed.error);
+  const seen = new Set<string>();
+  for (const g of parsed.data.groups) {
+    for (const k of g.sections) {
+      if (!sectionKeys.has(k))
+        throw new Error(
+          `Invalid card file "_groups.yaml": group "${g.key}" references unknown section "${k}"`,
+        );
+      if (seen.has(k))
+        throw new Error(`Invalid card file "_groups.yaml": section "${k}" appears in more than one group`);
+      seen.add(k);
+    }
+  }
+  return parsed.data.groups;
 }
 
 /** Read + validate every section file (excludes files beginning with "_"), in filename order. */
@@ -125,5 +155,7 @@ export function loadCardsPayload(dir: string): CardsPayload {
     });
   }
 
-  return { cats, catColors, cards, diagrams, multiPool };
+  const groups: Group[] = readGroups(dir, new Set(sections.map((s) => s.section.key)));
+
+  return { cats, catColors, groups, cards, diagrams, multiPool };
 }

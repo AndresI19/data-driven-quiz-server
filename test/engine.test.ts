@@ -98,6 +98,7 @@ const CARDS: GameCard[] = [
 const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
   catColors: { A: '#5a67f2' },
+  groups: [],
   cards: CARDS,
   diagrams: {},
   multiPool: {},

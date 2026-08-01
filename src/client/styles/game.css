@@ -136,10 +136,10 @@ h1 {
 .secchip.sc.on:hover {
   color: #fff;
 }
-.secchip.sc {
+.secchip[data-tip] {
   position: relative;
 }
-.secchip.sc:hover::after {
+.secchip[data-tip]:hover::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -157,7 +157,7 @@ h1 {
   pointer-events: none;
   animation: fadeIn .12s;
 }
-.secchip.sc:hover::before {
+.secchip[data-tip]:hover::before {
   content: "";
   position: absolute;
   bottom: calc(100% + 3px);
@@ -167,6 +167,38 @@ h1 {
   border-top-color: var(--ink);
   z-index: 20;
   pointer-events: none;
+}
+/* Live pool-size readout beside the Sections label — updates as sections/roles are toggled. */
+.poolnum {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--accent);
+  margin-left: 8px;
+}
+/* Role groups: a bordered cluster of a role header chip + its section chips, tinted by the role hue. */
+.secgroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--cat) 30%, var(--line));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--cat) 6%, transparent);
+}
+.secchip.grp {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--cat) 45%, var(--line));
+  color: var(--cat);
+}
+.secchip.grp:hover {
+  border-color: var(--cat);
+}
+.secchip.grp.on {
+  background: var(--cat);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 9px color-mix(in srgb, var(--cat) 40%, transparent);
 }
 .watermark {
   font-size: 12px;

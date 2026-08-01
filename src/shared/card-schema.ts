@@ -101,10 +101,19 @@ export interface GameCard {
   codeselect: CodeSelect | null;
 }
 
+/** A job-role bucket folding several sections together — a presentation layer over section keys. */
+export interface Group {
+  key: string; // stable group id (e.g. "platform")
+  name: string; // display label
+  color: string; // hex accent
+  sections: string[]; // section keys it contains, in display order
+}
+
 /** Everything the client needs at boot. */
 export interface CardsPayload {
   cats: Record<string, string>; // key → section name
   catColors: Record<string, string>; // key → hex
+  groups: Group[]; // role buckets over the sections; [] when cards/_groups.yaml is absent
   cards: GameCard[];
   diagrams: Record<string, string>; // name → inline SVG
   multiPool: Record<string, string[]>; // card id → multi member names (distractor pool)

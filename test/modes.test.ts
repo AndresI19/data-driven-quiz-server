@@ -72,11 +72,20 @@ const MULTI = card({ id: 'A4', multi: ['availability', 'partition tolerance'] })
 const MCQ = card({
   id: 'A6',
   topic: 'CAP theorem',
-  mcq: { prompt: 'Under a network partition, CAP says you must give up which one?', options: ['Consistency or availability', 'Durability', 'Latency', 'Throughput'], answerIndex: 0 },
+  mcq: {
+    prompt: 'Under a network partition, CAP says you must give up which one?',
+    options: ['Consistency or availability', 'Durability', 'Latency', 'Throughput'],
+    answerIndex: 0,
+  },
 });
 const FILL = card({
   id: 'A5',
-  fill: { text: 'kind: {0}\nreplicas: {1}', blanks: ['Deployment', '3'], distractors: ['Service'], code: true },
+  fill: {
+    text: 'kind: {0}\nreplicas: {1}',
+    blanks: ['Deployment', '3'],
+    distractors: ['Service'],
+    code: true,
+  },
 });
 const CAT = card({
   id: 'A7',
@@ -118,6 +127,7 @@ const CODESELECT = card({
 const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
   catColors: { A: '#5a67f2' },
+  groups: [],
   // BF picks distractors out of the full card list, so it needs more than one card to choose from.
   cards: [
     card(),
@@ -339,5 +349,4 @@ describe('grading and payout', () => {
     expect(DB.coins).toBe(0);
     expect(DB.combo).toBe(0);
   });
-
 });
