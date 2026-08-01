@@ -143,6 +143,7 @@ const DIRECTION_LABELS: Record<string, string> = {
   cz: 'fill-in',
   ma: 'match',
   ms: 'multi',
+  mq: 'multiple-choice',
   iv: 'inverse',
   fl: 'fill the blanks',
   cg: 'categorize',

@@ -9,6 +9,14 @@ cards:
       text: Containers share the host {}, whereas each VM ships a full guest OS.
       answer: kernel
     hint: Shared kernel versus a full guest OS — the weight/speed tradeoff.
+    mcq:
+      prompt: Why does a container start in milliseconds while a VM takes far longer to boot?
+      options:
+      - it reuses the host's running kernel
+      - it boots a smaller guest OS
+      - it skips the hypervisor's scheduler
+      - it caches a guest kernel image
+      answerIndex: 0
   - topic: "OS layers: node → pod → container"
     desc: "The nesting on ONE shared kernel: a node has a single Linux kernel; a pod groups containers that share a network namespace (1 IP); a container is an isolated process with its own filesystem. Containers ship userspace, not a kernel."
     diagram: nested_layers
@@ -23,6 +31,14 @@ cards:
       text: A {} groups containers that share one network namespace and a single IP.
       answer: pod
     hint: Three nested levels on one kernel — what each one owns.
+    mcq:
+      prompt: Two containers must reach each other over localhost and share one IP. Which Kubernetes construct do you put them in?
+      options:
+      - the same pod
+      - the same node
+      - the same namespace
+      - the same Deployment
+      answerIndex: 0
   - topic: What's shared vs. isolated across the folds
     desc: "Who shares what as you nest node → pod → container:"
     extras:
@@ -76,6 +92,14 @@ cards:
         - cluster autoscaler
         - autoscaler
     hint: Two independent loops — one scales pods, one scales nodes.
+    mcq:
+      prompt: A spike makes the HPA request 20 pods, but they sit Pending because nodes are full. What provisions MORE nodes so they can schedule?
+      options:
+      - Cluster Autoscaler
+      - Vertical Pod Autoscaler
+      - kube-proxy
+      - kube-scheduler
+      answerIndex: 0
   - topic: Docker commands (basic → advanced)
     desc: Docker builds images (blueprints) and runs them as containers (running instances). Commands roughly basic → advanced.
     extras:
@@ -95,3 +119,11 @@ cards:
       - compose up -d | down — run/stop a multi-container stack from compose.yaml
       - system prune -a · build --no-cache — reclaim space / bust the layer cache
     hint: Build, run, inspect — then volumes, networks, compose.
+    mcq:
+      prompt: You have a STOPPED container and want it running again WITHOUT creating a new one. Which command?
+      options:
+      - docker start
+      - docker run
+      - docker create
+      - docker exec
+      answerIndex: 0

@@ -154,6 +154,14 @@ cards:
       text: Deserializing untrusted data with Python {} can execute arbitrary code.
       answer: pickle
     hint: Turning objects into bytes/text to cross a boundary — plus the deserialization trap.
+    mcq:
+      prompt: Which serialization format can run arbitrary code when you deserialize untrusted input, so it must never cross a trust boundary?
+      options:
+      - MessagePack
+      - JSON
+      - pickle
+      - Protobuf
+      answerIndex: 2
   - topic: "Python envs: venv & uv"
     desc: A venv (virtual environment) is an isolated, per-project Python install — its own dependencies, so projects don't collide in the global site-packages. uv is a fast Rust-based tool (by Astral) that creates the venv AND manages packages, replacing pip / virtualenv / pyenv / much of poetry.
     extras:
@@ -176,3 +184,11 @@ cards:
       text: "{} turns type-hinted classes into runtime validators and is the engine under FastAPI."
       answer: Pydantic
     hint: Type hints turned into enforced runtime validation.
+    mcq:
+      prompt: Which library turns type-hinted classes into runtime validators that coerce input and raise on bad data, powering FastAPI's request parsing?
+      options:
+      - dataclasses
+      - attrs
+      - marshmallow
+      - Pydantic
+      answerIndex: 3

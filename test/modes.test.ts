@@ -8,6 +8,7 @@ import {
   renderFill,
   renderIV,
   renderMA,
+  renderMQ,
   renderMS,
 } from '../src/client/quiz/modes.js';
 import { app, initData } from '../src/client/runtime/data.js';
@@ -40,6 +41,7 @@ const card = (over: Partial<GameCard> = {}): GameCard => ({
   match: null,
   multi: null,
   mc: null,
+  mcq: null,
   recall: true,
   inverse: true,
   fill: null,
@@ -67,6 +69,11 @@ const MATCH = card({
   ],
 });
 const MULTI = card({ id: 'A4', multi: ['availability', 'partition tolerance'] });
+const MCQ = card({
+  id: 'A6',
+  topic: 'CAP theorem',
+  mcq: { prompt: 'Under a network partition, CAP says you must give up which one?', options: ['Consistency or availability', 'Durability', 'Latency', 'Throughput'], answerIndex: 0 },
+});
 const FILL = card({
   id: 'A5',
   fill: { text: 'kind: {0}\nreplicas: {1}', blanks: ['Deployment', '3'], distractors: ['Service'], code: true },
@@ -159,6 +166,7 @@ const MODES: [string, (c: GameCard) => void, GameCard, string][] = [
   ['cz', renderCZ, CLOZE, 'fill in'],
   ['ma', renderMA, MATCH, 'match'],
   ['ms', renderMS, MULTI, 'select all'],
+  ['mq', renderMQ, MCQ, 'multiple choice'],
   ['iv', renderIV, card(), 'name it'],
   ['fl', renderFill, FILL, 'label the config'],
   ['cg', renderCat, CAT, 'categorize'],
@@ -202,6 +210,32 @@ describe('every mode draws the same card scaffolding', () => {
     // A timed-out card is a missed card — never a free pass, and never a payout.
     expect(S.ses!.correct).toBe(0);
     expect(DB.coins).toBe(0);
+  });
+});
+
+describe('mcq (multiple-choice) grading', () => {
+  const CORRECT = MCQ.mcq!.options[MCQ.mcq!.answerIndex];
+  const click = (want: boolean): void => {
+    const btns = [...app.querySelectorAll('.choice')] as HTMLElement[];
+    const target = btns.find((b) => (b.textContent || '').includes(CORRECT) === want)!;
+    target.click();
+  };
+
+  test('picking the authored answer scores correct', () => {
+    startSession(MCQ, 'mq');
+    renderMQ(MCQ);
+    click(true);
+    expect(S.ses!.correct).toBe(1);
+    expect(app.querySelector('.choice.correct')?.textContent).toContain(CORRECT);
+  });
+
+  test('picking a wrong option scores it wrong but still marks the correct one', () => {
+    startSession(MCQ, 'mq');
+    renderMQ(MCQ);
+    click(false);
+    expect(S.ses!.correct).toBe(0);
+    expect(app.querySelector('.choice.wrong'), 'the wrong pick is flagged').not.toBeNull();
+    expect(app.querySelector('.choice.correct')?.textContent).toContain(CORRECT);
   });
 });
 

@@ -48,7 +48,7 @@ function renderChoice(
       seen.add(o.topic);
       return true;
     })
-    .slice(0, 7);
+    .slice(0, 5); // 5 distractors + the correct answer = a 6-option grid
   const opts = shuffle(pool.concat(c));
   const btns = opts
     .map(
@@ -427,6 +427,60 @@ export function renderMS(c: GameCard): void {
   app.querySelector('#mscheck')!.addEventListener('click', () => check(false));
 
   checkboxKeys('.choice', ses, check);
+}
+
+/**
+ * Multiple-choice: a self-contained prompt with authored options — pick the right one. Unlike identify
+ * (which pools distractor topics), the four options are authored on the card, and the correct one is
+ * given by `answerIndex`; we shuffle them and grade by which option was picked. Single-pick, like the
+ * identify grid, so it borrows that grid's ending (no #act — a Next button is appended after #choices).
+ */
+export function renderMQ(c: GameCard): void {
+  const q = c.mcq!;
+  const opts = shuffle(q.options.map((text, i) => ({ text, ok: i === q.answerIndex })));
+  const btns = opts
+    .map(
+      (o, i) =>
+        `<button class="choice" data-i="${i}"><span class="k">${CHOICE_LETTERS[i]}</span>${esc(o.text)}</button>`,
+    )
+    .join('');
+
+  const ses = drawCard(
+    c,
+    'multiple choice',
+    `<div class="topic" style="font-size:16px">${esc(q.prompt)}</div>
+      <div class="choices" id="choices">${btns}</div>`,
+  );
+
+  function finish(picked: HTMLElement | null): void {
+    if (ses.answered) return;
+    answeredNow();
+    const ok = picked ? opts[+picked.dataset.i!].ok : false;
+    app.querySelectorAll('.choice').forEach((b) => {
+      (b as HTMLButtonElement).disabled = true;
+      if (opts[+(b as HTMLElement).dataset.i!].ok) b.classList.add('correct');
+    });
+    if (picked && !ok) picked.classList.add('wrong');
+    score(c, ok, 'mq');
+
+    const note = picked ? '' : '<div class="grade-note bad">⏱ Timed out</div>';
+    const cont = document.createElement('div');
+    cont.innerHTML = `${note}<div class="actions center"><button class="btn primary" id="next">Next <kbd>→</kbd></button></div>`;
+    app.querySelector('#choices')!.after(cont);
+    app.querySelector('#next')!.addEventListener('click', advance);
+  }
+
+  ses._onTimeout = () => finish(null);
+  app.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => finish(b as HTMLElement)));
+
+  modeKeys((e) => {
+    if (ses.answered) return;
+    const idx = choiceIndex(e);
+    if (idx >= 0) {
+      const b = app.querySelectorAll('.choice')[idx];
+      if (b) finish(b as HTMLElement);
+    }
+  });
 }
 
 /** Inverse recall: show the (topic-masked) definition, name the concept. Machine-graded by ivOK. */

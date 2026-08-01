@@ -44,6 +44,15 @@ export interface CodeSelect {
   answer: number[]; // 0-based indices into Code.lines that are correct
 }
 
+/** A self-contained multiple-choice question: a scenario prompt with authored options and one right
+ *  answer. Unlike `mc` (extra distractor topics for the identify grid), `mcq` carries its OWN prompt
+ *  and options → the "multiple-choice" mode (mq). Adopted from the Know Your Stack fork's mobile bank. */
+export interface Mcq {
+  prompt: string;
+  options: string[];
+  answerIndex: number; // 0-based index of the correct option
+}
+
 /** A card exactly as authored in YAML (before transforms). */
 export interface AuthoredCard {
   topic: string;
@@ -55,6 +64,7 @@ export interface AuthoredCard {
   match?: [string, string][];
   multi?: string[];
   mc?: string[];
+  mcq?: Mcq; // a self-contained multiple-choice question → enables "multiple-choice" (mq)
   cloze?: Cloze;
   hint?: string;
   fold?: boolean;
@@ -81,6 +91,7 @@ export interface GameCard {
   match: [string, string][] | null;
   multi: string[] | null;
   mc: string[] | null;
+  mcq: Mcq | null;
   recall: boolean;
   inverse: boolean;
   fill: Fill | null;

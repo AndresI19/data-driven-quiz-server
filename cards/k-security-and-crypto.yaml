@@ -20,6 +20,14 @@ cards:
         - key-derivation function
         - key derivation function
     inverse: true
+    mcq:
+      prompt: Which of these must you NOT use to store a password, because it is a fast general-purpose hash rather than a deliberately slow KDF?
+      options:
+      - SHA-256
+      - bcrypt
+      - scrypt
+      - Argon2
+      answerIndex: 0
 
   - topic: "Salt vs pepper"
     desc: "Two different secrets defending against two different attacks. A SALT is random, per-row, and stored NEXT TO the hash. A PEPPER is a single secret, shared across all rows, kept OUTSIDE the database (an environment variable or sealed secret)."
@@ -32,6 +40,14 @@ cards:
       - ["salt", "random, per-row, stored beside the hash — defeats rainbow tables"]
       - ["pepper", "one secret, held outside the DB — a stolen dump is useless without it"]
       - ["slow KDF", "makes each guess expensive — the defence against a weak password"]
+    mcq:
+      prompt: Which value is random, unique to each user row, and stored right beside the hash — defeating rainbow tables and stopping two identical passwords from producing the same hash?
+      options:
+      - salt
+      - pepper
+      - nonce
+      - seed
+      answerIndex: 0
 
   - topic: "Why a random token can use a fast hash but a password cannot"
     desc: "A high-entropy, server-generated token (e.g. 34 billion possibilities) can be stored as a fast KEYED hash — HMAC(pepper, token) — because it is deterministic (so login is a single INDEXED lookup) and un-guessable even at billions of tries/sec. A user-CHOSEN password is low-entropy, so it needs a slow, per-row-SALTED hash, which cannot be indexed."
@@ -43,6 +59,14 @@ cards:
         text: "A salted hash is non-deterministic (a random salt per row), so you can't look a user up BY it — you find the row by username first, THEN verify. HMAC is deterministic, so it can be the index."
       - label: Say
         text: "\"Entropy decides the algorithm: high-entropy input → fast keyed hash you can index; low-entropy input → slow salted hash you verify.\""
+    mcq:
+      prompt: A stored token must be findable by one indexed lookup at login. Which property must its hash have — the very property a per-row-salted password hash deliberately lacks?
+      options:
+      - Deterministic
+      - Salted
+      - Memory-hard
+      - Non-deterministic
+      answerIndex: 0
 
   - topic: "Timing attack: username enumeration"
     desc: "If a login returns 'no such user' FASTER than 'wrong password' (because it skips the expensive hash on a missing user), an attacker can measure response time to discover which usernames exist. Defence: do the same work either way — verify the supplied password against a DUMMY hash even when the user doesn't exist — and return one generic error."
@@ -56,6 +80,14 @@ cards:
       answer: "dummy"
       alts:
         - decoy
+    mcq:
+      prompt: Comparing a secret with `===` lets an attacker measure how many leading bytes matched. Which Node function performs the comparison in constant time to close that leak?
+      options:
+      - timingSafeEqual
+      - createHash
+      - randomBytes
+      - scryptSync
+      answerIndex: 0
 
   - topic: "CWE-312: clear-text storage of sensitive data"
     desc: "Storing a secret unencrypted where it can be read back — a password in a cookie, a token in localStorage, credentials in logs. The risk is anything that reads that store (XSS, a shared machine, a log aggregator) gets the secret."
@@ -87,6 +119,14 @@ cards:
     match:
       - ["HS256", "symmetric — one shared secret signs AND verifies (verifier can forge)"]
       - ["RS256", "asymmetric — private key signs, public key (JWKS) only verifies"]
+    mcq:
+      prompt: Across service boundaries you want each verifier able to CHECK a token but never able to ISSUE one — a private key signs, and a public JWKS key only verifies. Which algorithm gives that?
+      options:
+      - RS256
+      - HS256
+      - HS384
+      - HS512
+      answerIndex: 0
 
   - topic: "Access token vs refresh token"
     desc: "An ACCESS token is short-lived (minutes to a day) and sent on every request. A REFRESH token is long-lived and used only to mint new access tokens without re-authenticating. Splitting them limits the blast radius: a leaked access token expires soon; the refresh token is exposed rarely."
@@ -109,6 +149,14 @@ cards:
         text: "Rate limiting stops ONLINE attacks (through your endpoint). It does nothing about OFFLINE attacks (a stolen hash cracked on the attacker's own hardware) — that's what a slow hash + pepper are for."
       - label: Trap
         text: "An in-process limiter (a Map in memory) silently breaks when you scale to multiple replicas: each replica enforces its own limit, multiplying the real ceiling. Move it to a shared store first."
+    mcq:
+      prompt: A patient attacker steals your password hashes and cracks them on their own GPUs. Which defense does NOTHING to stop that, because it only guards the live endpoint?
+      options:
+      - Rate limiting
+      - A slow KDF
+      - A pepper
+      - A per-row salt
+      answerIndex: 0
 
   - topic: "The three layers protecting a stored password"
     desc: "Defence in depth: each layer covers what the next cannot."

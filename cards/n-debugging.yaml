@@ -25,6 +25,14 @@ cards:
       alts:
         - "connection pool"
         - "pool"
+    mcq:
+      prompt: A service is fast at low traffic, but under load requests hang for seconds and then time out — while the database CPU sits near idle the entire time. Most likely root cause?
+      options:
+      - Connection-pool exhaustion
+      - A slow query plan
+      - Lock contention
+      - An N+1 query pattern
+      answerIndex: 0
 
   - topic: "Cache stampede (thundering herd)"
     desc: "A single popular cache key expires and thousands of concurrent requests all miss at once, hammering the origin with identical queries until one request repopulates the key. Latency spikes and the database briefly saturates every time that key expires."
@@ -39,6 +47,14 @@ cards:
       alts:
         - "stampede (thundering herd)"
         - "thundering herd"
+    mcq:
+      prompt: One very popular cache key expires and thousands of requests miss at the same instant, all hitting the origin with the identical query until one repopulates it; the database saturates for a moment each time that key expires. Root cause?
+      options:
+      - Cache-replication lag
+      - A cache stampede
+      - An undersized cache
+      - A hot-key collision
+      answerIndex: 1
 
   - topic: "Liveness probe killing a slow-starting pod"
     desc: "A Kubernetes pod keeps entering CrashLoopBackOff. The logs show the process was still starting up — loading a large model into memory — when it received SIGTERM. The liveness probe's delay is shorter than the app's real startup time, so the kubelet restarts it before it is ever ready."
@@ -51,6 +67,14 @@ cards:
       - ["liveness probe", "restarts the container when it keeps failing"]
       - ["readiness probe", "drops the pod from Service endpoints while it fails"]
       - ["startup probe", "guards a slow start before liveness begins to apply"]
+    mcq:
+      prompt: A pod keeps entering CrashLoopBackOff. Logs show the process received SIGTERM while still loading a large model into memory, before it ever served a request. Most likely root cause?
+      options:
+      - An early OOMKill
+      - Liveness probe firing too early
+      - An ImagePullBackOff
+      - A failing readiness probe
+      answerIndex: 1
 
   - topic: "Retry storm (no exponential backoff)"
     desc: "A downstream service has a two-second blip. Every client immediately retries in a tight loop, and the synchronized wave of retries keeps the recovering service pinned down — turning a brief blip into a ten-minute outage. The retries have neither jitter nor exponential backoff."
@@ -64,6 +88,14 @@ cards:
       answer: "jitter"
       alts:
         - "random jitter"
+    mcq:
+      prompt: A downstream service has a two-second blip. Every client retries immediately in a tight, synchronized loop, keeping the recovering service pinned down and stretching the blip into a ten-minute outage. Root cause?
+      options:
+      - A stuck-open circuit breaker
+      - A client thread-pool deadlock
+      - Retries without backoff/jitter
+      - An over-long DNS TTL
+      answerIndex: 2
 
   - topic: "OOMKilled: memory limit set below real usage"
     desc: "A pod is repeatedly killed with reason OOMKilled and its restart count climbs, even though the node has plenty of free memory. The container's memory limit is set below the app's steady-state heap, so the cgroup out-of-memory killer terminates it whenever it crosses the cap."
@@ -75,6 +107,14 @@ cards:
     cloze:
       text: "A container terminated with reason OOMKilled has exceeded its configured memory {}."
       answer: "limit"
+    mcq:
+      prompt: A pod is repeatedly killed with reason OOMKilled and its restart count climbs — even though the node itself has plenty of free memory. Most likely root cause?
+      options:
+      - Node memory-pressure eviction
+      - A too-low memory limit
+      - A slow memory leak
+      - A liveness-probe timeout
+      answerIndex: 1
 
   - topic: "Signs pointing to an in-process memory leak"
     desc: "Symptoms that distinguish a genuine leak inside the process from external memory pressure on the node."

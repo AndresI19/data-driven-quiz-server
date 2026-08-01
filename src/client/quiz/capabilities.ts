@@ -11,6 +11,7 @@ export const MODE_REQUIRES: Record<string, (c: GameCard) => boolean> = {
   cz: (c) => !!c.cloze,
   ma: (c) => !!c.match,
   ms: (c) => !!c.multi,
+  mq: (c) => !!c.mcq,
   iv: (c) => !!c.inverse,
   fl: (c) => !!c.fill,
   cg: (c) => !!c.categorize,
@@ -21,7 +22,7 @@ export const MODE_REQUIRES: Record<string, (c: GameCard) => boolean> = {
 
 // The field-gated modes in canonical order (matches session.pickDir's original push order, which the
 // dashboard and the mixed-mode random pick depend on).
-const GATED_MODES = ['cz', 'ma', 'ms', 'iv', 'fl', 'cg', 'or', 'cw', 'cs'] as const;
+const GATED_MODES = ['cz', 'ma', 'ms', 'mq', 'iv', 'fl', 'cg', 'or', 'cw', 'cs'] as const;
 
 /** The modes available for a card under the 'mixed' direction: bf (identify) always, plus each gated
  *  mode the card's fields enable. Recall (fb) is intentionally absent so the rotation only ever asks

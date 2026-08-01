@@ -211,6 +211,7 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
     match: recall ? null : match(c),
     multi: recall ? null : multi(c),
     mc: c.mc ?? null,
+    mcq: recall ? null : (c.mcq ?? null),
     recall,
     inverse: Boolean(c.inverse) && !recall,
     fill: recall ? null : (c.fill ?? null),

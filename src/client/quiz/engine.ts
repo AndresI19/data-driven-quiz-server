@@ -22,6 +22,7 @@ import {
   renderFill,
   renderIV,
   renderMA,
+  renderMQ,
   renderMS,
   renderOR,
 } from './modes.js';
@@ -48,6 +49,7 @@ const RENDERERS: Record<string, (c: GameCard) => void> = {
   bf: renderBF,
   cz: renderCZ,
   ma: renderMA,
+  mq: renderMQ,
   iv: renderIV,
   fl: renderFill,
   cg: renderCat,

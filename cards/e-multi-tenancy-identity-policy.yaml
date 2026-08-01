@@ -20,6 +20,14 @@ cards:
       - - Bridge
         - shared infra, a separate schema per tenant — a middle ground
     hint: Three isolation models — separate DB, shared DB, or something in between.
+    mcq:
+      prompt: A compliance customer insists their data never sit in the same database as anyone else's. Which multi-tenancy model gives that hard, per-customer isolation?
+      options:
+      - Silo
+      - Pool
+      - Bridge
+      - Sharded
+      answerIndex: 0
   - topic: Authentication vs. authorization
     desc: Proving WHO you are (authn) vs. deciding WHAT you're allowed to do (authz).
     cloze:
@@ -28,6 +36,14 @@ cards:
       alts:
         - authz
     hint: Proving who you are versus deciding what you're allowed to do.
+    mcq:
+      prompt: A user's password is verified and their identity confirmed, yet the system still checks whether they may delete this particular record. That second check is which step?
+      options:
+      - Authorization
+      - Authentication
+      - Accounting
+      - Attestation
+      answerIndex: 0
   - topic: Cookies — and how the backend knows who you are
     desc: HTTP is stateless. A cookie is the server asking the browser to hold a string and hand it back — Set-Cookie on the response, a Cookie header on every matching request after.
     extras:
@@ -66,6 +82,14 @@ cards:
       alts:
         - openid connect
     hint: "Three pieces: delegation, an identity layer on top, and a self-contained signed token."
+    mcq:
+      prompt: Which of these is purely a delegation framework — it lets an app act on your behalf via access tokens — and does not, by itself, prove who you are?
+      options:
+      - OAuth2
+      - OIDC
+      - SAML
+      - JWT
+      answerIndex: 0
   - topic: RBAC vs. ABAC
     desc: Two ways to decide 'can this subject do this action?'. RBAC checks WHO YOU ARE (your role); ABAC checks the ATTRIBUTES of the request (who + what + when + where). ABAC is a superset — it can express any RBAC rule plus context — which is why fine-grained policy engines lean toward it.
     extras:
@@ -112,6 +136,14 @@ cards:
         - attribute-based
         - attribute based
     hint: Access by role versus access by attributes and conditions.
+    mcq:
+      prompt: An access model grants permissions strictly by the roles assigned to a user — 'admins can delete' — and its classic failure mode is role explosion. Which model is it?
+      options:
+      - RBAC
+      - ABAC
+      - MAC
+      - DAC
+      answerIndex: 0
   - topic: Policy-as-code (OPA/Rego, Cedar)
     desc: Externalizing authorization rules into an engine you evaluate at runtime — the essence of runtime 'policy enforcement'.
     extras:
@@ -125,6 +157,14 @@ cards:
       text: Open Policy Agent evaluates authorization rules written in the {} language.
       answer: Rego
     hint: Externalize authorization rules into an engine you evaluate at runtime.
+    mcq:
+      prompt: Which tool is the CNCF general-purpose policy engine that pulls allow/deny decisions out of each service into a single, versioned, testable policy evaluated at request time?
+      options:
+      - OPA
+      - Cedar
+      - Kyverno
+      - Sentinel
+      answerIndex: 0
   - topic: PEP vs. PDP
     desc: "The two halves of an authorization system: the PDP (Policy Decision Point) evaluates the rules and answers 'allow or deny?'; the PEP (Policy Enforcement Point) sits in the request path and actually enforces that answer."
     extras:
@@ -145,6 +185,14 @@ cards:
         - "PAP"
         - "PIP"
     hint: Two halves — one decides allow/deny, one enforces it in the request path.
+    mcq:
+      prompt: An API gateway intercepts a request, asks a policy server for a verdict, and returns 403 when told 'deny'. In XACML terms, which role is the gateway playing?
+      options:
+      - PEP
+      - PDP
+      - PAP
+      - PIP
+      answerIndex: 0
   - topic: Secrets management
     desc: Vaulting credentials and keys (HashiCorp Vault, cloud KMS) instead of hardcoding them.
     cloze:
@@ -153,6 +201,14 @@ cards:
       alts:
         - "key management service"
     hint: Where credentials belong instead of hardcoded — a vault or a KMS.
+    mcq:
+      prompt: Which purpose-built cloud service stores and rotates encryption keys, letting apps request cryptographic operations without ever handling the raw key material?
+      options:
+      - KMS
+      - IAM
+      - HSM
+      - Vault
+      answerIndex: 0
   - topic: Real-time detection & enforcement
     desc: Inspecting agent actions in-flight and blocking or scoring risky ones — the runtime control-plane pitch.
     extras:
@@ -179,6 +235,14 @@ cards:
       text: Older enterprise SSO uses SAML, which encodes its assertions in {}.
       answer: XML
     hint: Two federation protocols for single sign-on — one old/XML, one modern/JWT.
+    mcq:
+      prompt: A team needs SSO for a modern mobile app and its REST APIs, and prefers JSON over XML. Which federation protocol fits best?
+      options:
+      - OIDC
+      - SAML
+      - LDAP
+      - Kerberos
+      answerIndex: 0
   - topic: ID vs access vs refresh tokens
     desc: "OAuth2 / OIDC issue three token types, each with a different job and audience:"
     extras:
@@ -210,6 +274,14 @@ cards:
       alts:
         - identity
     hint: Three tokens — the key is who each one is FOR (its audience).
+    mcq:
+      prompt: Which OAuth2 token is long-lived and used only to obtain new short-lived access tokens, without forcing the user to log in again?
+      options:
+      - Refresh token
+      - ID token
+      - Access token
+      - Bearer token
+      answerIndex: 0
   - topic: mTLS & workload identity
     desc: How SERVICES (not users) prove identity to each other. mTLS (mutual TLS) = both client and server present certs, so each authenticates the other. Workload identity gives each service a verifiable identity + auto-rotated certs.
     extras:
@@ -223,6 +295,14 @@ cards:
       alts:
         - mtls
     hint: How services, not users, prove identity to each other.
+    mcq:
+      prompt: Which framework issues each workload a short-lived SVID identity document plus auto-rotated certs, so pods authenticate to one another with no static keys?
+      options:
+      - SPIFFE/SPIRE
+      - OAuth2
+      - Kerberos
+      - LDAP
+      answerIndex: 0
   - topic: Threat modeling (STRIDE)
     desc: "Systematically enumerating how a system could be attacked BEFORE building defenses. STRIDE is the classic checklist: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege."
     extras:
@@ -255,6 +335,14 @@ cards:
       - "Rate each threat by impact × likelihood"
       - "Design mitigations for the high-risk ones"
     hint: Enumerate the attacks before defending — a six-letter checklist.
+    mcq:
+      prompt: In STRIDE, an attacker forging messages to impersonate a trusted service falls under which category?
+      options:
+      - Spoofing
+      - Tampering
+      - Repudiation
+      - Elevation of privilege
+      answerIndex: 0
 
   - topic: "The role comes from the issuer, not the caller"
     desc: "A privilege (admin, tenant, scope) must be decided by the token ISSUER and SIGNED into the token — never asserted by the client and never re-derived by each verifier. The auth service checks its private admin list at mint time and signs `admin: true`; a client cannot ask to be admin, edit the claim, or forge a token, because it doesn't hold the signing key."
@@ -266,6 +354,14 @@ cards:
     cloze:
       text: "An authorization claim like admin must be set by the {} and signed, not asserted by the client."
       answer: "issuer"
+    mcq:
+      prompt: 'A client crafts a JWT and sets `admin: true` in the payload itself, and a correct gateway ignores it. Which party''s signature is the only thing that can legitimately establish that claim?'
+      options:
+      - The issuer
+      - The subject
+      - The audience
+      - The bearer
+      answerIndex: 0
 
   - topic: "Pseudonymous identity (deliberately holding no PII)"
     desc: "An identity that ties activity to a stable handle WITHOUT collecting personally identifiable information — no email, no real name. A user is a random id plus a credential, and nothing sensitive sits behind it. The trade: there's no account RECOVERY (recovery needs an email, and an email is PII)."
@@ -279,6 +375,14 @@ cards:
         text: "Holding no PII shrinks the blast radius of a breach to near nothing and sidesteps most privacy/consent obligations — a good fit when the data is low-stakes (a game profile), a bad fit for anything real."
       - label: Public vs secret
         text: "Keep the PUBLIC identifier (a display handle, safe to show anywhere) separate from the CREDENTIAL — never print the thing that proves who you are."
+    mcq:
+      prompt: Holding no personal data shrinks a breach's blast radius, but it removes which capability entirely — since restoring access would require an email the system deliberately never stored?
+      options:
+      - Account recovery
+      - Rate limiting
+      - Password hashing
+      - Session cookies
+      answerIndex: 0
 
   - topic: "Debugging a 403 from the Kubernetes API (kubectl auth can-i)"
     desc: "A pod's app gets 403 Forbidden calling the API — it authenticated fine (the API knew who it was) but RBAC denied the action. Confirm it in one command: `kubectl auth can-i <verb> <resource> --as=system:serviceaccount:<ns>:<sa>` replays the check AS that ServiceAccount and answers yes/no, so you reproduce the denial without the pod."
