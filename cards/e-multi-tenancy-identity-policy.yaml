@@ -413,3 +413,94 @@ cards:
       - label: e.g.
         text: "PKCE (Proof Key for Code Exchange) protects public clients — SPAs and mobile apps that can't keep a secret — with a per-request verifier in the secret's place."
     hint: "redirect → consent → code → back-channel token exchange → verify."
+  - topic: Cookie flags
+    desc: The HttpOnly cookie flag prevents JavaScript from reading the cookie, blunting XSS token theft.
+    cloze:
+      text: The {} cookie flag prevents JavaScript from reading the cookie, blunting XSS token theft.
+      answer: HttpOnly
+    mcq:
+      prompt: Which cookie attribute keeps the browser from attaching the cookie on cross-site requests, mitigating CSRF?
+      options:
+      - SameSite
+      - HttpOnly
+      - Secure
+      - Path
+      answerIndex: 0
+  - topic: Noisy neighbor in pooled tenancy
+    desc: In a pooled multi-tenant database, one tenant's expensive query can starve everyone sharing the node — the classic noisy-neighbor problem.
+    cloze:
+      text: In a pooled multi-tenant database, one tenant's expensive query can starve everyone sharing the node — the classic {} problem.
+      answer: noisy-neighbor
+    mcq:
+      prompt: On a shared database serving all tenants from one table, a single customer's full scan spikes latency for every other customer. Which tenancy risk is this, and the reason silo models exist?
+      options:
+      - Noisy neighbor
+      - Data residency
+      - Role explosion
+      - Token replay
+      answerIndex: 0
+  - topic: Row-level security for tenant isolation
+    desc: Relying on every query to remember its tenant filter is fragile; enforcing tenant isolation inside the database uses row-level security.
+    cloze:
+      text: Relying on every query to remember its tenant filter is fragile; enforcing tenant isolation inside the database uses {} security.
+      answer: row-level
+    mcq:
+      prompt: One forgotten tenant filter in a single query leaked another customer's rows. Which database feature moves that check out of application code so a missing WHERE clause cannot cross tenants?
+      options:
+      - Row-level security
+      - A unique index
+      - A foreign key
+      - A check constraint
+      answerIndex: 0
+  - topic: Revoking a stateless JWT
+    desc: A stateless JWT stays valid until it expires because nothing checks a server-side store per request, so an urgent logout needs a token denylist list or short lifetimes.
+    cloze:
+      text: A stateless JWT stays valid until it expires because nothing checks a server-side store per request, so an urgent logout needs a token {} list or short lifetimes.
+      answer: denylist
+    mcq:
+      prompt: A user's laptop is stolen and you must kill their session immediately, but your access tokens are self-contained JWTs. Which approach actually cuts off an unexpired token at once?
+      options:
+      - Check a revocation list
+      - Rotate the key next month
+      - Lower future lifetimes
+      - Add more scopes
+      answerIndex: 0
+  - topic: Immutable audit log
+    desc: A SOC2 control requires proving who did what and when, so security-relevant actions are written to an append-only, tamper-evident audit log.
+    cloze:
+      text: A SOC2 control requires proving who did what and when, so security-relevant actions are written to an append-only, tamper-evident audit {}.
+      answer: log
+    mcq:
+      prompt: An auditor asks you to show that admin actions cannot be quietly deleted or altered after the fact. Which property must your access-log store have?
+      options:
+      - Append-only immutability
+      - Read replicas
+      - Short retention
+      - Client-side writes
+      answerIndex: 0
+  - topic: Data residency
+    desc: A rule that an EU customer's data must be stored and processed only inside the EU is a data residency requirement.
+    cloze:
+      text: A rule that an EU customer's data must be stored and processed only inside the EU is a data {} requirement.
+      answer: residency
+    mcq:
+      prompt: A contract forbids German user data from ever leaving EU regions, shaping where you deploy and replicate. Which compliance constraint is this — about where data lives, not how long you keep it?
+      options:
+      - Data residency
+      - Data retention
+      - Data masking
+      - Data lineage
+      answerIndex: 0
+  - topic: Dynamic / rotated secrets
+    desc: A long-lived database password in an env var is a standing risk; Vault reduces it by issuing short-lived, automatically rotated credentials per workload.
+    cloze:
+      text: A long-lived database password in an env var is a standing risk; Vault reduces it by issuing short-lived, automatically {} credentials per workload.
+      answer: rotated
+    mcq:
+      prompt: A leaked static database credential stayed valid for months. Which secrets approach shrinks that window by minting on-demand credentials that expire in minutes?
+      options:
+      - Dynamic secrets
+      - A shared vault file
+      - Base64 encoding
+      - A longer password
+      answerIndex: 0

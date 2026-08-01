@@ -146,3 +146,107 @@ cards:
     match:
       - ["pull signal", "you go look — a red ✗, a dashboard"]
       - ["push alert", "it comes to you — Slack/Discord, a page"]
+  - topic: A health check that trusts no component
+    desc: When a deploy silently reverts to old code even though every step reported success, the undetected gap between what is running and what should be running is called drift.
+    cloze:
+      text: When a deploy silently reverts to old code even though every step reported success, the undetected gap between what is running and what should be running is called {}.
+      answer: drift
+    mcq:
+      prompt: A health check reads the LIVE running version and diffs it against the latest release tag, trusting no component to report its own success. Which principle does this follow?
+      options:
+      - Step-success checking
+      - Synthetic monitoring
+      - Heartbeat polling
+      - End-state verification
+      answerIndex: 3
+  - topic: Metric cardinality explosion
+    desc: Putting a unique value like user_id or request_id into a Prometheus metric label multiplies the time-series count until the store falls over.
+    cloze:
+      text: Putting a unique value like user_id or request_id into a Prometheus metric {} multiplies the time-series count until the store falls over.
+      answer: label
+    mcq:
+      prompt: Your metrics backend runs out of memory right after a deploy that added user_email as a tag on a request counter. Which problem did that tag cause?
+      options:
+      - Cardinality explosion
+      - Sampling bias
+      - Clock skew
+      - Log truncation
+      answerIndex: 0
+  - topic: RED vs USE method
+    desc: For a request-driven service you watch Rate, Errors, and Duration — the RED method — rather than host utilization metrics.
+    cloze:
+      text: For a request-driven service you watch Rate, Errors, and Duration — the {} method — rather than host utilization metrics.
+      answer: RED
+    mcq:
+      prompt: You are choosing the three signals to alert on for an HTTP API. Which method prescribes request rate, error rate, and latency, as opposed to the USE method's focus on resource utilization and saturation?
+      options:
+      - The RED method
+      - The USE method
+      - Golden ratios
+      - Apdex scoring
+      answerIndex: 0
+  - topic: Tail-based trace sampling
+    desc: Recording a trace for every request is too costly at scale, so tracing systems keep only a fraction through sampling.
+    cloze:
+      text: Recording a trace for every request is too costly at scale, so tracing systems keep only a fraction through {}.
+      answer: sampling
+    mcq:
+      prompt: At very high request rates you cannot store a span for every request, but you must keep every trace that contains an error. Which strategy decides AFTER a request finishes whether to keep its trace?
+      options:
+      - Tail-based sampling
+      - Head-based sampling
+      - Rate limiting
+      - Downsampling
+      answerIndex: 0
+  - topic: Alert on symptoms, not causes
+    desc: Paging on every CPU blip trains responders to ignore the pager; mature on-call alerts on user-facing symptoms instead of internal causes.
+    cloze:
+      text: Paging on every CPU blip trains responders to ignore the pager; mature on-call alerts on user-facing {} instead of internal causes.
+      answer: symptoms
+    mcq:
+      prompt: Your team gets two hundred pages a night, starts muting them, then misses a real outage. Which alerting principle most directly fixes this?
+      options:
+      - Alert on symptoms not causes
+      - Add more alerts
+      - Shorten every timeout
+      - Page two people each time
+      answerIndex: 0
+  - topic: Error budget policy
+    desc: One minus the SLO is the error budget — the unreliability you are allowed to spend before feature work must stop and reliability work takes over.
+    cloze:
+      text: One minus the SLO is the error {} — the unreliability you are allowed to spend before feature work must stop and reliability work takes over.
+      answer: budget
+    mcq:
+      prompt: A 99.9% target leaves about forty-three minutes of allowed downtime a month, and your team agrees to freeze features once it is used up. What is that allowance called?
+      options:
+      - The error budget
+      - The SLA penalty
+      - The toil quota
+      - The blast radius
+      answerIndex: 0
+  - topic: Blameless postmortem
+    desc: After an incident, a blameless postmortem focuses on the systems and conditions that allowed the failure, not on punishing the engineer who triggered it.
+    cloze:
+      text: After an incident, a {} postmortem focuses on the systems and conditions that allowed the failure, not on punishing the engineer who triggered it.
+      answer: blameless
+    mcq:
+      prompt: Your goal after an outage is honest disclosure and systemic fixes, so engineers report near-misses instead of hiding them. Which postmortem culture achieves that?
+      options:
+      - Blameless
+      - Name-and-shame
+      - Skip-if-minor
+      - Manager-only
+      answerIndex: 0
+  - topic: Toil reduction
+    desc: Repetitive, manual, automatable operational work that scales with service size but adds no lasting value is called toil, and SRE's job is to automate it away.
+    cloze:
+      text: Repetitive, manual, automatable operational work that scales with service size but adds no lasting value is called {}, and SRE's job is to automate it away.
+      answer: toil
+    mcq:
+      prompt: An SRE team caps time spent on manual, repetitive, ticket-driven ops at fifty percent so the rest goes to engineering. Which category of work is that cap meant to bound?
+      options:
+      - Toil
+      - Incident response
+      - Capacity planning
+      - Code review
+      answerIndex: 0

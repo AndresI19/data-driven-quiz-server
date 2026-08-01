@@ -132,3 +132,55 @@ cards:
       - preload
       - prefetch
       answerIndex: 1
+  - topic: CORS preflight
+    desc: A browser blocks a cross-origin POST carrying a custom header until the server answers an OPTIONS preflight request with the right Access-Control headers.
+    cloze:
+      text: A browser blocks a cross-origin POST carrying a custom header until the server answers an OPTIONS {} request with the right Access-Control headers.
+      answer: preflight
+    mcq:
+      prompt: Your fetch to another origin fails in the browser with no response, and DevTools shows an OPTIONS call you never wrote. Which CORS mechanism is that automatic OPTIONS?
+      options:
+      - The preflight
+      - A 301 redirect
+      - A service worker
+      - A socket upgrade
+      answerIndex: 0
+  - topic: Forced reflow / layout thrash
+    desc: Reading an element's offsetHeight and then writing a style in a tight loop forces the browser to recompute layout each iteration — a costly reflow.
+    cloze:
+      text: Reading an element's offsetHeight and then writing a style in a tight loop forces the browser to recompute layout each iteration — a costly {}.
+      answer: reflow
+    mcq:
+      prompt: A scroll handler that measures then mutates DOM nodes one by one janks badly. Which browser cost is being triggered synchronously on every read-after-write?
+      options:
+      - Forced reflow
+      - GPU compositing
+      - JIT warmup
+      - Garbage collection
+      answerIndex: 0
+  - topic: Debounce vs throttle
+    desc: Firing an autocomplete request only after the user stops typing for a moment, collapsing a burst into one call at the end, is debouncing.
+    cloze:
+      text: Firing an autocomplete request only after the user stops typing for a moment, collapsing a burst into one call at the end, is {}.
+      answer: debouncing
+    mcq:
+      prompt: A resize handler runs hundreds of times per drag and you want it to run at most once every 100ms DURING the drag, not just when it ends. Which technique fits — as opposed to waiting for the burst to stop?
+      options:
+      - Throttling
+      - Debouncing
+      - Memoizing
+      - Lazy-loading
+      answerIndex: 0
+  - topic: Optimistic UI updates
+    desc: Showing a 'liked' state instantly before the server confirms, then rolling back if the request fails, is an optimistic UI update.
+    cloze:
+      text: Showing a 'liked' state instantly before the server confirms, then rolling back if the request fails, is an {} UI update.
+      answer: optimistic
+    mcq:
+      prompt: You want a comment to appear the instant a user hits send, without waiting on the round-trip, while still handling the rare failure. Which UI pattern is this?
+      options:
+      - Optimistic updates
+      - Server-side rendering
+      - Long polling
+      - Skeleton loading
+      answerIndex: 0

@@ -185,3 +185,42 @@ cards:
         - "Subject Alternative Name"
         - "subject alternative name"
     hint: "Two checks — the signing chain, and whether the hostname you dialed is on the cert. Which one does 'valid for X, not Y' fail?"
+  - topic: Parameterized queries vs SQL injection
+    desc: Building a query by concatenating user input lets an attacker alter its structure; the fix is a parameterized query, also called a prepared statement.
+    cloze:
+      text: Building a query by concatenating user input lets an attacker alter its structure; the fix is a parameterized query, also called a prepared {}.
+      answer: statement
+    mcq:
+      prompt: A login field containing `' OR '1'='1` returns every user row. Which coding practice would have stopped the input from being interpreted as SQL?
+      options:
+      - Parameterized queries
+      - Escaping HTML output
+      - Rate limiting
+      - A firewall rule
+      answerIndex: 0
+  - topic: Least privilege limits blast radius
+    desc: Granting a service the narrowest permissions it needs, so a compromise touches as little as possible, is the principle of least privilege.
+    cloze:
+      text: Granting a service the narrowest permissions it needs, so a compromise touches as little as possible, is the principle of least {}.
+      answer: privilege
+    mcq:
+      prompt: A leaked key could read every storage bucket because it was attached to an admin role to save time. Which principle, applied, would have limited the damage to one bucket?
+      options:
+      - Least privilege
+      - Defense in depth
+      - Zero trust
+      - Fail closed
+      answerIndex: 0
+  - topic: CSRF vs XSS
+    desc: An attack that rides a logged-in user's cookies to perform an unwanted state-changing request from another site is CSRF — defeated by anti-forgery tokens.
+    cloze:
+      text: An attack that rides a logged-in user's cookies to perform an unwanted state-changing request from another site is {} — defeated by anti-forgery tokens.
+      answer: CSRF
+    mcq:
+      prompt: A hidden form on a malicious site auto-submits a transfer request to your bank's endpoint, and the browser attaches the victim's session cookie. Which attack class is this — not the one that injects scripts into a page?
+      options:
+      - CSRF
+      - XSS
+      - SQLi
+      - RCE
+      answerIndex: 0

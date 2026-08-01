@@ -104,6 +104,14 @@ cards:
       text: In this deep-learning framework, the {} engine records operations on tensors and computes their gradients automatically for backpropagation.
       answer: autograd
     hint: The dominant deep-learning framework — tensors, autograd, GPU.
+    mcq:
+      prompt: You call y.backward() and PyTorch fills in x.grad on its own. Which subsystem recorded the tensor operations and computed those gradients?
+      options:
+      - Autograd
+      - Autocast
+      - TorchScript
+      - cuDNN
+      answerIndex: 0
   - topic: Hugging Face transformers
     desc: The de-facto Python library for downloading and running pretrained transformer models (LLMs, embeddings, vision, audio) behind a uniform API. Runs on top of PyTorch (or TF/JAX), and pulls weights from the Hugging Face Hub — the 'GitHub for models'.
     extras:
@@ -150,4 +158,30 @@ cards:
       - DPO
       - SFT
       - Distillation
+      answerIndex: 0
+  - topic: Train/serve skew
+    desc: A model that scores well offline but poorly in production often suffers train/serve skew — features computed differently at inference than in training.
+    cloze:
+      text: A model that scores well offline but poorly in production often suffers train/serve {} — features computed differently at inference than in training.
+      answer: skew
+    mcq:
+      prompt: Your fraud model had strong offline accuracy but performs near-random live, and you find the training pipeline normalized amounts while the serving path did not. Which problem is this?
+      options:
+      - Train/serve skew
+      - Data leakage
+      - Class imbalance
+      - Overfitting
+      answerIndex: 0
+  - topic: Approximate nearest-neighbor tradeoff
+    desc: A vector database trades exact nearest-neighbor accuracy for speed with an approximate index, so tuning it balances latency against recall.
+    cloze:
+      text: A vector database trades exact nearest-neighbor accuracy for speed with an approximate index, so tuning it balances latency against {}.
+      answer: recall
+    mcq:
+      prompt: Your retrieval got ten times faster after switching to an approximate index, but it sometimes misses the truly closest document. Which quality did that approximation trade away?
+      options:
+      - Recall
+      - Throughput
+      - Cardinality
+      - Determinism
       answerIndex: 0
