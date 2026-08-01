@@ -613,8 +613,8 @@ cards:
       options:
       - '137'
       - '143'
+      - '139'
       - '1'
-      - '0'
       answerIndex: 0
   - topic: Subnets (and how a VPC is carved up)
     desc: A VPC is your private network in the cloud with one big IP range (a CIDR block like 10.0.0.0/16). A SUBNET is a slice of that range, and — critically — each subnet lives in exactly ONE availability zone. You split a VPC into subnets to place resources across zones for HA and to separate public from private tiers.
@@ -629,7 +629,7 @@ cards:
       - One subnet = one AZ — spread subnets across AZs so one zone failing doesn't take you down
       - "The CIDR suffix sizes it: a /24 subnet = 256 IPs (minus ~5 the cloud reserves)"
     cloze:
-      text: "Each subnet lives in exactly one {}, so you spread subnets across several of them for high availability."
+      text: Each subnet lives in exactly one {}, so you spread subnets across several of them for fault tolerance.
       answer: "availability zone"
       alts:
         - "az"
@@ -874,7 +874,7 @@ cards:
   - topic: Mesh traffic splitting
     desc: To send five percent of live traffic to a new version at the request level — richer than a plain replica ratio — a service mesh applies a traffic-split rule.
     cloze:
-      text: To send five percent of live traffic to a new version at the request level — richer than a plain replica ratio — a service mesh applies a {} rule.
+      text: To send five percent of live requests to a new version at the request level — richer than a plain replica ratio — a service mesh applies a {} rule.
       answer: traffic-split
     mcq:
       prompt: You want to route exactly ten percent of production requests to v2 by HTTP header, shifting gradually while watching error rates. Which mesh capability does that weighted routing?
@@ -890,7 +890,7 @@ cards:
       text: Two engineers running terraform apply at once can corrupt shared state, so a remote backend takes a state {} for the duration of each apply.
       answer: lock
     mcq:
-      prompt: Your team keeps clobbering each other's changes because state lives in one shared file. Which backend feature serializes concurrent applies so only one runs at a time?
+      prompt: Your team keeps clobbering each other's changes because everyone's applies share one backend file. Which backend feature serializes concurrent applies so only one runs at a time?
       options:
       - State locking
       - A larger plan
@@ -916,7 +916,7 @@ cards:
       text: The cheapest way to run fault-tolerant, interruptible batch work in the cloud is on deeply discounted {} instances.
       answer: spot
     mcq:
-      prompt: A cluster's nodes sit at fifteen percent CPU yet the bill is huge. Which FinOps action most directly removes that waste, versus buying commitments?
+      prompt: A cluster's worker machines sit at fifteen percent CPU yet the bill is huge. Which FinOps action most directly removes that waste, versus buying commitments?
       options:
       - Rightsize the nodes
       - Buy reserved capacity

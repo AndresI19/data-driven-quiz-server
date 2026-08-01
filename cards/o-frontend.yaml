@@ -31,7 +31,7 @@ cards:
         - "path"
         - "name"
     mcq:
-      prompt: New artwork is deployed over the old file at the same path, the origin is confirmed to be serving the new bytes, yet visitors keep seeing the old picture for hours and a hard refresh changes nothing. Most likely cause?
+      prompt: New artwork is deployed over the old file at the same path, the origin is confirmed to be serving the new bytes, yet visitors keep seeing the old picture for hours and a hard refresh makes no difference. Most likely cause?
       options:
       - The filename never changed
       - The pod runs the old image
@@ -77,7 +77,7 @@ cards:
 
   # ── Checks that lie to you ────────────────────────────────────────────────────────────────────
     mcq:
-      prompt: An asset is stale for you but fresh for a colleague routed to a different edge, and a hard refresh does nothing. Which action actually replaces the copy the CDN edge is serving?
+      prompt: An asset is stale for you but fresh for a colleague routed to a different edge, and a hard refresh does nothing. Which action actually replaces the copy that edge cache is serving?
       options:
       - A browser hard-refresh
       - A private-browsing window
@@ -101,7 +101,7 @@ cards:
         - "MIME type"
         - "media type"
     mcq:
-      prompt: A script polls a URL to confirm an asset deployed and gets 200 OK, yet the file was never shipped. The server's route table ends in a wildcard that returns index.html. Why does a missing file answer 200?
+      prompt: A deploy check polls an asset's URL to confirm it shipped and gets 200 OK — but the file was never built. Why does a request for a missing file return 200 instead of 404?
       options:
       - The wildcard serves index.html
       - The CDN rewrites 404s

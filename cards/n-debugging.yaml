@@ -89,7 +89,7 @@ cards:
       alts:
         - "random jitter"
     mcq:
-      prompt: A downstream service has a two-second blip. Every client retries immediately in a tight, synchronized loop, keeping the recovering service pinned down and stretching the blip into a ten-minute outage. Root cause?
+      prompt: A downstream service has a two-second blip. Every client re-sends immediately in a tight, synchronized loop, keeping the recovering service pinned down and stretching the blip into a ten-minute outage. Root cause?
       options:
       - A stuck-open circuit breaker
       - A client thread-pool deadlock
@@ -308,7 +308,7 @@ cards:
       text: A handler that blocks on another call served by the SAME fixed thread pool can deadlock when every thread waits on a task that itself needs a thread — pool {}.
       answer: starvation
     mcq:
-      prompt: Under load a service hangs completely though CPU is idle, and every worker thread is blocked calling an internal endpoint served by the same pool. Which failure is this?
+      prompt: Under load a service hangs completely though CPU is idle, and every worker is blocked waiting on an internal endpoint that is itself served by the same limited set of workers. Which failure is this?
       options:
       - Thread-pool starvation
       - A memory leak
@@ -321,7 +321,7 @@ cards:
       text: A process whose memory climbs steadily for hours and never plateaus, then dies, points to a memory {} rather than a too-low limit.
       answer: leak
     mcq:
-      prompt: A pod is fine for six hours, then OOMKills, and its memory graph is a straight upward line with no plateau. Which root cause fits better than an undersized limit?
+      prompt: A pod is fine for six hours, then OOMKills, and its RAM-usage graph is a straight upward line with no plateau. Which root cause fits better than an undersized limit?
       options:
       - A memory leak
       - A traffic spike

@@ -132,7 +132,7 @@ cards:
   - topic: "Deploy on merge: version-tag then release"
     desc: "A common continuous-deployment shape: merging to main fires TWO workflows on the same push event. One (version-tag) cuts the release tag; the other (release) reads that tag and dispatches the actual build-and-deploy to a runner. Merge → tag → deploy, with no manual step."
     cloze:
-      text: "On merge to main, one workflow cuts the release {} and a second reads it to dispatch the build-and-deploy — merge, tag, deploy, no manual step."
+      text: On merge to main, one workflow cuts the release {} and a second reads it to dispatch the build-and-deploy — no manual step.
       answer: "tag"
     order:
       - "Merge the PR to main (a single push event)"
@@ -216,7 +216,7 @@ cards:
       text: A test that passes and fails on identical code trains developers to re-run until green, hiding real regressions; such a test is {}.
       answer: flaky
     mcq:
-      prompt: Your CI's red builds are so often 'just re-run it' that a genuine breakage merged unnoticed. Which testing problem most directly caused that eroded trust?
+      prompt: Your CI's red builds are so often 'just re-run it' that a genuine breakage merged unnoticed. Which CI reliability problem most directly caused that eroded trust?
       options:
       - Flaky tests
       - Low coverage
@@ -310,7 +310,7 @@ cards:
       prompt: When Log4Shell broke, teams that could instantly list which builds contained the vulnerable library patched in hours. Which build artifact gives that instant dependency inventory?
       options:
       - A software bill of materials
-      - A vulnerability score
-      - A firewall rule
-      - A signed commit
+      - A container image digest
+      - A dependency lockfile
+      - A CVE severity score
       answerIndex: 0

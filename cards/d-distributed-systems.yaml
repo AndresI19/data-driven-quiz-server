@@ -214,7 +214,7 @@ cards:
       text: Two-phase commit gives cross-service atomicity but blocks every participant if the {} crashes after the prepare phase, which is why sagas are preferred at scale.
       answer: coordinator
     mcq:
-      prompt: A cross-service transaction leaves rows locked for minutes when one node dies mid-commit, because all participants wait on a single decision-maker. Which protocol has this blocking failure mode?
+      prompt: A cross-service transaction leaves rows locked for minutes when one node dies partway through, because all participants wait on a single coordinator's decision. Which protocol has this blocking failure mode?
       options:
       - Two-phase commit
       - Gossip protocol
@@ -240,7 +240,7 @@ cards:
       text: Ordering events across machines by wall-clock time is unsafe because clocks drift; distributed systems order causally-related events with {} clocks instead.
       answer: logical
     mcq:
-      prompt: Two datacenters disagree on which of two writes came first, because their NTP-synced clocks still differ by milliseconds. Which mechanism captures 'happened-before' without trusting wall time?
+      prompt: Two datacenters disagree on which of two writes came first, because their NTP-synced wall time still differs by milliseconds. Which mechanism captures 'happened-before' without trusting physical time?
       options:
       - Vector clocks
       - Unix timestamps
@@ -250,7 +250,7 @@ cards:
   - topic: Kafka consumer-group parallelism
     desc: In Kafka, the unit of consumer parallelism is the partition, so adding more consumers than partitions in a group leaves the extras idle.
     cloze:
-      text: In Kafka, the unit of consumer parallelism is the partition, so adding more consumers than {} in a group leaves the extras idle.
+      text: In Kafka, consumer parallelism is capped by how many {} a topic has, so adding more consumers than that in a group leaves the extras idle.
       answer: partitions
     mcq:
       prompt: Your consumer group has twelve members but only eight partitions, and four consumers do nothing. Which fact explains why the extra consumers cannot help?
@@ -266,9 +266,9 @@ cards:
       text: Kafka guarantees order only within a single partition, so events that must stay ordered — one account's transactions — must share a partition {}.
       answer: key
     mcq:
-      prompt: Two updates for the same user were processed out of order because they landed on different partitions. Which choice guarantees a given user's events keep their produced order?
+      prompt: Two updates for the same account were processed out of order because they landed on different partitions. Which producer choice guarantees a given account's events keep their produced order?
       options:
-      - Key by user id
+      - Key by account id
       - Add more partitions
       - Increase replication
       - Shorten retention
