@@ -11,7 +11,7 @@ import { discardActive, resumeActive, retrySession, reviewIds, start } from '../
 import { COIN, CURRENCY } from '../runtime/currency.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
 // favorites + sessions panels, the live garden mini-render, and the debug menu. Ported verbatim.
-import { CARDS, CATCOL, CATS, app, byId } from '../runtime/data.js';
+import { CARDS, CATCOL, CATS, GROUPS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
@@ -20,6 +20,13 @@ import { exportPage } from './export.js';
 import { favoritesPage } from './favorites.js';
 import { reviewSession } from './review.js';
 import { studyPage } from './study.js';
+
+/** How many cards live in a section (cat key). */
+const catCount = (k: string): number => CARDS.reduce((n, c) => (c.cat === k ? n + 1 : n), 0);
+
+/** One section chip: the single-letter key, hover-tip = "Full name · N cards", coloured by its hue. */
+const secChip = (k: string): string =>
+  `<button class="secchip sc" data-sec="${k}" data-tip="${esc(CATS[k])} · ${catCount(k)} cards" style="--cat:${CATCOL[k]}">${k}</button>`;
 
 /**
  * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
@@ -124,16 +131,18 @@ export function setup(): void {
     ${resumeHtml}
     <div class="panel">
       <div class="panelsub">${CARDS.length} cards · multiple-choice, fill-in, match & drag-to-order. <span class="tiny">${lifetime()}</span>${Object.keys(DB.stats).length ? ` <button class="linkbtn" id="resetstats">reset</button>` : ''} <button class="linkbtn" id="exportbtn">export</button></div>
-      <div class="row"><div class="lab">Sections</div>
+      <div class="row"><div class="lab">Sections <span class="poolnum" id="poolcount"></span></div>
         <div class="secchips" id="secchips">
           <button class="secchip all" data-sec="all">All (${CARDS.length})</button>
           ${Object.keys(DB.favorites).length ? `<button class="secchip fav" data-sec="fav">★ Favorites</button>` : ''}
-          ${Object.keys(CATS)
-            .map(
-              (k) =>
-                `<button class="secchip sc" data-sec="${k}" data-tip="${esc(CATS[k])}" style="--cat:${CATCOL[k]}">${k}</button>`,
-            )
-            .join('')}
+          ${
+            GROUPS.length
+              ? GROUPS.map((g) => {
+                  const n = g.sections.reduce((t, k) => t + catCount(k), 0);
+                  return `<div class="secgroup" style="--cat:${g.color}"><button class="secchip grp" data-grp="${g.key}" data-secs="${g.sections.join(',')}" data-tip="all of ${esc(g.name)} · ${n} cards">${esc(g.name)}</button>${g.sections.map(secChip).join('')}</div>`;
+                }).join('')
+              : Object.keys(CATS).map(secChip).join('')
+          }
         </div></div>
       <div class="row"><div class="lab">Length</div>
         <div class="sndrow">
@@ -189,27 +198,41 @@ export function setup(): void {
   S.cfg.direction = 'mixed';
   const refreshSecs = (): void =>
     app.querySelectorAll('.secchip').forEach((b) => {
-      const s = (b as HTMLElement).dataset.sec!;
-      const on =
-        S.cfg.scope === 'all'
-          ? s === 'all'
+      const el = b as HTMLElement;
+      const grp = el.dataset.grp; // role header: lit when its whole set is selected
+      const on = grp
+        ? Array.isArray(S.cfg.scope) &&
+          el.dataset.secs!.split(',').every((k) => (S.cfg.scope as string[]).includes(k))
+        : S.cfg.scope === 'all'
+          ? el.dataset.sec === 'all'
           : S.cfg.scope === 'fav'
-            ? s === 'fav'
-            : Array.isArray(S.cfg.scope) && S.cfg.scope.includes(s);
+            ? el.dataset.sec === 'fav'
+            : Array.isArray(S.cfg.scope) && S.cfg.scope.includes(el.dataset.sec!);
       b.classList.toggle('on', on);
     });
   refreshSecs();
   app.querySelectorAll('.secchip').forEach((b) =>
     b.addEventListener('click', () => {
-      const s = (b as HTMLElement).dataset.sec!;
-      if (s === 'all') S.cfg.scope = 'all';
-      else if (s === 'fav') S.cfg.scope = 'fav';
-      else {
-        if (!Array.isArray(S.cfg.scope)) S.cfg.scope = [];
-        const i = S.cfg.scope.indexOf(s);
-        if (i >= 0) S.cfg.scope.splice(i, 1);
-        else S.cfg.scope.push(s);
-        if (!S.cfg.scope.length) S.cfg.scope = 'all';
+      const el = b as HTMLElement;
+      const grp = el.dataset.grp;
+      if (grp) {
+        // Toggle the whole role: if every section is already in scope, drop them all; else add them.
+        const secs = el.dataset.secs!.split(',');
+        const cur = Array.isArray(S.cfg.scope) ? [...S.cfg.scope] : [];
+        const allOn = secs.every((k) => cur.includes(k));
+        const next = allOn ? cur.filter((k) => !secs.includes(k)) : [...new Set([...cur, ...secs])];
+        S.cfg.scope = next.length ? next : 'all';
+      } else {
+        const s = el.dataset.sec!;
+        if (s === 'all') S.cfg.scope = 'all';
+        else if (s === 'fav') S.cfg.scope = 'fav';
+        else {
+          if (!Array.isArray(S.cfg.scope)) S.cfg.scope = [];
+          const i = S.cfg.scope.indexOf(s);
+          if (i >= 0) S.cfg.scope.splice(i, 1);
+          else S.cfg.scope.push(s);
+          if (!S.cfg.scope.length) S.cfg.scope = 'all';
+        }
       }
       refreshSecs();
       syncLen(); // the selection changed — retune the length slider's ceiling to it
@@ -310,6 +333,7 @@ export function setup(): void {
   });
   const len = app.querySelector('#len') as HTMLInputElement;
   const lennum = app.querySelector('#lennum') as HTMLElement;
+  const poolnum = app.querySelector('#poolcount') as HTMLElement;
   if (typeof S.cfg.count !== 'number') S.cfg.count = 20;
   // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer sections has to
   // shrink the max, or "length" could exceed how many cards the selection actually contains.
@@ -329,6 +353,8 @@ export function setup(): void {
     len.value = String(v);
     S.cfg.count = v;
     lennum.textContent = v >= cnt ? `All (${cnt})` : `${v} cards`;
+    // Rolling pool size: how many cards the current section/role selection contains, live as you toggle.
+    poolnum.textContent = `${cnt} card${cnt === 1 ? '' : 's'} in pool`;
   };
   len.value = String(Math.min(S.cfg.count, Math.max(5, scopeCount())));
   syncLen();

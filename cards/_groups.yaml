@@ -1,0 +1,27 @@
+# Role groups — a presentation layer that folds the existing A–O sections into job-role buckets.
+# This file does NOT change any section key or card id (ids stay A1, B7, …), so saved favourites,
+# notes, and progress are untouched. It is read by load-cards.ts (files starting with "_" are
+# excluded from section loading, like _diagrams.yaml) and rendered as headers over the sections.
+# Each `sections` entry must be an existing section key; every section should appear in exactly one
+# group. Group order here is the order shown in the UI.
+groups:
+  - key: platform
+    name: Platform & SRE
+    color: "#0ea5e9"
+    sections: [B, C, L, F, N]
+  - key: backend
+    name: Backend & Distributed
+    color: "#6366f1"
+    sections: [A, D, E]
+  - key: ai
+    name: AI / ML Engineering
+    color: "#22c55e"
+    sections: [G, J]
+  - key: craft
+    name: Product & Craft
+    color: "#f59e0b"
+    sections: [H, M, O, I]
+  - key: security
+    name: Security
+    color: "#ef4444"
+    sections: [K]
