@@ -26,6 +26,15 @@ const CategorizeSchema = z
   })
   .strict();
 const CodeSchema = z.object({ lang: z.string().optional(), text: z.string() }).strict();
+// A self-contained multiple-choice question: prompt + authored options + the index of the right one.
+const McqSchema = z
+  .object({
+    prompt: z.string(),
+    options: z.array(z.string()).min(2),
+    answerIndex: z.number().int().nonnegative(),
+  })
+  .strict()
+  .refine((m) => m.answerIndex < m.options.length, { message: 'answerIndex out of range' });
 const CodeSelectSchema = z
   .object({ prompt: z.string(), answer: z.array(z.number().int().nonnegative()) })
   .strict();
@@ -41,6 +50,7 @@ const AuthoredCardSchema = z
     match: z.array(z.tuple([z.string(), z.string()])).optional(),
     multi: z.array(z.string()).optional(),
     mc: z.array(z.string()).optional(),
+    mcq: McqSchema.optional(),
     cloze: ClozeSchema.optional(),
     hint: z.string().optional(),
     fold: z.boolean().optional(),

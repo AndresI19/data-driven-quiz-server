@@ -17,6 +17,14 @@ cards:
       text: An {} is a vector that captures meaning, so similar items sit close together.
       answer: embedding
     hint: A vector that captures meaning, so similar items sit close together.
+    mcq:
+      prompt: '''king'' and ''queen'' land near each other in a 1536-dimensional space, and you retrieve similar documents by cosine distance. What is each such meaning-carrying vector called?'
+      options:
+      - An embedding
+      - A token
+      - A logit
+      - A one-hot vector
+      answerIndex: 0
   - topic: Model evaluation
     desc: Systematically measuring LLM output quality — accuracy, LLM-as-judge, and benchmark suites.
     extras:
@@ -28,6 +36,14 @@ cards:
       text: Grading LLM output with another model against a rubric is the LLM-as-{} method.
       answer: judge
     hint: Measuring output quality — labeled sets, LLM-as-judge, benchmarks.
+    mcq:
+      prompt: You score a model's open-ended answers using another LLM with a rubric, rather than measuring n-gram overlap against a reference. Which evaluation method is this?
+      options:
+      - LLM-as-judge
+      - BLEU
+      - ROUGE
+      - Perplexity
+      answerIndex: 0
   - topic: Fine-tuning vs. prompting vs. RAG
     desc: The three levers for adapting model behavior, and their cost/benefit tradeoffs.
     extras:
@@ -44,6 +60,14 @@ cards:
       text: Of prompting, RAG, and fine-tuning, {} is the cheapest and should be tried first.
       answer: prompting
     hint: Three ways to adapt a model — name them cheapest-effort first.
+    mcq:
+      prompt: You need to adapt a model's behavior. Which lever is cheapest and should be tried before you add retrieval infrastructure or run any training?
+      options:
+      - Prompting
+      - Fine-tuning
+      - RAG
+      - Pretraining
+      answerIndex: 0
   - topic: Risk scoring for agent actions
     desc: Quantifying how dangerous an agent's proposed action is — the heart of the governance product.
     extras:
@@ -59,6 +83,14 @@ cards:
       text: "Actions scoring above a set {} are auto-blocked or routed to a human."
       answer: "threshold"
     hint: Quantifying how dangerous an agent's proposed action is.
+    mcq:
+      prompt: A governance system rates send_email as low and delete_records as high, then requires human approval above a cutoff. Which kind of scoring is this?
+      options:
+      - Risk scoring
+      - Anomaly scoring
+      - Confidence scoring
+      - Toxicity scoring
+      answerIndex: 0
   - topic: PyTorch
     desc: The dominant open-source deep-learning framework (from Meta AI). GPU-accelerated tensors (NumPy-like arrays) + autograd (automatic differentiation) + nn.Module layers — the substrate under Hugging Face transformers, the models vLLM serves, and most fine-tuning.
     extras:
@@ -85,6 +117,14 @@ cards:
       text: Hugging Face {} is the library for downloading and running pretrained models behind a uniform API.
       answer: transformers
     hint: The library for downloading and running pretrained models behind a uniform API.
+    mcq:
+      prompt: '`from ___ import pipeline; pipeline(''sentiment-analysis'')` downloads a model from the Hub and runs it in two lines behind a uniform API. Which Hugging Face library is this?'
+      options:
+      - transformers
+      - datasets
+      - diffusers
+      - tokenizers
+      answerIndex: 0
   - topic: Alignment (RLHF / preference tuning)
     desc: Making a model behave the way humans INTEND — helpful, honest, harmless — as opposed to just predicting the next token. Distinct from evaluation (which MEASURES quality); alignment SHAPES behavior.
     extras:
@@ -103,3 +143,11 @@ cards:
       - "Fine-tune the LLM with RL against the reward model"
       - "Re-evaluate behavior and iterate"
     hint: Making a model behave as intended (RLHF) — distinct from measuring quality.
+    mcq:
+      prompt: Humans rank outputs, a reward model learns those preferences, and the LLM is optimized against it. Which alignment method is this — as opposed to the RL-free alternative that optimizes preferences directly?
+      options:
+      - RLHF
+      - DPO
+      - SFT
+      - Distillation
+      answerIndex: 0

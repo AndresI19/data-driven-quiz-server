@@ -12,6 +12,14 @@ cards:
       text: A {} app keeps no per-request data between calls, so any replica can serve any request.
       answer: stateless
     hint: The distinction is whether the server must remember anything between requests.
+    mcq:
+      prompt: A JWT-auth API stores no session on the server, so you can add identical replicas freely and any one can serve any request. Which property describes this design?
+      options:
+      - Idempotent
+      - Stateless
+      - Stateful
+      - Ephemeral
+      answerIndex: 1
   - topic: Horizontal vs. vertical scaling
     desc: Adding more machines (scale out) versus making one machine bigger (scale up), and why stateless design favors the former.
     extras:
@@ -26,6 +34,14 @@ cards:
         - scale-out
         - scaling out
     hint: "Two directions to grow: out (more machines) or up (a bigger machine)."
+    mcq:
+      prompt: You add ten more identical pods behind the load balancer instead of giving one pod a bigger CPU and more RAM. What kind of scaling is this?
+      options:
+      - Horizontal
+      - Vertical
+      - Diagonal
+      - Elastic
+      answerIndex: 0
   - topic: Externalizing state (session, files, identity)
     desc: Pushing session/state out of app servers into a datastore, cache, or client-held token so the app tier stays stateless.
     cloze:
@@ -35,6 +51,14 @@ cards:
       - label: e.g.
         text: session in Redis, files in S3, identity in a signed JWT — the app tier holds nothing.
     hint: If the app tier holds nothing, where did the session / files / identity go?
+    mcq:
+      prompt: An app tier keeps sessions in Redis and files in S3 so it retains nothing between requests. What is this 'externalize the state' pattern meant to make the tier?
+      options:
+      - Stateful
+      - Stateless
+      - Idempotent
+      - Ephemeral
+      answerIndex: 1
   - topic: Sticky sessions & session affinity
     desc: A load-balancer trick to route a user back to the same instance — and why relying on it is a scaling smell.
     extras:
@@ -47,6 +71,14 @@ cards:
         - stickiness
         - sticky
     hint: A load-balancer trick to pin a user to one instance — and why it's a scaling smell.
+    mcq:
+      prompt: A load balancer is configured with an ip_hash rule so each client always returns to the one pod holding their cart in memory. What is this technique called?
+      options:
+      - Round-robin
+      - Session affinity
+      - Least-connections
+      - Failover
+      answerIndex: 1
   - topic: Load balancing (L4 vs L7)
     desc: Spreading traffic across replicas. L4 works at the transport layer — it forwards raw TCP/UDP by IP:port without seeing the request, so it's fast but 'dumb.' L7 works at the HTTP layer — it reads the request, so it can route by URL/host, terminate TLS, and do cookie logic.
     extras:
@@ -59,6 +91,14 @@ cards:
         - l7
         - seven
     hint: "Two layers: one forwards raw packets by IP:port, one reads the HTTP request."
+    mcq:
+      prompt: An NGINX ingress reads the HTTP path to send /api to the backend and / to the frontend, and it terminates HTTPS. At which OSI layer is it working?
+      options:
+      - '7'
+      - '4'
+      - '3'
+      - '5'
+      answerIndex: 0
   - topic: Data partitioning / sharding
     desc: Splitting load across multiple data stores when one node can't hold or serve it all.
     extras:
@@ -70,6 +110,14 @@ cards:
       alts:
         - partitioning
     hint: When one node can't hold or serve it all, you split the data by a key.
+    mcq:
+      prompt: A single users table has outgrown one node, so you distribute its ROWS across many nodes by hash(user_id) % N, each node holding a subset. Which technique is this?
+      options:
+      - Sharding
+      - Read replication
+      - Federation
+      - Denormalization
+      answerIndex: 0
   - topic: Caching layers & invalidation
     desc: Storing computed or fetched results to cut latency and load — the hard part being knowing when they're stale.
     cloze:
@@ -81,6 +129,14 @@ cards:
       - label: e.g.
         text: cache a product page in Redis for 60s; bust the key on a price change.
     hint: Store results to cut latency — the hard part is knowing when they go stale.
+    mcq:
+      prompt: You cache a product page in Redis; a price change then makes the cached copy wrong and you must bust the key. Deciding WHEN a cached entry has gone stale is the classic hard problem — what is it called?
+      options:
+      - Invalidation
+      - Eviction
+      - Expiration
+      - Warming
+      answerIndex: 0
   - topic: Idempotency
     desc: Designing operations so that retrying them produces the same result, essential when requests can be replayed.
     extras:
@@ -98,6 +154,14 @@ cards:
       alts:
         - idempotency
     hint: The property that makes a retried request safe to replay.
+    mcq:
+      prompt: Stripe requires an Idempotency-Key header so that retrying a 'create charge' after a network timeout does NOT double-charge the customer. Which property does that key guarantee?
+      options:
+      - Atomicity
+      - Idempotency
+      - Consistency
+      - Durability
+      answerIndex: 1
   - topic: Backpressure & rate limiting
     desc: Protecting a system from being overwhelmed by shedding, queuing, or slowing incoming load.
     extras:
@@ -107,6 +171,14 @@ cards:
       text: An API returning HTTP {} with a Retry-After header is shedding load via rate limiting.
       answer: "429"
     hint: "Three ways to survive more load than you can handle: shed, queue, slow down."
+    mcq:
+      prompt: A client fires 150 requests per minute against a 100-per-minute limit, so the server rejects the surplus and tells the client when it may retry. Which HTTP status code signals this?
+      options:
+      - '429'
+      - '503'
+      - '403'
+      - '408'
+      answerIndex: 0
   - topic: CAP theorem & consistency models
     desc: During a network partition you can keep only two of Consistency, Availability, Partition-tolerance — and since partitions are inevitable, you're really choosing C or A.
     extras:
@@ -121,6 +193,14 @@ cards:
       text: During a network partition, CAP forces a choice between availability and {}.
       answer: consistency
     hint: During a partition you can keep only two of three — which do you drop?
+    mcq:
+      prompt: A bank ledger chooses to REJECT writes during a network partition rather than let its replicas diverge. In CAP terms, which of the two conflicting guarantees is it keeping?
+      options:
+      - Consistency
+      - Availability
+      - Partition tolerance
+      - Durability
+      answerIndex: 0
   - topic: SQL vs. NoSQL & ACID vs. BASE
     desc: The first data-tier fork. SQL (relational) = fixed schema, JOINs, strong ACID guarantees, scales UP; NoSQL = flexible schema, denormalized, scales OUT, usually BASE (eventually consistent). Pick by access pattern, not hype.
     extras:
@@ -151,6 +231,14 @@ cards:
       text: ACID databases favor strong consistency; the eventually-consistent counterpart model is called {}.
       answer: BASE
     hint: "Two axes: schema shape, and which consistency model each family favors."
+    mcq:
+      prompt: Cassandra stays writable during a partition and lets replicas reconcile afterward, giving up strong guarantees for availability. Which consistency model does it follow?
+      options:
+      - BASE
+      - ACID
+      - CRUD
+      - CAP
+      answerIndex: 0
   - topic: Indexes, replication & isolation levels
     desc: "Three database mechanics interviewers dig into once you've picked a store:"
     extras:
@@ -171,6 +259,14 @@ cards:
         - n1
         - n + 1
     hint: "Three DB mechanics: one speeds reads, one scales them, one guards concurrent writes."
+    mcq:
+      prompt: A page lists 50 orders, and your ORM runs 1 query for the list then 50 more — one per order — to load each customer. What is this classic latency anti-pattern called?
+      options:
+      - N+1 query
+      - Cartesian join
+      - Cache stampede
+      - Full table scan
+      answerIndex: 0
   - topic: TCP vs. UDP (transport layer / L4)
     desc: Both are Layer-4 transport protocols moving bytes between host:port. TCP trades speed for reliability; UDP trades reliability for speed.
     extras:
@@ -213,6 +309,14 @@ cards:
       text: DNS, VoIP, and gaming favor {} because a dropped packet beats a late one.
       answer: UDP
     hint: Both move bytes at layer 4 — one is reliable/ordered, one is fast/lossy.
+    mcq:
+      prompt: You need low-latency delivery where an occasional lost packet is fine but a delayed one is not — no handshake, no retransmits, no ordering. Which transport protocol fits?
+      options:
+      - UDP
+      - TCP
+      - QUIC
+      - SCTP
+      answerIndex: 0
   - topic: HTTP (application layer / L7)
     desc: The web's request/response protocol at Layer 7, built on top of TCP. Stateless — each request is independent; cookies/JWTs add state.
     extras:
@@ -227,6 +331,14 @@ cards:
       text: HTTP/3 drops TCP in favor of {}, which runs over UDP to cut latency.
       answer: QUIC
     hint: The web's request/response protocol — which layer, sitting on top of what?
+    mcq:
+      prompt: HTTP/3 abandons the TCP transport its predecessors used, adopting a newer UDP-based protocol to remove head-of-line blocking. What is that protocol?
+      options:
+      - QUIC
+      - SCTP
+      - SPDY
+      - WebSocket
+      answerIndex: 0
   - topic: DNS resolution (how a name resolves)
     desc: "Turning a hostname into an IP by walking a hierarchy: your stub resolver asks a recursive resolver, which queries a root server → the TLD server (.com) → the domain's authoritative server; answers are cached along the way by TTL. Runs on port 53 (UDP)."
     extras:
@@ -245,6 +357,14 @@ cards:
       text: DNS normally runs over UDP on port {}.
       answer: "53"
     hint: A name becomes an IP by walking a hierarchy of servers, caching along the way.
+    mcq:
+      prompt: Your app's plain, unencrypted name lookups leave the box over UDP to a recursive resolver. Which port are they using?
+      options:
+      - '53'
+      - '853'
+      - '443'
+      - '5353'
+      answerIndex: 0
   - topic: A lookup from your laptop, end to end
     desc: The app never speaks DNS. It calls getaddrinfo(); libc reads /etc/nsswitch.conf and works left to right — /etc/hosts, then a nameserver. Only after an IP comes back does a TCP connection open.
     cloze:
@@ -261,6 +381,14 @@ cards:
       - "resolved checks its cache first: ~0.7 ms warm vs ~16 ms cold, no packet leaves the box on a hit"
       - miss → your router → the ISP's RECURSIVE resolver → root → TLD → authoritative
     hint: The app never speaks DNS directly — what does it call, and what reads nsswitch?
+    mcq:
+      prompt: A program resolves a hostname the modern, protocol-agnostic way; libc consults nsswitch and /etc/hosts before any packet leaves the box. Which C library call did the program make?
+      options:
+      - getaddrinfo
+      - gethostbyname
+      - getnameinfo
+      - getservbyname
+      answerIndex: 0
   - topic: "DNS & networking: Docker vs. Kubernetes"
     desc: Docker's DNS returns a container's REAL address. Kubernetes' DNS returns a ClusterIP — a virtual IP nothing listens on, made real by kube-proxy. One translation versus two.
     extras:
@@ -298,6 +426,14 @@ cards:
       - - ndots:5
         - why an in-cluster name tries several search domains before the real query
     hint: One returns a real IP, the other a virtual one — one hop versus two.
+    mcq:
+      prompt: In Kubernetes, a Service name resolves to a virtual address no process actually listens on; kube-proxy then DNATs it to a real pod. What is that virtual address called?
+      options:
+      - ClusterIP
+      - NodePort
+      - Pod IP
+      - Endpoint
+      answerIndex: 0
   - topic: Anatomy of an IP address (and ports)
     desc: IPv4 is 32 bits shown as four bytes. A CIDR suffix says how many LEADING bits are the network; the rest identify the host. /24 → 256 addresses, 254 usable (network + broadcast reserved). IPv6 is 128 bits, so it needs no NAT.
     extras:
@@ -319,6 +455,14 @@ cards:
       text: A CIDR suffix of /24 leaves {} usable host addresses after the network and broadcast are reserved.
       answer: "254"
     hint: 32 bits split into network and host by a CIDR suffix, plus ports and the 5-tuple.
+    mcq:
+      prompt: You are handed the 192.168.1.0/24 block. After setting aside the network and broadcast addresses, how many usable host addresses remain?
+      options:
+      - '254'
+      - '256'
+      - '253'
+      - '510'
+      answerIndex: 0
   - topic: TLS handshake (how HTTPS is set up)
     desc: ClientHello (cipher list + SNI) → ServerHello + certificate → key exchange → both derive a shared SYMMETRIC session key → encrypted traffic. Asymmetric crypto only authenticates + agrees the key; fast symmetric crypto encrypts the data. TLS 1.3 = one round-trip.
     extras:
@@ -338,6 +482,14 @@ cards:
       - "Both derive a shared SYMMETRIC session key via ephemeral key exchange"
       - "Encrypted application traffic flows over the session"
     hint: The hello sequence — and which crypto authenticates versus which encrypts.
+    mcq:
+      prompt: TLS uses slow public-key crypto only to authenticate the server and agree on a secret, then switches to fast crypto for the actual data. What kind of key encrypts the bulk traffic?
+      options:
+      - Symmetric
+      - Asymmetric
+      - Private-key
+      - Ephemeral
+      answerIndex: 0
   - topic: TLS / cert file types (.key .crt .pem .csr)
     desc: "The confusion: .pem/.der are ENCODINGS, while .key/.crt/.csr describe CONTENT — a .pem file can hold a cert, a key, or both. Mental model:"
     extras:
@@ -361,6 +513,14 @@ cards:
       - - .p12 / .pfx
         - "bundle: cert + private key in one file (password)"
     hint: "Encodings versus content: which extensions are formats, which describe what's inside."
+    mcq:
+      prompt: Of these certificate files, which one holds your PRIVATE key — the piece you must never share and keep off the wire?
+      options:
+      - .key
+      - .crt
+      - .csr
+      - .pem
+      answerIndex: 0
   - topic: Reading a certificate (the five things that must match)
     desc: "A cert is ONE signed claim: this public key belongs to these names, until this date. It holds no secret — the server hands it to anyone. Verifying it means five independent matches."
     extras:
@@ -381,6 +541,14 @@ cards:
       alts:
         - common name
     hint: Five independent things must all match for a certificate to verify.
+    mcq:
+      prompt: A certificate lists its hostnames only in an old identity field, with no subjectAltName, so modern browsers reject it. Which ignored field is it?
+      options:
+      - CN
+      - SAN
+      - SNI
+      - DN
+      answerIndex: 0
   - topic: SNI & where TLS terminates
     desc: SNI (Server Name Indication) — the client puts the target hostname in the ClientHello so one IP / load balancer can serve the correct cert for many domains. TLS usually TERMINATES at the ingress / load balancer (decrypted there), not the app.
     extras:
@@ -394,6 +562,14 @@ cards:
       alts:
         - server name indication
     hint: How one IP serves many domains' certs — and where TLS usually terminates.
+    mcq:
+      prompt: One load-balancer IP hosts certificates for fifty domains. Which TLS handshake extension tells it which certificate to serve for the requested hostname?
+      options:
+      - SNI
+      - ALPN
+      - SAN
+      - OCSP
+      answerIndex: 0
   - topic: DNSSEC
     desc: DNS Security Extensions — cryptographically SIGNS DNS records so resolvers can verify they weren't forged (defends cache poisoning / spoofing). It adds authenticity, NOT encryption — DNS answers are still public.
     extras:
@@ -408,6 +584,14 @@ cards:
         - privacy
         - confidentiality
     hint: It signs DNS records for authenticity — but it does NOT do what?
+    mcq:
+      prompt: DNSSEC protects DNS answers from forgery and cache poisoning, yet the answers still travel in the clear for anyone to read. Which security property does DNSSEC NOT provide?
+      options:
+      - Encryption
+      - Integrity
+      - Authenticity
+      - Origin authentication
+      answerIndex: 0
   - topic: Anycast
     desc: One IP address announced from MANY locations at once; the network routes each client to the NEAREST instance. How CDNs, Cloudflare, and the DNS root servers serve the whole world from a single IP with low latency and built-in DDoS spread.
     extras:
@@ -420,6 +604,14 @@ cards:
       text: One IP announced from many locations, routing each client to the nearest, is called {}.
       answer: anycast
     hint: One IP announced from many places; the network routes you to the nearest.
+    mcq:
+      prompt: Cloudflare's 1.1.1.1 is announced from data centers worldwide; you and someone overseas both dial it but land on different nearby PoPs. Which addressing scheme makes that work?
+      options:
+      - Anycast
+      - Unicast
+      - Multicast
+      - Broadcast
+      answerIndex: 0
   - topic: What TLS 1.3 improves (the modern default)
     desc: "TLS 1.3 (2018) is the modern default. Four concrete things it changed over 1.2:"
     extras:
@@ -442,6 +634,14 @@ cards:
       alts:
         - "13"
     hint: The newer one is faster (fewer round-trips) and drops the legacy ciphers.
+    mcq:
+      prompt: Which TLS version cut the handshake to one round trip, removed static-RSA and CBC ciphers, and requires ephemeral, forward-secret key exchange?
+      options:
+      - '1.3'
+      - '1.2'
+      - '1.1'
+      - '1.0'
+      answerIndex: 0
   - topic: Certificate chain of trust
     desc: "A server cert is trusted by CHAINING up: leaf (your server cert) → one or more intermediate CAs → a root CA preinstalled in the client's trust store. Validation walks the chain to a trusted root."
     extras:
@@ -453,6 +653,14 @@ cards:
       text: "The #1 certificate bug is a missing {} cert — it works in your browser but fails for other clients."
       answer: intermediate
     hint: Trust flows from your leaf cert up through intermediates to a root.
+    mcq:
+      prompt: Your HTTPS works in Chrome but curl and Java fail with 'unable to get local issuer certificate.' You served only the leaf and omitted the cert that links it up the chain. Which cert is missing?
+      options:
+      - Intermediate
+      - Root CA
+      - Cross-signed
+      - Wildcard
+      answerIndex: 0
   - topic: The resolver path, step by step
     desc: A simpler breakdown of what happens when your app resolves a name — the ordered stages, so you can recite them without the full end-to-end card.
     cloze:
@@ -474,6 +682,14 @@ cards:
       - "Cache miss → it asks the upstream RECURSIVE resolver (router / ISP / 1.1.1.1)"
       - "That resolver walks root → TLD → authoritative, caches the answer, returns the IP"
       - "Only NOW does the app open a TCP connection to that IP"
+    mcq:
+      prompt: On a typical Ubuntu box, /etc/resolv.conf points at 127.0.0.53 — a local stub that caches answers and forwards misses upstream. Which service is listening there?
+      options:
+      - systemd-resolved
+      - dnsmasq
+      - nscd
+      - bind9
+      answerIndex: 0
 
   - topic: "Optimistic concurrency control"
     desc: "Let concurrent writers proceed WITHOUT locks, and detect conflicts at write time. Each row carries a VERSION; a client reads version N, and its update says 'set … WHERE version = N'. If someone else wrote first (version is now N+1), the update matches zero rows and you reject with a 409 instead of silently clobbering their change."
@@ -485,6 +701,14 @@ cards:
     cloze:
       text: "Optimistic concurrency detects a conflicting write by checking a {} column and returning 409 instead of overwriting."
       answer: "version"
+    mcq:
+      prompt: Two clients read the same row and both edit it; the second update is rejected with a 409 because a counter on the row had already advanced past the value it read. What column pattern enables this lock-free conflict detection?
+      options:
+      - Version column
+      - Timestamp column
+      - Row lock
+      - Sequence
+      answerIndex: 0
 
   - topic: "Derived columns: never trust a client-supplied aggregate"
     desc: "When a value can be COMPUTED from data the server already holds (a score, a total, a count), compute it SERVER-SIDE on write — don't accept it from the client. If the client could send both a document and its 'score', it could send a document worth 10 and a score of 10,000, and any leaderboard reading that column would be forgeable."
@@ -498,6 +722,14 @@ cards:
         text: "Make the two disagreeing structurally impossible, not merely unlikely: derive the projection from the source of truth so they can't drift."
       - label: "e.g."
         text: "Store the full progress blob; extract coins/correct/answered server-side into promoted columns so a leaderboard query is cheap AND unforgeable."
+    mcq:
+      prompt: If a game could submit both its answers AND its score, it could send a low-value game with a score of 10,000 and forge the leaderboard. Where must the score be computed instead?
+      options:
+      - Server-side
+      - Client-side
+      - In the browser
+      - At the CDN edge
+      answerIndex: 0
 
   - topic: "Database-per-service vs shared schema"
     desc: "Each microservice OWNS its own database (schema); no other service reads or writes those tables directly — they talk through the service's API. Sharing a schema across services is the DISTRIBUTED-MONOLITH trap: a migration in one silently breaks another, and neither can deploy independently."
@@ -511,6 +743,14 @@ cards:
         text: "Two services reading one schema couples them at the worst layer — you get the operational cost of microservices with the coupling of a monolith."
       - label: Nuance
         text: "Sharing a database SERVER (one Postgres pod, several databases) is fine — that's resource consolidation. Sharing a SCHEMA is the coupling to avoid."
+    mcq:
+      prompt: Several microservices all read and write the same database tables, so a schema migration in one silently breaks the others and they can no longer deploy independently. What is this anti-pattern called?
+      options:
+      - Distributed monolith
+      - Big ball of mud
+      - Microservice sprawl
+      - Shared-nothing
+      answerIndex: 0
 
   - topic: "Establishing an HTTPS connection, in order"
     desc: "How a browser goes from a URL to encrypted HTTP — resolve, connect, negotiate TLS, then send the request."

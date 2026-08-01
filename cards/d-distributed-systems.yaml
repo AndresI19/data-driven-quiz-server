@@ -12,6 +12,14 @@ cards:
       text: In {}-driven architecture, services communicate via asynchronous messages instead of direct calls.
       answer: event
     hint: Services talk via asynchronous messages instead of direct calls.
+    mcq:
+      prompt: Uber publishes a TripCompleted message to Kafka; payments, receipts, and fraud-scoring each consume it at their own pace, and a new analytics consumer can be added later without changing the producer. Which architectural style is this?
+      options:
+      - Request-response
+      - Event-driven
+      - Layered monolith
+      - Client-server
+      answerIndex: 1
   - topic: Message queues & streams
     desc: Async messaging between services. A queue delivers a message to one worker then deletes it; a log/stream is append-only and retained, so many consumers can replay it independently.
     extras:
@@ -31,6 +39,14 @@ cards:
       text: A durable log like {} keeps messages after they're read, so each consumer tracks its own offset.
       answer: Kafka
     hint: A queue hands work to one worker; a log lets many consumers replay.
+    mcq:
+      prompt: Which system is a durable, append-only commit log where every consumer tracks its own offset — rather than a broker that deletes each message once one worker has handled it?
+      options:
+      - RabbitMQ
+      - SQS
+      - Redis
+      - Kafka
+      answerIndex: 3
   - topic: Consensus & coordination
     desc: How independent servers agree on a single value, leader, or ordered log despite failures and network delays. Consensus algorithms (Raft, Paxos) require a MAJORITY (quorum) of members to commit each decision — so the cluster stays correct and avoids split-brain (two leaders acting at once) as long as more than half the members are reachable.
     extras:
@@ -50,6 +66,14 @@ cards:
       alts:
         - quorum
     hint: How independent servers agree despite failures — and how many must agree.
+    mcq:
+      prompt: A coordination system elects a single leader per numbered term and replicates an append-only log to its followers, and was designed to be easier to understand than its predecessor. Which consensus algorithm is it?
+      options:
+      - Paxos
+      - Raft
+      - Gossip
+      - ZAB
+      answerIndex: 1
   - topic: etcd
     desc: A distributed, strongly-consistent key-value store — Kubernetes's single source of truth. EVERY cluster object (pods, services, secrets, configmaps) is persisted in etcd, and the API server is the only component that talks to it. It uses the Raft consensus algorithm to replicate data across its members, so a quorum must agree on every write.
     extras:
@@ -63,6 +87,14 @@ cards:
       text: Kubernetes persists all cluster state in {}, a strongly-consistent key-value store.
       answer: etcd
     hint: Kubernetes' single source of truth — what kind of store, kept consistent how?
+    mcq:
+      prompt: Lose quorum on this component and the Kubernetes control plane goes read-only; lose it with no snapshot and the entire cluster's state is gone. Which component?
+      options:
+      - kube-apiserver
+      - kube-scheduler
+      - kubelet
+      - etcd
+      answerIndex: 3
   - topic: Eventual consistency & sagas
     desc: Handling multi-step operations across services without a single distributed transaction.
     extras:
@@ -87,6 +119,14 @@ cards:
       - "Book the hotel"
       - "If a later step fails, run compensating actions to undo the earlier ones"
     hint: Multi-step ops without one big transaction — how do you undo a failed step?
+    mcq:
+      prompt: In a booking flow (reserve flight, charge card, book hotel), the hotel step fails. What undoes the already-charged card and the flight reservation, given you cannot roll back across services?
+      options:
+      - Two-phase commit
+      - Compensating action
+      - Retry with backoff
+      - Optimistic lock
+      answerIndex: 1
   - topic: Retries, timeouts, circuit breakers
     desc: The resilience patterns that stop one slow dependency from cascading into a full outage.
     extras:
@@ -96,6 +136,14 @@ cards:
       text: A {} breaker trips after too many failures so calls fail fast instead of piling up.
       answer: circuit
     hint: The patterns that stop one slow dependency from cascading into an outage.
+    mcq:
+      prompt: Calls to a flaky payment API pile up because each one waits the full connection time before giving up. Which resilience control caps how long you will wait on a single call?
+      options:
+      - Circuit breaker
+      - Retry
+      - Backoff jitter
+      - Timeout
+      answerIndex: 3
 
   - topic: "Single-replica assumptions that break when you scale out"
     desc: "State kept IN-PROCESS (a rate-limiter counter, a cache, a session) works on one replica and silently breaks on several: each replica has its own copy. An in-memory rate limit of 10/min across 3 replicas becomes an effective 30/min; an in-process cache gives inconsistent reads."
@@ -111,6 +159,14 @@ cards:
         text: "Move shared state to a shared store (Redis, the database). If you must stay single-replica, make that assumption EXPLICIT — because it fails quietly, not loudly, when someone scales the deployment."
       - label: Say
         text: "\"Anything counted or cached in process is per-replica; horizontal scaling multiplies it unless the state is shared.\""
+    mcq:
+      prompt: An in-memory rate limiter set to 10 requests per minute runs on 3 replicas behind a round-robin load balancer, each keeping its own counter. What is the effective global limit?
+      options:
+      - 10 / min
+      - 30 / min
+      - 3 / min
+      - 3.3 / min
+      answerIndex: 1
 
   - topic: "Idempotency and delivery semantics"
     desc: "An IDEMPOTENT operation can be applied many times with the same result as once. It's what makes retries safe in a distributed system, where you usually get AT-LEAST-once delivery (messages can arrive twice) rather than exactly-once. Idempotency keys or version checks turn 'at-least-once + idempotent' into effectively exactly-once."
@@ -122,6 +178,14 @@ cards:
     cloze:
       text: "Retries are safe when the operation is {} — applying it twice is the same as applying it once."
       answer: "idempotent"
+    mcq:
+      prompt: Your broker retries on failure, so a consumer sometimes sees the same message twice but never loses one. Which delivery guarantee is this?
+      options:
+      - At-most-once
+      - Exactly-once
+      - Best-effort
+      - At-least-once
+      answerIndex: 3
 
   - topic: "Outbound-only architecture (caller vs callee)"
     desc: "A security posture where NOTHING on the internet can open a connection INTO your machine — every connection is dialled OUT from your side. A tunnel client (e.g. cloudflared) dials out to the edge; a CI runner long-POLLS its queue; the node PULLS images. With no inbound port, there's no listening surface to attack."
@@ -136,3 +200,11 @@ cards:
         text: "In a diagram, draw the arrow from who OPENS the connection to who receives it — not the direction the bytes travel. The runner points at GitHub even though jobs 'come to' it, because the runner dialled out."
       - label: Why
         text: "You can run public-facing services on a machine with zero open ports, because reachability comes from outbound tunnels, not inbound firewall holes."
+    mcq:
+      prompt: How can you expose public-facing services from a machine that has zero open inbound ports and lets nothing on the internet dial in?
+      options:
+      - A static public IP
+      - Outbound tunnels
+      - Port forwarding
+      - A firewall exception
+      answerIndex: 1

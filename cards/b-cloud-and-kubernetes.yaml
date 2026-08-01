@@ -9,6 +9,14 @@ cards:
       text: "Kubernetes is an open-source container {} exposing one declarative API to deploy, scale, and self-heal containers."
       answer: "orchestrator"
     hint: A container orchestrator with one declarative API and a reconcile loop.
+    mcq:
+      prompt: Docker runs one container on a single host. Which category of tool coordinates MANY containers across a fleet of machines — placing, scaling, and restarting them?
+      options:
+      - Orchestrator
+      - Container runtime
+      - Hypervisor
+      - Load balancer
+      answerIndex: 0
   - topic: kube-apiserver (the hub of Kubernetes)
     desc: The front door and hub of Kubernetes — a REST API that EVERY component (kubectl, each node's kubelet, the scheduler, controllers) talks to, and the ONLY component that reads/writes etcd. It runs authn → authz → admission control → validation on every request. Diagram shows the control plane + nodes around it.
     extras:
@@ -46,6 +54,14 @@ cards:
       - - AKS
         - Azure — Azure Kubernetes Service
     hint: Same kubectl/YAML API everywhere — so what actually differs between EKS/GKE/AKS?
+    mcq:
+      prompt: Your manifests run unchanged on any cloud's Kubernetes. Which managed offering is Google Cloud's Kubernetes service?
+      options:
+      - GKE
+      - GCE
+      - EKS
+      - AKS
+      answerIndex: 0
   - topic: "Managed K8s: each provider's native edge"
     desc: "All three run and patch the control plane for you — you only manage workloads. They differ in native integrations, which is usually what picks the winner in an interview answer:"
     extras:
@@ -61,6 +77,14 @@ cards:
       - - Self-hosted (kubeadm / kOps)
         - full control, but you own upgrades & etcd backups
     hint: Who runs the control plane — and what that trades in ops versus control.
+    mcq:
+      prompt: Which managed Kubernetes service is known for the deepest AWS integration — IRSA, VPC CNI, and Fargate serverless pods?
+      options:
+      - EKS
+      - GKE
+      - AKS
+      - OpenShift
+      answerIndex: 0
   - topic: Cloud primitives (the infra under K8s)
     desc: The building blocks a cloud gives you BELOW Kubernetes — created with the cloud's own API or Terraform, not kubectl. K8s YAML only manages what runs INSIDE the cluster; these live underneath it.
     extras:
@@ -79,6 +103,14 @@ cards:
       - ['Managed data', 'RDS (SQL), S3 (object storage), ElastiCache (Redis)']
       - ['Load balancer', 'an ALB/NLB a Service of type LoadBalancer provisions']
     hint: K8s YAML manages inside the cluster; what manages the cloud around it?
+    mcq:
+      prompt: Which cloud primitive decides who or what may call which cloud API — the permission layer, not a network?
+      options:
+      - IAM
+      - ACL
+      - RBAC
+      - VPC
+      answerIndex: 0
   - topic: Core K8s objects
     desc: "The core objects and what each is for:"
     items:
@@ -93,6 +125,14 @@ cards:
       text: In Kubernetes, a {} gives a stable IP and DNS name for a set of pods.
       answer: Service
     hint: "The handful of objects: what runs pods, what gives a stable IP, what holds config/secrets."
+    mcq:
+      prompt: A Deployment's pods get new IPs on every restart. Which object kind puts ONE stable virtual IP and DNS name in front of them?
+      options:
+      - Service
+      - Ingress
+      - ReplicaSet
+      - ConfigMap
+      answerIndex: 0
   - topic: Controllers & the reconciliation loop
     desc: The heart of Kubernetes — and the blueprint for any CONTROL PLANE. A controller watches desired state (your YAML in etcd), compares it to actual cluster state, and acts to close the gap — forever, in a loop. Declarative, level-triggered (reacts to the STATE, not one-off events), self-healing.
     extras:
@@ -117,6 +157,14 @@ cards:
         - reconcile
         - reconciling
     hint: "The loop at the heart of K8s: observe desired, diff actual, converge."
+    mcq:
+      prompt: 'A Kubernetes controller reacts to the current STATE, not the one-off event that changed it, so a missed event still converges. This design is called:'
+      options:
+      - level-triggered
+      - edge-triggered
+      - event-sourced
+      - eventually consistent
+      answerIndex: 0
   - topic: Pod health probes (liveness / readiness / startup)
     desc: "How the kubelet decides a pod is healthy — three probes with distinct jobs:"
     extras:
@@ -139,6 +187,14 @@ cards:
       text: A failing {} probe pulls a pod from Service endpoints without restarting the container.
       answer: readiness
     hint: Three probes — which restarts, which pulls from traffic, which waits for a slow boot?
+    mcq:
+      prompt: Which probe, when it fails, tells Kubernetes the app is wedged and to RESTART the container?
+      options:
+      - liveness
+      - readiness
+      - startup
+      - healthcheck
+      answerIndex: 0
   - topic: kubectl commands (basic → advanced)
     desc: The verbs you actually reach for, roughly basic → advanced. Almost all take -n <ns> (or -A for every namespace) and -o wide|yaml|json to change the output.
     extras:
@@ -167,6 +223,14 @@ cards:
       text: The Kubernetes isolation boundary used to separate teams or tenants in one cluster is a {}.
       answer: namespace
     hint: The isolation boundary for teams or tenants inside one cluster.
+    mcq:
+      prompt: You want dev, staging, and prod to share ONE cluster while staying isolated with their own RBAC and quotas. Which construct gives that boundary?
+      options:
+      - Namespace
+      - Node
+      - Cluster
+      - Deployment
+      answerIndex: 0
   - topic: Helm / Kustomize
     desc: Templating and packaging K8s manifests so one deployment adapts to many environments.
     extras:
@@ -180,6 +244,14 @@ cards:
       text: "{} packages a Kubernetes app as a versioned chart with per-environment value overrides."
       answer: Helm
     hint: Two ways to adapt manifests per environment — templating versus patching.
+    mcq:
+      prompt: You need to adapt base manifests per environment by PATCHING them with overlays — no templating engine, no packaging. Which tool is that?
+      options:
+      - Kustomize
+      - Helm
+      - Kompose
+      - Argo CD
+      answerIndex: 0
   - topic: Helm commands (basic → advanced)
     desc: "Helm is the K8s package manager: a chart (templated manifests + default values) installed as a named release you can upgrade and roll back. Commands roughly basic → advanced."
     extras:
@@ -208,6 +280,14 @@ cards:
       text: "{} is the cloud-agnostic tool teams use to provision cloud infrastructure as code."
       answer: Terraform
     hint: The cloud-agnostic tool that provisions infrastructure from code.
+    mcq:
+      prompt: Which IaC tool is cloud-agnostic and keeps a STATE file mapping declared config to real resources, unlike AWS-only CloudFormation?
+      options:
+      - Terraform
+      - Pulumi
+      - Ansible
+      - Chef
+      answerIndex: 0
   - topic: Terraform commands (basic → advanced)
     desc: Terraform provisions cloud infra as declarative code and keeps a STATE file mapping your config to real resources. Commands roughly basic → advanced.
     extras:
@@ -227,6 +307,14 @@ cards:
       - "apply -replace=<addr> (was: taint) — force one resource to be recreated next apply"
       - plan -refresh-only — reconcile state with real-world drift
     hint: The workflow — init, preview, apply — plus a state file it must protect.
+    mcq:
+      prompt: In a fresh project you must download providers and wire the backend before anything else. Which terraform command runs first?
+      options:
+      - init
+      - plan
+      - apply
+      - fmt
+      answerIndex: 0
   - topic: Managed identity across clouds
     desc: "How a pod assumes CLOUD permissions with NO long-lived keys. Same idea on all three clouds: the pod's Kubernetes ServiceAccount is exchanged (via OIDC federation) for short-lived, auto-rotated cloud credentials scoped to a role."
     extras:
@@ -246,6 +334,14 @@ cards:
       - - The shared trick
         - OIDC token exchange → short-lived creds, zero static secrets in the pod
     hint: How a pod assumes cloud permissions with no static keys.
+    mcq:
+      prompt: On every cloud, a pod's Kubernetes ServiceAccount is swapped for short-lived cloud credentials through which federation mechanism?
+      options:
+      - OIDC token exchange
+      - SAML assertion
+      - mTLS handshake
+      - API key rotation
+      answerIndex: 0
   - topic: Kubernetes DNS & service discovery
     desc: CoreDNS (the kube-dns Service) resolves service names inside the cluster. A service's FQDN (Fully Qualified Domain Name) is <service>.<namespace>.svc.cluster.local; a same-namespace call can use just <service>.
     extras:
@@ -259,6 +355,14 @@ cards:
       text: Inside a cluster, {} (the kube-dns Service) resolves service names to ClusterIPs.
       answer: CoreDNS
     hint: What resolves service names inside the cluster, and the FQDN form.
+    mcq:
+      prompt: A pod calls another Service by name and it fails to resolve. Which cluster component's pods and logs do you check first?
+      options:
+      - CoreDNS
+      - kube-proxy
+      - kubelet
+      - kube-scheduler
+      answerIndex: 0
   - topic: Kubernetes networking model
     desc: Every pod gets its own routable IP and all pods reach each other without NAT (a flat network). A CNI (Container Network Interface) plugin — Calico, Cilium, Flannel — wires it up.
     extras:
@@ -282,6 +386,14 @@ cards:
       text: In the Kubernetes network model every pod gets its own IP and pods reach each other without {}.
       answer: NAT
     hint: Every pod gets its own IP with no NAT — what wires it, what firewalls it?
+    mcq:
+      prompt: The flat pod network where every pod sees every other pod's real IP is wired up by which pluggable layer?
+      options:
+      - CNI plugin
+      - CSI driver
+      - CRI runtime
+      - kube-proxy
+      answerIndex: 0
   - topic: Debugging connectivity (503 / empty endpoints)
     desc: "When a Service times out or 503s, the fastest tell is `kubectl get endpoints <svc>`: if it's EMPTY, the Service's label selector matches no READY pod, so it has nowhere to send traffic."
     extras:
@@ -297,6 +409,14 @@ cards:
       text: If a Service 503s, an empty result from `kubectl get {}` means its selector matches no ready pod.
       answer: endpoints
     hint: Which single kubectl command tells you whether the Service has anywhere to send traffic?
+    mcq:
+      prompt: A Service keeps timing out. Which single command tells you whether it's wired to any READY pod (empty = selector miss)?
+      options:
+      - kubectl get endpoints
+      - kubectl get pods
+      - kubectl describe service
+      - kubectl get events
+      answerIndex: 0
   - topic: Cloudflare (what it is)
     desc: "A global network that sits in FRONT of your site as a reverse proxy: every request hits Cloudflare's nearest edge PoP first, and it forwards to your ORIGIN (your actual server). You point your domain's nameservers at Cloudflare so it fronts every request. It bundles several jobs into that one hop:"
     extras:
@@ -317,6 +437,14 @@ cards:
       - ['DDoS protection', 'absorbs volumetric floods across anycast capacity']
       - ['TLS termination', 'decrypts HTTPS at the edge, hiding the origin IP']
     hint: A reverse proxy in front of your site — CDN, DNS, security, TLS termination.
+    mcq:
+      prompt: Cloudflare inspects HTTP requests and blocks SQLi, XSS, and bad bots by rule. What is that specific feature called?
+      options:
+      - WAF
+      - CDN
+      - DDoS protection
+      - TLS termination
+      answerIndex: 0
   - topic: Cloudflare SSL modes & Tunnel
     desc: "Your ORIGIN is your real server behind Cloudflare (the box CF forwards to). There are TWO TLS legs — client↔CF and CF↔origin — and the SSL mode controls only the second leg:"
     extras:
@@ -338,6 +466,14 @@ cards:
       - ['Tunnel (cloudflared)', 'the origin dials OUT to CF — no inbound ports at all']
     diagram: cf_ssl
     hint: The modes control the CF↔origin leg — which one is a plaintext trap?
+    mcq:
+      prompt: For production you want CF-to-origin encrypted AND the origin to present a VALID certificate. Which SSL mode?
+      options:
+      - Full (strict)
+      - Full
+      - Flexible
+      - Tunnel
+      answerIndex: 0
   - topic: Reading an Ingress manifest
     desc: "An Ingress is L7 host/path routing rules (needs a running ingress controller). To parse one, read these fields in order:"
     extras:
@@ -421,6 +557,14 @@ cards:
       - ['docker build -t', 'Docker — build / run container images']
       - ['git rebase -i', 'Git — version and rewrite source history']
     hint: Match each command to the DevOps tool it belongs to.
+    mcq:
+      prompt: Which tool's verb vocabulary is get / describe / logs / exec — for inspecting and driving LIVE cluster objects?
+      options:
+      - kubectl
+      - Helm
+      - Terraform
+      - Docker
+      answerIndex: 0
   - topic: "Pod resources: requests, limits & QoS"
     desc: "The two knobs that decide placement and what happens under pressure:"
     extras:
@@ -440,6 +584,14 @@ cards:
         - oomkilled
         - oomkill
     hint: Two knobs — what the scheduler reserves vs. the hard cap — plus what exit 137 means.
+    mcq:
+      prompt: A container is killed by the kernel for exceeding its memory limit. Which Linux exit code does it report?
+      options:
+      - '137'
+      - '143'
+      - '1'
+      - '0'
+      answerIndex: 0
   - topic: Subnets (and how a VPC is carved up)
     desc: A VPC is your private network in the cloud with one big IP range (a CIDR block like 10.0.0.0/16). A SUBNET is a slice of that range, and — critically — each subnet lives in exactly ONE availability zone. You split a VPC into subnets to place resources across zones for HA and to separate public from private tiers.
     extras:
@@ -458,6 +610,14 @@ cards:
       alts:
         - "az"
         - "availability-zone"
+    mcq:
+      prompt: Whether a subnet is 'public' is decided by which of these — not by its name?
+      options:
+      - its route table
+      - its CIDR size
+      - its security group
+      - its availability zone
+      answerIndex: 0
 
   - topic: "PersistentVolume (PV) and PersistentVolumeClaim (PVC)"
     desc: "Storage that OUTLIVES a pod. A PersistentVolume is a piece of storage in the cluster; a PersistentVolumeClaim is a pod's REQUEST for some (size + access mode). Kubernetes binds a claim to a volume, and the pod mounts the claim — so the data survives the pod being rescheduled, restarted, or replaced."
@@ -470,6 +630,14 @@ cards:
       - ["PersistentVolume", "the actual storage that exists in the cluster"]
       - ["PersistentVolumeClaim", "a pod's request for storage, bound to a PV"]
       - ["StorageClass", "a template for provisioning PVs dynamically"]
+    mcq:
+      prompt: Which object is a TEMPLATE that provisions new PersistentVolumes dynamically whenever a claim asks for storage?
+      options:
+      - StorageClass
+      - PersistentVolume
+      - PersistentVolumeClaim
+      - VolumeMount
+      answerIndex: 0
 
   - topic: "A mount is not network traffic"
     desc: "Attaching a volume to a pod is NOT a network call — it's a filesystem mount, local to the node. Nothing flows along it the way a request flows between services. In an architecture diagram a mount is a plain line, not an arrow; a database CONNECTION (SQL over TCP) is the traffic."
@@ -481,6 +649,14 @@ cards:
         text: "Drawing a volume mount as traffic implies a request path that doesn't exist. The pod reads/writes files; there's no client and server."
       - label: Seed-then-mount
         text: "A common pattern: an initContainer seeds default content onto a fresh volume once (cp -rn, which never overwrites), then the app mounts it — often READ-ONLY, so a web server can't rewrite the data it serves."
+    mcq:
+      prompt: In an architecture diagram, which of these is NOT network traffic between components?
+      options:
+      - a volume mount
+      - a SQL connection
+      - an HTTP request
+      - a gRPC call
+      answerIndex: 0
 
   - topic: "CrashLoopBackOff — what it means and how to read it"
     desc: "A pod's container keeps starting and immediately dying, so Kubernetes restarts it with an EXPONENTIAL back-off (hence the growing delay). It's a symptom, not a cause — the container is exiting non-zero on startup."
@@ -508,6 +684,14 @@ cards:
         text: "Treat the manifests (in git) as the source of truth. An imperative hotfix is fine to unblock, but fold it back into the manifests or it will be silently undone."
       - label: Say
         text: "\"apply is the desired state; set-image is a hotfix that lives outside it until you commit it back.\""
+    mcq:
+      prompt: Which command is the IMPERATIVE one-off change that drifts from your git manifests, so the next apply reverts it?
+      options:
+      - kubectl set image
+      - kubectl apply -f
+      - kubectl apply -k
+      - kubectl diff
+      answerIndex: 0
 
   - topic: "initContainers"
     desc: "Containers that run to completion, IN ORDER, BEFORE the pod's main containers start. Used for one-time setup that must finish first: wait for a dependency, run a database migration, seed a volume, or fix permissions."
@@ -522,6 +706,14 @@ cards:
         text: "A 'wait-for-db' init that blocks until Postgres answers, then a 'migrate' step, so the app container only starts against a ready, migrated database."
       - label: Contrast
         text: "A sidecar runs ALONGSIDE the app for the pod's whole life (a proxy, a log shipper); an initContainer runs FIRST and exits."
+    mcq:
+      prompt: You need a 'wait-for-db' step that finishes and exits BEFORE the app container starts. Which construct is that?
+      options:
+      - an initContainer
+      - a postStart hook
+      - an ephemeral container
+      - a liveness probe
+      answerIndex: 0
 
   - topic: "Readiness vs liveness probes"
     desc: "Both are health checks Kubernetes runs against a container, answering different questions. A LIVENESS probe asks 'is it broken?' — failing it RESTARTS the pod. A READINESS probe asks 'can it serve traffic yet?' — failing it removes the pod from the Service's endpoints (no restart) until it recovers."
@@ -531,6 +723,14 @@ cards:
     match:
       - ["liveness probe", "is it broken? — fail restarts the pod"]
       - ["readiness probe", "can it serve yet? — fail pulls it from the Service"]
+    mcq:
+      prompt: Using which probe TOO aggressively will restart-loop a pod that only needed more warmup time?
+      options:
+      - liveness
+      - readiness
+      - startup
+      - healthcheck
+      answerIndex: 0
 
   - topic: "Pod stuck Pending — reading why it won't schedule"
     desc: "Pending means the scheduler accepted the pod but can't place it on any node yet — so before logs (there's no running container to log), run `kubectl describe pod <p>` and READ THE EVENTS at the bottom, which name the exact reason."

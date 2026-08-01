@@ -35,6 +35,14 @@ cards:
       - "chain both steps in one workflow via needs:"
       - "ride the same triggering event in two workflows"
       - "dispatch with a separate fine-grained token (PAT)"
+    mcq:
+      prompt: A CI job's pushed tag never starts the release workflow because the default credential can't trigger another run. Which credential, used for the push, works around this guard?
+      options:
+      - OIDC token
+      - deploy key
+      - GITHUB_TOKEN
+      - PAT
+      answerIndex: 3
 
   - topic: "repository_dispatch"
     desc: "A GitHub Actions event that lets one repository (or an external system) trigger a workflow in ANOTHER repo via an authenticated API POST. Used for cross-repo pipelines — e.g. an app repo tells a central deploy repo 'build and ship version X'."
@@ -46,6 +54,14 @@ cards:
     cloze:
       text: "To trigger a workflow in a DIFFERENT repository, POST a {} event with a token scoped to the target repo."
       answer: "repository_dispatch"
+    mcq:
+      prompt: An external system needs to kick off a workflow in another repo through an authenticated API POST. Which event does it send?
+      options:
+      - workflow_dispatch
+      - workflow_call
+      - repository_dispatch
+      - deployment
+      answerIndex: 2
 
   - topic: "The 'read the value, don't recompute it' race"
     desc: "When two independent jobs each compute 'latest + 1' for the same commit, they RACE and disagree — one sees the other's new value and lands one higher. The fix: one job is the source of truth (it creates the value); everyone else READS what it created, never recomputes it."
@@ -82,6 +98,14 @@ cards:
         text: "Re-trigger by pushing again — even an empty commit re-fires the `push` event and the deploy runs."
       - label: Why it exists
         text: "Two deploys racing to the same environment can interleave and leave it in a mixed state; the group forces order."
+    mcq:
+      prompt: You want only one deploy to production at a time, and a newer run should cancel any in-flight one. Which workflow keyword enforces that?
+      options:
+      - needs
+      - matrix
+      - environment
+      - concurrency
+      answerIndex: 3
 
   - topic: "Self-hosted runner scoping"
     desc: "A self-hosted CI runner executes jobs on YOUR hardware. On a personal account a runner is registered to ONE repository, so no other repo — including a stranger's fork opening a PR — can reach it. Its labels (e.g. self-hosted) decide which jobs it accepts."

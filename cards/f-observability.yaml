@@ -21,6 +21,14 @@ cards:
         - "events"
         - "alerts"
     hint: Three signal types that together explain what broke, why, and where.
+    mcq:
+      prompt: You know the error rate spiked and you have the stack trace, but you need to see which service in a multi-hop request chain caused the failure. Which signal shows the end-to-end path across services?
+      options:
+      - Metrics
+      - Traces
+      - Logs
+      - Profiles
+      answerIndex: 1
   - topic: OpenTelemetry
     desc: The vendor-neutral standard for emitting traces, metrics, and logs.
     extras:
@@ -33,6 +41,14 @@ cards:
         - otel
         - open telemetry
     hint: The vendor-neutral standard for emitting traces, metrics, and logs.
+    mcq:
+      prompt: OpenTelemetry is the vendor-neutral instrumentation standard. Which of these is a distributed-tracing backend and UI that it can export spans to?
+      options:
+      - Prometheus
+      - Loki
+      - StatsD
+      - Jaeger
+      answerIndex: 3
   - topic: Prometheus & Grafana
     desc: "The de-facto open-source metrics stack in K8s: Prometheus COLLECTS + STORES the numbers, Grafana VISUALIZES them. They're two halves — one is the database, the other is the dashboard."
     extras:
@@ -53,6 +69,14 @@ cards:
       text: "{} scrapes a /metrics endpoint from each pod and stores the time-series data."
       answer: Prometheus
     hint: The scrape-and-store metrics engine plus its dashboard front-end.
+    mcq:
+      prompt: Your metrics are already scraped and stored. Which data-source-agnostic layer do teams put on the wall to graph them — alongside logs and traces from other backends — and alert on them?
+      options:
+      - Alertmanager
+      - Grafana
+      - PromQL
+      - Prometheus
+      answerIndex: 1
   - topic: SLI / SLO / SLA
     desc: How you measure, target, and contractually promise reliability.
     extras:
@@ -75,6 +99,14 @@ cards:
       text: A 99.9% SLO implies an error {} of about 43 minutes of allowed failure per month.
       answer: budget
     hint: "Three acronyms in rising order of commitment: measure it, target it, promise it."
+    mcq:
+      prompt: The percentage of requests served under 300 ms is the raw measurement you compute from real traffic. Which term names that measurement — not the target you set on it, nor the contract you sign?
+      options:
+      - SLA
+      - SLO
+      - KPI
+      - SLI
+      answerIndex: 3
   - topic: LLM/agent-specific observability
     desc: Tracing prompts, tokens, tool calls, and agent steps — the novel part of the product.
     extras:
@@ -84,6 +116,14 @@ cards:
       text: Tools like LangSmith and {} capture each agent step — prompt, tokens, tool calls — as a nested trace.
       answer: Langfuse
     hint: Tracing the novel agent parts — prompts, tokens, tool calls, steps.
+    mcq:
+      prompt: LangChain's own hosted tracing-and-evaluation platform — capturing agent runs, token cost, and tool calls, and letting you attach eval scores to catch regressions — is called what?
+      options:
+      - Langfuse
+      - LangSmith
+      - MLflow
+      - Weights & Biases
+      answerIndex: 1
 
   - topic: "A check that depends on nothing"
     desc: "The most reliable health signal doesn't trust any component to report its own success — it independently compares 'what IS running' to 'what SHOULD be'. Deploys drift silently, so a check that reads the live version (e.g. /api/versions) and diffs it against the latest release tag catches a failed deploy that every other signal reported as fine."

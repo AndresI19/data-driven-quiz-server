@@ -30,6 +30,14 @@ cards:
         - "file name"
         - "path"
         - "name"
+    mcq:
+      prompt: New artwork is deployed over the old file at the same path, the origin is confirmed to be serving the new bytes, yet visitors keep seeing the old picture for hours and a hard refresh changes nothing. Most likely cause?
+      options:
+      - The filename never changed
+      - The pod runs the old image
+      - Wrong static directory
+      - CDN re-compression corrupted it
+      answerIndex: 0
 
   - topic: "Content fingerprinting"
     desc: "Build tools emit bundles under hashed names like index-CWr5tzLu.js so the file can be cached indefinitely, while any change to it ships under an address no cache has ever seen. Files copied verbatim out of a public/ or static/ directory never pass through that step — which is precisely why those are the assets that go stale after a swap."
@@ -44,6 +52,14 @@ cards:
       alts:
         - "hashing"
         - "fingerprint"
+    mcq:
+      prompt: Build tools emit bundles under names like index-CWr5tzLu.js so that any change ships the file under an address no cache has seen. Which build step produces those names?
+      options:
+      - Minification
+      - Tree shaking
+      - Code splitting
+      - Content hashing
+      answerIndex: 3
 
   - topic: "A hard refresh does not clear a CDN edge"
     desc: "Pressing Ctrl+Shift+R throws away the local browser copy and refetches, but the request still terminates at the nearest edge, which keeps serving the copy it holds for as long as that copy is fresh. Only an expiry, an explicit purge, or a changed address replaces it — which is also why a colleague routed to a different edge can honestly report seeing the new version while you still cannot."
@@ -60,6 +76,14 @@ cards:
         - "client"
 
   # ── Checks that lie to you ────────────────────────────────────────────────────────────────────
+    mcq:
+      prompt: An asset is stale for you but fresh for a colleague routed to a different edge, and a hard refresh does nothing. Which action actually replaces the copy the CDN edge is serving?
+      options:
+      - A browser hard-refresh
+      - A private-browsing window
+      - A CDN purge
+      - Clearing site cookies
+      answerIndex: 2
   - topic: "SPA catch-all masking a missing file"
     desc: "A single-page app's server ends its route table with a wildcard that returns index.html, so that deep links into client-side routes still work. A request for a file that does not exist therefore answers 200 with an HTML body instead of 404 — so a script that polls for the asset to appear reports success immediately, and a file that was never deployed looks like it arrived."
     mc:
@@ -76,6 +100,14 @@ cards:
         - "mime type"
         - "MIME type"
         - "media type"
+    mcq:
+      prompt: A script polls a URL to confirm an asset deployed and gets 200 OK, yet the file was never shipped. The server's route table ends in a wildcard that returns index.html. Why does a missing file answer 200?
+      options:
+      - The wildcard serves index.html
+      - The CDN rewrites 404s
+      - A service worker intercepts
+      - The static dir was omitted
+      answerIndex: 0
 
   - topic: 'loading="lazy" above the fold'
     desc: "Marking an image lazy defers its fetch until it nears the viewport, which buys exactly nothing for an image already in the viewport when the page arrives. A heavy hero or banner graphic stays in the critical path, and the attribute leaves a comfortable impression that page weight has been dealt with when it has not."
@@ -92,3 +124,11 @@ cards:
         - "visible"
         - "on screen"
         - "onscreen"
+    mcq:
+      prompt: A heavy hero banner sits in the viewport on load but paints slowly; its current loading="lazy" does nothing for it. Which loading-attribute value would instead tell the browser to fetch such a critical image right away?
+      options:
+      - lazy
+      - eager
+      - preload
+      - prefetch
+      answerIndex: 1
