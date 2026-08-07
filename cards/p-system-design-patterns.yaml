@@ -101,20 +101,17 @@ cards:
         text: Oban (Elixir), River (Go), Graphile Worker (Node), and Rails' Solid Queue are all built
           on exactly this.
       - label: Trap
-        text: the transaction is held open for the whole claim, so keep the claim short — SELECT the batch,
-          mark it, COMMIT, and only then do the slow work. Doing the job inside the claiming transaction
-          holds locks for the job's entire duration.
+        text: the claim holds locks for the whole transaction — SELECT the batch, mark it, COMMIT, and
+          only then do the slow work.
     code:
       lang: sql
       text: |
         BEGIN;
         SELECT id, payload FROM jobs
           WHERE state = 'pending'
-          ORDER BY created_at
-          LIMIT 10
+          ORDER BY created_at LIMIT 10
           FOR UPDATE SKIP LOCKED;
-        UPDATE jobs SET state = 'in_flight', leased_until = now() + interval '5 min'
-          WHERE id = ANY($claimed);
+        UPDATE jobs SET state = 'in_flight' WHERE id = ANY($claimed);
         COMMIT;
     cloze:
       text: Adding {} to a FOR UPDATE query makes concurrent workers step over already-locked rows instead
@@ -548,4 +545,71 @@ cards:
         - "5,000"
         - "12,500"
         - "400"
+      answerIndex: 0
+
+  - topic: "Real-time transports: polling → WebSocket"
+    desc: Four ways to get server data to a client, separated by one axis — who may start a message,
+      and what one message costs. The progression runs from asking repeatedly on a timer, through holding
+      a request open until there is news, to a one-way stream, to a single connection either side can
+      send on at will.
+    table:
+      - - ""
+        - Direction
+        - Cost per message
+        - Watch out for
+      - - Polling
+        - client pulls
+        - a full request every tick
+        - latency equals the interval; most responses empty
+      - - Long polling
+        - client pulls
+        - one request cycle per message
+        - constant reconnects; a held socket per waiting client
+      - - Server-sent events
+        - server to client only
+        - one frame on an open stream
+        - no upstream channel; text only
+      - - WebSocket
+        - bidirectional
+        - a few bytes of framing
+        - needs the upgrade to survive every proxy in the path
+    extras:
+      - label: Say
+        text: “Chat wants WebSocket because it is genuinely bidirectional and high-frequency in BOTH
+          directions — messages down, receipts and typing indicators up. Server-sent events would need
+          a second channel just for the upstream half.”
+      - label: Trap
+        text: name the cost immediately after choosing WebSocket, because it is the consequence interviewers
+          are waiting for — the connection is STATEFUL, so a user is pinned to one server. You now need
+          a registry mapping user to node and a bus between nodes, and a node holding 100,000 sockets dying
+          means 100,000 simultaneous reconnects.
+      - label: e.g.
+        text: server-sent events are underrated for one-way feeds — dashboards, notifications, streaming
+          LLM tokens — because the response is ordinary HTTP, so proxies, compression, and auth all work
+          unchanged and the browser reconnects on its own.
+    match:
+      - - Polling
+        - latency equals the interval, and most responses are empty
+      - - Long polling
+        - held open until there is data, then a fresh request each time
+      - - Server-sent events
+        - one-way server-to-client over plain HTTP, auto-reconnecting
+      - - WebSocket
+        - one bidirectional full-duplex connection after an upgrade
+    cloze:
+      text: A single connection either side can send on at any moment, costing only a few bytes of framing
+        per message, is a {}.
+      answer: WebSocket
+      alts:
+        - web socket
+    hint: Four options on one axis — who may start a message, and what each message costs.
+    mcq:
+      prompt: A dashboard needs a continuous one-way stream of updates from server to browser, has to
+        pass through corporate proxies untouched, and should reconnect by itself. Which transport fits
+        best?
+      options:
+        - Server-sent events
+        - WebSocket
+        - Long polling
+        - Polling on a one-second timer
       answerIndex: 0
