@@ -1,0 +1,551 @@
+section:
+  key: P
+  name: "System Design Patterns"
+  color: "#14b8a6"
+cards:
+  - topic: "Lease & visibility timeout"
+    desc: How a queue survives a worker dying mid-job. The worker does not delete the job when it takes
+      it — it takes a LEASE. The job is hidden from every other worker for a visibility timeout; if the
+      worker acknowledges before that expires the job is deleted, and if the worker dies the lease expires
+      and the job reappears for someone else. No heartbeat protocol, no failure detector — an expiring
+      timer is the whole mechanism.
+    extras:
+      - label: e.g.
+        text: SQS gives each received message a visibility timeout (default 30s) and a receipt handle;
+          the consumer calls ChangeMessageVisibility to extend it on a long job, or DeleteMessage to finish.
+      - label: Say
+        text: “Set the timeout near the p99 job duration and let workers heartbeat to extend it. That
+          way a six-hour job does not force a six-hour lease — a crashed worker is still detected in minutes
+          regardless of how long the work legitimately takes.”
+      - label: Trap
+        text: too short and the job is redelivered while it is still running, so you do the work twice
+          and possibly forever; too long and a crashed worker's job sits invisible for the entire timeout
+          before anyone retries it.
+      - label: Trap
+        text: the acknowledgement must carry the LEASE receipt, not just the job id — otherwise a slow
+          worker's late ack deletes a job that has already been redelivered and is running on someone else.
+    order:
+      - Worker requests a batch of jobs
+      - Queue marks them in-flight and starts the visibility timer
+      - Worker processes the job
+      - Worker acknowledges using its lease receipt
+      - Queue deletes the job
+    cloze:
+      text: A worker that takes a job does not delete it — it holds a {} that expires, so the job reappears
+        automatically if the worker dies.
+      answer: lease
+      alts:
+        - visibility timeout
+    hint: Why a crashed worker does not take the job it was holding down with it.
+    mcq:
+      prompt: A worker pulls a job, begins processing, and its host is terminated ten seconds later. No
+        other worker touches the job for five minutes, after which it runs to completion. What produced
+        the five-minute delay?
+      options:
+        - The visibility timeout on the lease expiring
+        - A dead-letter queue redrive policy
+        - Exponential backoff before the retry
+        - Consumer-group rebalancing
+      answerIndex: 0
+
+  - topic: "Poison pill & the dead-letter queue"
+    desc: A poison pill is a message that crashes every worker that touches it. Under at-least-once delivery
+      it is redelivered forever, and because it kills the worker it also takes down whatever else that
+      worker was processing — one malformed message can put an entire fleet into a crash loop. The fix
+      is to count attempts ON THE MESSAGE and, after N, move it to a dead-letter queue instead of retrying.
+    extras:
+      - label: Say
+        text: “A dead-letter queue with no owner and no alert is a silent data-loss mechanism with extra
+          steps. It needs someone who is paged, and a replay path back onto the main queue once the bug
+          is fixed.”
+      - label: e.g.
+        text: SQS has it built in — a redrive policy with maxReceiveCount routes to the DLQ automatically.
+          Kafka has no such concept; you implement the attempt counting and the dead-letter topic yourself.
+      - label: Trap
+        text: counting attempts inside the worker instead of on the message. A worker that crashes never
+          gets to increment anything, so the count stays at zero and the message retries forever.
+    cloze:
+      text: After N failed attempts a message is moved off the main queue to a {} queue, so one bad message
+        cannot loop forever.
+      answer: dead-letter
+      alts:
+        - DLQ
+        - dead letter
+    hint: What stops one unprocessable message from cycling through your whole worker fleet.
+    mcq:
+      prompt: One malformed message is crashing every consumer that receives it, and because each crash
+        kills the process mid-batch, other healthy messages are being disrupted too. What is this called,
+        and what bounds it?
+      options:
+        - A poison pill, bounded by a dead-letter queue after N attempts
+        - A thundering herd, bounded by request coalescing
+        - Head-of-line blocking, bounded by partitioning
+        - Backpressure, bounded by a rate limiter
+      answerIndex: 0
+
+  - topic: "A relational table as a job queue (SKIP LOCKED)"
+    desc: "`SELECT ... FOR UPDATE SKIP LOCKED` turns an ordinary table into a work queue. Each polling
+      transaction locks the rows it claims, and SKIP LOCKED makes concurrent pollers step OVER rows another
+      transaction already holds instead of blocking behind them. Good to tens of thousands of jobs per
+      second — far past the point most teams assume they need a broker."
+    extras:
+      - label: Say
+        text: “Reaching for Kafka when Postgres would do is a common over-engineering tell. A queue table
+          is transactional with the rest of your writes, inspectable with ordinary SQL, and you can write
+          ad-hoc recovery queries against it during an incident — which is worth a great deal at 3am.”
+      - label: Trap
+        text: without SKIP LOCKED the second worker BLOCKS on the first worker's locked row rather than
+          moving to the next one. You get a queue with an effective concurrency of one, and it looks like
+          a performance problem rather than a correctness one.
+      - label: e.g.
+        text: Oban (Elixir), River (Go), Graphile Worker (Node), and Rails' Solid Queue are all built
+          on exactly this.
+      - label: Trap
+        text: the transaction is held open for the whole claim, so keep the claim short — SELECT the batch,
+          mark it, COMMIT, and only then do the slow work. Doing the job inside the claiming transaction
+          holds locks for the job's entire duration.
+    code:
+      lang: sql
+      text: |
+        BEGIN;
+        SELECT id, payload FROM jobs
+          WHERE state = 'pending'
+          ORDER BY created_at
+          LIMIT 10
+          FOR UPDATE SKIP LOCKED;
+        UPDATE jobs SET state = 'in_flight', leased_until = now() + interval '5 min'
+          WHERE id = ANY($claimed);
+        COMMIT;
+    cloze:
+      text: Adding {} to a FOR UPDATE query makes concurrent workers step over already-locked rows instead
+        of blocking on them.
+      answer: SKIP LOCKED
+    hint: The two words that let many workers poll one table without queueing up behind each other.
+    mcq:
+      prompt: Ten workers poll the same jobs table with SELECT ... FOR UPDATE, and throughput is identical
+        to running one worker. What is the most likely cause?
+      options:
+        - SKIP LOCKED is missing, so nine workers block on the first worker's locked row
+        - The table is missing an index on the state column
+        - The isolation level is set to READ COMMITTED
+        - Connection pooling is serialising the queries
+      answerIndex: 0
+
+  - topic: "Fan-out on write vs. fan-out on read"
+    desc: The core choice whenever one item must reach many subscribers. Fan-out on WRITE (push) copies
+      the item into every recipient's precomputed list at publish time — reads become a single lookup,
+      writes become O(recipients). Fan-out on READ (pull) stores it once and assembles per-recipient at
+      request time — writes are trivial, reads become O(subscriptions). Neither pure form survives a heavy-tailed
+      audience, so real systems go hybrid.
+    table:
+      - - ""
+        - Fan-out on write (push)
+        - Fan-out on read (pull)
+      - - Write cost
+        - O(followers) — huge for a celebrity
+        - one insert
+      - - Read cost
+        - one lookup
+        - O(followees), merged live
+      - - Dies when
+        - someone has millions of followers
+        - someone follows thousands of accounts
+      - - Deletion
+        - must unwind millions of copies
+        - free — one source of truth
+    extras:
+      - label: Say
+        text: “Push for ordinary accounts, pull for the high-follower tail, merged at read time. The merge
+          is cheap because any one user follows only a handful of celebrities, and those posts sit in one
+          hot cache shared by millions of readers.”
+      - label: Trap
+        text: "announcing “hybrid” with no arithmetic reads as memorised. Derive it: 1,200 posts/sec
+          × 200 average followers is 240,000 timeline writes/sec, which is affordable — while one 50M-follower
+          post is 50M writes, which is not. The contradiction between the average and the tail is what
+          forces the hybrid."
+      - label: e.g.
+        text: store post IDs in the timeline, never post bodies, so an edit or delete is corrected in
+          one place instead of a million.
+    cloze:
+      text: Pushing a new post into every follower's precomputed timeline at publish time is called fan-out
+        on {}.
+      answer: write
+      alts:
+        - write (push)
+        - push
+    hint: Two ways to get one item in front of many people — pay at publish time, or pay at read time.
+    mcq:
+      prompt: A social feed has fast reads but posting slows down proportionally to a user's follower
+        count, and an account with 40 million followers effectively stalls the write pipeline. Which strategy
+        is in use, and what fixes the stall?
+      options:
+        - Fan-out on write; exempt high-follower accounts and merge their posts at read time
+        - Fan-out on read; precompute every timeline in advance
+        - Fan-out on write; shard the timeline store by post id
+        - Fan-out on read; add a write-through cache
+      answerIndex: 0
+
+  - topic: "Claim check (payload by reference)"
+    desc: When a message would carry a large payload, store the payload in object storage and put only
+      a REFERENCE on the queue. The consumer fetches the bytes itself. This keeps the messaging layer doing
+      what it is good at — small, ordered, durable, cheap-to-replicate notifications — instead of becoming
+      a poorly-designed blob store.
+    extras:
+      - label: e.g.
+        text: brokers enforce this whether you like it or not — SQS caps a message at 256 KB and Kafka
+          defaults to 1 MB, so a 40 MB video job MUST be a reference.
+      - label: Say
+        text: “Cap the message at tens of kilobytes; anything larger goes to object storage and the message
+          carries a key. Otherwise every replica, every retry, and every dead-letter copy is carrying the
+          full payload with it.”
+      - label: Trap
+        text: the two now have independent lifetimes. If the blob's retention is shorter than the queue's
+          maximum retry window, a retried job resolves its reference to a deleted object — so tie the blob's
+          expiry to the job's, not to a generic bucket policy.
+    cloze:
+      text: Putting a pointer to object storage on the queue instead of the payload itself is the {} check
+        pattern.
+      answer: claim
+    hint: Like a coat check — you hold the ticket, not the coat.
+    mcq:
+      prompt: A pipeline needs to process 40 MB video files, but the broker rejects messages above 1 MB.
+        What is the standard pattern?
+      options:
+        - Write the file to object storage and enqueue only its key
+        - Split the file across multiple ordered messages and reassemble
+        - Compress the payload until it fits under the limit
+        - Raise the broker's max message size and add memory to the brokers
+      answerIndex: 0
+
+  - topic: "Control plane vs. data plane"
+    desc: Split the system that DECIDES from the system that DOES. The control plane is low-rate, human-driven,
+      and handles configuration, provisioning and authorisation; the data plane is high-rate, latency-sensitive,
+      and carries the actual traffic or bytes. They differ by orders of magnitude in rate and latency budget,
+      so they get separate designs, separate scaling and separate availability targets.
+    extras:
+      - label: e.g.
+        text: presigned URLs are the canonical instance — the client asks your API for permission (control
+          plane) then uploads straight to object storage (data plane), so gigabytes never touch your servers.
+      - label: e.g.
+        text: Kubernetes is the same shape — the API server and scheduler decide, the kubelet and running
+          pods do. Pods keep running when the API server is down.
+      - label: Say
+        text: “Routing 4.6 gigabits a second of uploads through my application tier would mean a fleet
+          of machines whose only job is copying bytes from one socket to another — cost, latency and a
+          failure point in exchange for nothing.”
+      - label: Trap
+        text: authorisation happens when the URL is ISSUED, not per byte served — so revocation is not
+          instant. Bound the window with a short expiry, and enforce the size limit inside the presigned
+          policy rather than trusting the size the client declared.
+    cloze:
+      text: Letting a client upload directly to object storage using a short-lived signed URL keeps the
+        bytes off your servers — the data plane is separated from the {} plane.
+      answer: control
+    hint: The part that decides, versus the part that carries the traffic.
+    mcq:
+      prompt: A file service must ingest 50 TB per day. Which design keeps the application tier from becoming
+        a bandwidth bottleneck?
+      options:
+        - Issue presigned URLs so clients upload directly to object storage
+        - Stream uploads through the API with chunked transfer encoding
+        - Autoscale the API tier on network throughput
+        - Put a CDN in front of the upload endpoint
+      answerIndex: 0
+
+  - topic: "Cell-based architecture"
+    desc: Partition tenants into independent CELLS, where a cell is a complete self-sufficient stack —
+      its own compute, its own database, its own capacity — serving a bounded set of tenants. Cells share
+      no state and never call each other, so a failure inside one is contained to the customers in it.
+      5,000 tenants at 500 per cell is ten cells, and any single-cell failure hits 10% of customers rather
+      than 100%.
+    extras:
+      - label: Say
+        text: “A cell is simultaneously the unit of deployment, of capacity planning, and of blast radius
+          — one abstraction doing three jobs, which is why the pattern pays for itself.”
+      - label: Trap
+        text: whatever remains SHARED is now your real single point of failure — the tenant-to-cell router,
+          identity, the billing service. Keep the router a dumb lookup with no logic in it, and list every
+          shared component explicitly, because that list is the list of ways everyone goes down at once.
+      - label: Trap
+        text: the most likely total outage is not hardware, it is a global config or code change applied
+          everywhere at once. Deploy cell by cell — canary cell, small cell, then progressively larger
+          — and give CONFIGURATION the same staging discipline as code.
+      - label: Cost
+        text: lower utilisation because every cell needs headroom, more operational surface, and cross-tenant
+          features become hard by construction (which is usually a feature).
+    cloze:
+      text: Partitioning tenants across independent self-contained stacks so a failure hits only a fraction
+        of customers is called {}-based architecture.
+      answer: cell
+    hint: The unit that bounds how many customers find out when something breaks.
+    mcq:
+      prompt: A platform wants any single infrastructure failure to affect at most 10% of its customers.
+        Which approach delivers that directly?
+      options:
+        - Split tenants across ten independent cells that share no state
+        - Run ten replicas of each service behind a load balancer
+        - Shard the database into ten partitions
+        - Deploy to ten availability zones with a global control plane
+      answerIndex: 0
+
+  - topic: "Static stability"
+    desc: The data plane must keep working when the control plane is down. Data-plane nodes cache the configuration
+      they need locally and keep serving the last known good state indefinitely, so a control-plane outage
+      means “you cannot change settings right now”, not “your traffic stops”. The failure mode of the large
+      cloud outages people remember is precisely this property being absent.
+    extras:
+      - label: Say
+        text: “If the data plane needs a control-plane call on every request, then a config outage is
+          a customer outage. I would rather the system be unable to CHANGE than unable to RUN.”
+      - label: e.g.
+        text: Kubernetes has it — pods keep running and kube-proxy keeps routing when the API server is
+          unavailable; you just cannot schedule anything new.
+      - label: e.g.
+        text: give every config a version and have nodes report the version they are running, so propagation
+          lag is visible and a node stuck on an old version cannot fail silently.
+      - label: Trap
+        text: validate configuration at WRITE time in the control plane, not at read time in the data
+          plane. Rejecting an invalid policy when an operator submits it is a good error message; discovering
+          it at enforcement time is an outage.
+    cloze:
+      text: Designing the data plane to keep serving from cached config while the control plane is unavailable
+        is called {} stability.
+      answer: static
+    hint: The property that stops a configuration outage from becoming a traffic outage.
+    mcq:
+      prompt: Your policy service is down. Requests continue to be served correctly using the last distributed
+        policy set, and only configuration CHANGES are blocked. Which property is this?
+      options:
+        - Static stability
+        - Graceful degradation
+        - Eventual consistency
+        - Circuit breaking
+      answerIndex: 0
+
+  - topic: "Cursor vs. offset pagination"
+    desc: Offset pagination (`LIMIT 20 OFFSET 40`) asks for a position in a result set. If rows are inserted
+      or deleted between requests everything shifts, so page 2 repeats items the reader already saw and
+      silently skips others. A cursor encodes WHERE YOU STOPPED — the sort key of the last row returned
+      — so the next page is “rows after this key”, which is stable under insertion and uses the index directly.
+    extras:
+      - label: Say
+        text: “On a feed that mutates while you read it, offset pagination is a correctness bug, not a
+          performance preference — it duplicates and skips.”
+      - label: e.g.
+        text: "it is also a performance trap: OFFSET 100000 makes the database walk and discard 100,000
+          rows on every request, so deep pages get linearly slower. A cursor is an index seek at any depth."
+      - label: Trap
+        text: keep the cursor OPAQUE (base64 the key) so clients cannot construct one, which leaves you
+          free to change the underlying sort later.
+      - label: e.g.
+        text: for a snapshot view, encode a timestamp in the first cursor and return only rows older than
+          it — new arrivals then surface through an explicit “12 new posts” control instead of shifting
+          the list under the reader.
+    cloze:
+      text: Paginating by the sort key of the last row returned, rather than by a numeric position, is
+        called {} pagination.
+      answer: cursor
+      alts:
+        - keyset
+        - seek
+    hint: Two ways to ask for the next page — by position, or by where you stopped.
+    mcq:
+      prompt: Users scrolling a busy feed report occasionally seeing the same post twice and missing others
+        entirely. Nothing is wrong with the data. What is the most likely cause?
+      options:
+        - Offset pagination over a result set that is being inserted into
+        - A cache serving a stale page
+        - Replication lag between primary and read replica
+        - Duplicate delivery from the fan-out queue
+      answerIndex: 0
+
+  - topic: "Append-only ledger vs. mutable balance"
+    desc: Do not store a balance in a column you overwrite. Store an immutable append-only sequence of
+      entries and DERIVE the balance by summing them. In double-entry form every transaction produces balanced
+      debits and credits, so the books carry their own invariant — debits must equal credits, and a background
+      check can therefore detect corruption without knowing anything about the business.
+    extras:
+      - label: Say
+        text: “A mutable balance column tells you the current number and nothing about how it got there
+          — and during a dispute, how it got there is the only question anyone is asking.”
+      - label: e.g.
+        text: you never edit an entry to fix a mistake; you post a compensating entry, so the error AND
+          its correction are both visible forever. Accounting has worked this way for six hundred years.
+      - label: Trap
+        text: summing the whole history gets slow, so keep periodic balance snapshots and sum forward
+          from the most recent one. Raise this before the interviewer does — it is the obvious objection.
+      - label: e.g.
+        text: store money as integers in MINOR units (cents), never floating point — binary floats cannot
+          represent 0.10 exactly and the rounding error accumulates.
+    cloze:
+      text: Recording every movement as an immutable entry and computing the balance by summing them,
+        rather than overwriting a balance column, is an {}-only ledger.
+      answer: append
+    hint: Why banks never UPDATE the number.
+    mcq:
+      prompt: A finance team needs to answer “what was this account's balance last Tuesday, and what changed
+        it?” Which data model supports that directly?
+      options:
+        - An append-only ledger of entries, with balances derived by summing
+        - A balances table with an updated_at timestamp
+        - A balances table plus database audit triggers
+        - Nightly snapshots of the balances table
+      answerIndex: 0
+
+  - topic: "Fail open vs. fail closed"
+    desc: When the component that makes a decision is unreachable, you must choose what happens by default.
+      Fail OPEN allows the request — protecting availability, and removing the protection precisely when
+      things are already going wrong. Fail CLOSED denies it — protecting the backend, and converting a
+      dependency failure into a customer-visible outage. This is a business decision, and naming it as
+      one is worth more than either answer.
+    extras:
+      - label: Say
+        text: “For a public API's rate limiter I fail open, because a limiter outage should not become
+          an API outage — but fail open, not fail UNLIMITED. Each node falls back to a generous in-memory
+          limit, so the backends still cannot be flooded arbitrarily.”
+      - label: e.g.
+        text: it inverts by threat model. Where the check is a SECURITY control rather than a capacity
+          control — login attempts, payment submission, an autonomous agent's write-capable tool calls
+          — you fail closed, because allowing unmetered action during a control-plane outage is exactly
+          the risk the control plane exists to prevent.
+      - label: Trap
+        text: a SLOW dependency is more dangerous than a dead one, because health checks keep passing
+          while everything degrades. Use an aggressive timeout and treat a timeout as a failure so the
+          fallback path actually engages.
+    cloze:
+      text: A rate limiter that allows requests through when its shared counter store is unreachable is
+        said to fail {}.
+      answer: open
+    hint: The default when the thing that decides cannot be reached.
+    mcq:
+      prompt: An authorisation service that gates an autonomous agent's ability to take destructive actions
+        becomes unreachable. Which default is appropriate, and why?
+      options:
+        - Fail closed — allowing unmetered action during the outage is the exact risk the service exists
+          to prevent
+        - Fail open — availability of the agent matters more than the check
+        - Fail open with a local fallback limit, as with a public API rate limiter
+        - Queue the actions and apply them once the service recovers
+      answerIndex: 0
+
+  - topic: "Precompute at write vs. compute at read"
+    desc: The recurring lever behind caching, materialised views, search indexes and fan-out. Doing work
+      at WRITE time makes reads a lookup and pays the cost once per write, amortised over every subsequent
+      read — which wins hard when reads vastly outnumber writes. Doing it at READ time keeps writes cheap
+      and the data always current. The read:write ratio and the latency budget decide it, nothing else.
+    extras:
+      - label: e.g.
+        text: autocomplete has roughly a 100 ms budget, of which network eats most — so the top completions
+          for every prefix are precomputed into the index at build time and a request becomes a prefix
+          walk plus a read, never a search.
+      - label: Say
+        text: “Build the structure offline and swap it in atomically rather than mutating it in place.
+          An immutable structure gives you consistent reads with no locking, and rollback becomes pointing
+          back at the previous version.”
+      - label: Trap
+        text: precomputation and PERSONALISATION are in direct tension — anything computed per viewer
+          cannot be shared across viewers, which destroys the cache that made it affordable. Resolve it
+          by re-ranking a shared precomputed candidate set, so the personalisation happens AFTER the cache.
+      - label: Trap
+        text: precomputed data goes stale. Pair a large slow-rebuilt layer with a small real-time layer
+          merged at read time — the same structural answer as hybrid fan-out.
+    cloze:
+      text: Storing the answer at write time so that a read is a lookup rather than a computation is called
+        {}.
+      answer: precomputation
+      alts:
+        - precomputing
+        - precompute
+    hint: Pay once per write, or pay once per read — the ratio decides.
+    mcq:
+      prompt: A typeahead endpoint must answer in under 20 ms server-side across 100 million distinct
+        queries. Which approach fits the budget?
+      options:
+        - Precompute the top completions at every prefix so a request is a walk plus a read
+        - Query the search index with a prefix filter and rank the matches
+        - Use a covering database index on the query text column
+        - Cache the most popular queries and compute the rest on demand
+      answerIndex: 0
+
+  - topic: "Replication vs. erasure coding"
+    desc: Two ways to survive losing a disk. REPLICATION keeps N whole copies — simple, any copy serves
+      a read, and a 200% storage overhead for three copies. ERASURE CODING splits an object into k data
+      fragments plus m parity fragments spread across failure domains; any k of the k+m reconstruct it.
+      A 10+4 scheme survives four simultaneous losses at a 40% overhead instead of 200%.
+    table:
+      - - ""
+        - 3× replication
+        - Erasure coding (10+4)
+      - - Storage overhead
+        - 200%
+        - 40%
+      - - Failures tolerated
+        - "2"
+        - "4"
+      - - Read cost
+        - read any one copy
+        - reconstruct from k fragments
+      - - Best for
+        - small, hot objects
+        - large, cold objects
+    extras:
+      - label: Say
+        text: “Durability is not a setting, it is a process — background scrubbing continuously reads
+          and checksums fragments and repairs from parity when it finds bit rot. Without it you discover
+          corruption at restore time.”
+      - label: Trap
+        text: durability and availability are different promises. Eleven nines of durability is about
+          not LOSING data; a zone outage can make data temporarily unreachable without ever putting it
+          at risk. Conflating them is the most common mistake in this topic.
+      - label: Trap
+        text: the durability figure is a MODEL output computed from device failure rates and repair times,
+          and it assumes failures are independent — which correlated events like a bad firmware rollout
+          or a shared power failure violate.
+    cloze:
+      text: Splitting an object into data and parity fragments so that any k of k+m can rebuild it is
+        called {} coding.
+      answer: erasure
+    hint: The alternative to keeping three whole copies.
+    mcq:
+      prompt: A storage tier holds petabytes of rarely-read archival objects and needs to survive several
+        simultaneous disk failures without tripling its storage bill. Which scheme fits?
+      options:
+        - Erasure coding, around 40% overhead for four tolerated failures
+        - Three-way replication across availability zones
+        - Two-way replication plus nightly backups
+        - Single copy plus checksums and a scrubber
+      answerIndex: 0
+
+  - topic: "Little's law for capacity"
+    desc: "Concurrency = arrival rate × time in system (L = λW). It converts a throughput requirement into
+      a machine count with one multiplication: 10,000 jobs per second at 200 ms each needs 10,000 × 0.2
+      = 2,000 concurrent workers. It also runs backwards — measure your concurrency and latency, and you
+      know the throughput you can actually sustain."
+    extras:
+      - label: Say
+        text: “Because concurrency is rate times DURATION, a dependency that slows from 200 ms to 2 seconds
+          needs ten times the workers for identical throughput. That is why a slow dependency silently
+          consumes an entire fleet.”
+      - label: Trap
+        text: it tells you to autoscale on queue depth and oldest-message age, never on worker CPU. A
+          worker blocked on a slow downstream call is idle on CPU while the backlog grows, so CPU-based
+          scaling scales DOWN exactly when you need to scale up.
+      - label: e.g.
+        text: the same arithmetic sizes connection pools and thread pools — a pool smaller than λW queues
+          requests no matter how fast the database is.
+    cloze:
+      text: "The relationship concurrency = arrival rate × time in system is known as {} law."
+      answer: Little's
+      alts:
+        - Littles
+        - Little
+    hint: The one multiplication that turns a throughput target into a worker count.
+    mcq:
+      prompt: A queue receives 5,000 jobs per second and each job takes 400 ms. Roughly how many jobs
+        are in flight at steady state?
+      options:
+        - "2,000"
+        - "5,000"
+        - "12,500"
+        - "400"
+      answerIndex: 0

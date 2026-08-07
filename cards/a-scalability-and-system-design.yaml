@@ -850,3 +850,57 @@ cards:
       - must-revalidate
       - private
       answerIndex: 0
+  - topic: What actually makes a database "relational"
+    desc: A relation IS a table — a set of rows sharing one fixed, typed set of columns. The name comes
+      from relational algebra (E.F. Codd, 1970), where every operation takes tables and returns a table.
+      The database enforces the structure rather than merely storing what you hand it, so invalid data
+      is REJECTED at write time instead of discovered later.
+    items:
+      - "Fixed schema — columns and types are declared up front, and every row has the same shape. A write
+        that does not fit is an error."
+      - "Primary key — one column (or set) that uniquely identifies a row. Duplicates are impossible because
+        the engine refuses them."
+      - "Foreign key — a column that must match some other table's primary key, and the DATABASE enforces
+        it: you cannot insert an order for a customer who does not exist, or delete a customer who still
+        has orders."
+      - "JOIN — related data is stored separately and combined at query time, so the relationship is expressed
+        in the query rather than baked into the storage."
+      - "Normalization — each fact is stored exactly once. Change a customer's address in one row and
+        every order referencing it is instantly correct."
+      - "Transactions (ACID) — a group of writes is all-or-nothing, so money never leaves one account
+        without arriving in the other."
+    extras:
+      - label: Trap
+        text: '"Relational" does NOT mean "the tables have relationships with each other" — that is the
+          near-universal misreading. It means the data is stored as mathematical RELATIONS, i.e. tables.
+          Foreign keys are a consequence of the model, not the source of the name.'
+      - label: e.g.
+        text: 'Postgres, MySQL, SQL Server, Oracle, SQLite; managed as AWS RDS/Aurora, Google Cloud SQL,
+          Azure SQL. Almost all speak SQL (Structured Query Language) — which is why "SQL database" and
+          "relational database" are used interchangeably.'
+      - label: Contrast
+        text: 'a document store (MongoDB) nests the related data INSIDE one document — no JOIN, and nothing
+          stops a document from referencing a customer that was deleted. You trade enforced integrity for
+          schema flexibility and easier horizontal sharding.'
+      - label: Say
+        text: “The relational model puts the integrity rules in the database, so every application that
+          touches it inherits them. In a schemaless store those rules live in application code — which
+          means they hold only as long as every writer remembers them.”
+    cloze:
+      text: A relational database stores data as relations — which in practice means {} of rows with a
+        fixed, typed set of columns.
+      answer: tables
+      alts:
+        - a table
+        - table
+    hint: The word describes the SHAPE of the data, not the links between tables.
+    inverse: true
+    mcq:
+      prompt: An application inserts an order row whose customer_id refers to a customer that was deleted
+        last week, and the database rejects the write outright. Which relational feature did that?
+      options:
+        - A foreign key constraint
+        - A primary key constraint
+        - A unique index
+        - A check constraint
+      answerIndex: 0
