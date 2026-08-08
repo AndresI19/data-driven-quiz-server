@@ -11,7 +11,7 @@ import { discardActive, resumeActive, retrySession, reviewIds, start } from '../
 import { COIN, CURRENCY } from '../runtime/currency.js';
 // Home / setup screen: section + length + sound + timer + hints controls, the resume banner,
 // favorites + sessions panels, the live garden mini-render, and the debug menu. Ported verbatim.
-import { CARDS, CATCOL, CATS, GROUPS, app, byId } from '../runtime/data.js';
+import { CARDS, CATEGORIES, LABELS, app, byId } from '../runtime/data.js';
 import { DB, saveDB } from '../runtime/db.js';
 import { setPath } from '../runtime/router.js';
 import { S } from '../runtime/state.js';
@@ -21,12 +21,13 @@ import { favoritesPage } from './favorites.js';
 import { reviewSession } from './review.js';
 import { studyPage } from './study.js';
 
-/** How many cards live in a section (cat key). */
-const catCount = (k: string): number => CARDS.reduce((n, c) => (c.cat === k ? n + 1 : n), 0);
+/** How many cards carry a label. Shown on the chip as a sizing hint, not a budget — labels overlap,
+ *  so these do not sum to the category total. */
+const labelCount = (k: string): number => CARDS.reduce((n, c) => (c.labels.includes(k) ? n + 1 : n), 0);
 
-/** One section chip: the single-letter key, hover-tip = "Full name · N cards", coloured by its hue. */
-const secChip = (k: string): string =>
-  `<button class="secchip sc" data-sec="${k}" data-tip="${esc(CATS[k])} · ${catCount(k)} cards" style="--cat:${CATCOL[k]}">${k}</button>`;
+/** One label chip: its display name and card count, tinted from the label registry. */
+const labelChip = (k: string): string =>
+  `<button class="secchip lc" data-label="${k}" style="--cat:${LABELS[k]?.color ?? '#888'}">${esc(LABELS[k]?.name ?? k)} <span class="lcnum">${labelCount(k)}</span></button>`;
 
 /**
  * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
@@ -131,35 +132,39 @@ export function setup(): void {
     ${resumeHtml}
     <div class="panel">
       <div class="panelsub">${CARDS.length} cards · multiple-choice, fill-in, match & drag-to-order. <span class="tiny">${lifetime()}</span>${Object.keys(DB.stats).length ? ` <button class="linkbtn" id="resetstats">reset</button>` : ''} <button class="linkbtn" id="exportbtn">export</button></div>
-      <div class="row"><div class="lab">Sections <span class="poolnum" id="poolcount"></span></div>
+      <div class="row"><div class="lab">Categories <span class="poolnum" id="poolcount"></span></div>
         <div class="secchips" id="secchips">
-          <button class="secchip all" data-sec="all">All (${CARDS.length})</button>
-          ${Object.keys(DB.favorites).length ? `<button class="secchip fav" data-sec="fav">★ Favorites</button>` : ''}
-          ${
-            GROUPS.length
-              ? GROUPS.map((g) => {
-                  const n = g.sections.reduce((t, k) => t + catCount(k), 0);
-                  return `<div class="secgroup" style="--cat:${g.color}"><button class="secchip grp" data-grp="${g.key}" data-secs="${g.sections.join(',')}" data-tip="all of ${esc(g.name)} · ${n} cards">${esc(g.name)}</button>${g.sections.map(secChip).join('')}</div>`;
-                }).join('')
-              : Object.keys(CATS).map(secChip).join('')
-          }
+          <div class="catrow catrow-top">
+            <button class="secchip all" data-label="all">All (${CARDS.length})</button>
+            ${Object.keys(DB.favorites).length ? `<button class="secchip fav" data-label="fav">★ Favorites</button>` : ''}
+          </div>
+          ${CATEGORIES.map((g) => {
+            // Union, not sum: a card can carry two of a category's labels, so adding the per-label
+            // counts would overstate the pool.
+            const n = CARDS.filter((c) => g.labels.some((l) => c.labels.includes(l))).length;
+            return `<div class="catblock" style="--cat:${g.color}">
+              <button class="cathead" data-cat="${g.key}" data-labels="${g.labels.join(',')}">
+                <span class="catname">${esc(g.name)}</span><span class="catnum">${n}</span>
+              </button>
+              <div class="catlabels">${g.labels.map(labelChip).join('')}</div>
+            </div>`;
+          }).join('')}
         </div></div>
       <div class="row"><div class="lab">Length</div>
         <div class="sndrow">
           <input type="range" id="len" class="vol" min="5" max="${CARDS.length}">
           <span class="tiny" id="lennum"></span>
         </div></div>
-      <div class="row"><div class="lab">Sound</div>
-        <div class="sndrow">
-          <input type="range" id="vol" class="vol" min="0" max="100">
-          <span class="tiny" id="volnum"></span>
-          <span class="tiny" style="opacity:.7">· 0% = muted</span>
-        </div></div>
       <div class="row"><div class="lab">Timer speed</div>
         <div class="sndrow">
           <input type="range" id="tspeed" class="vol" min="0" max="5" step="0.1">
           <span class="tiny" id="tspeednum"></span>
           <span class="tiny" style="opacity:.7">· scales with card length · 0 = off</span>
+        </div></div>
+      <div class="row"><div class="lab">Sound</div>
+        <div class="sndrow">
+          <button class="switch" id="sndsw" role="switch" aria-checked="false"><span class="knob"></span></button>
+          <span class="tiny" id="volnum"></span>
         </div></div>
       <div class="startbar">
         <span class="tiny"><kbd>Enter</kbd> start · <kbd>1</kbd>–<kbd>8</kbd> pick · <kbd>Enter</kbd> check</span>
@@ -196,64 +201,88 @@ export function setup(): void {
     </div>
   </div>`;
   S.cfg.direction = 'mixed';
-  const refreshSecs = (): void =>
+  // A scope array used to hold SECTION keys and now holds LABEL keys. A session saved before that
+  // change would carry letters that match nothing, so drop anything unrecognised rather than
+  // silently starting a quiz with an empty pool.
+  if (Array.isArray(S.cfg.scope)) {
+    const valid = S.cfg.scope.filter((k) => LABELS[k]);
+    S.cfg.scope = valid.length ? valid : 'all';
+  }
+
+  const refreshSecs = (): void => {
+    const sel = (k: string): boolean => Array.isArray(S.cfg.scope) && S.cfg.scope.includes(k);
+    app.querySelectorAll('.cathead').forEach((b) => {
+      const el = b as HTMLElement;
+      // A category header lights only when EVERY label it owns is selected.
+      b.classList.toggle('on', el.dataset.labels!.split(',').every(sel));
+    });
     app.querySelectorAll('.secchip').forEach((b) => {
       const el = b as HTMLElement;
-      const grp = el.dataset.grp; // role header: lit when its whole set is selected
-      const on = grp
-        ? Array.isArray(S.cfg.scope) &&
-          el.dataset.secs!.split(',').every((k) => (S.cfg.scope as string[]).includes(k))
-        : S.cfg.scope === 'all'
-          ? el.dataset.sec === 'all'
-          : S.cfg.scope === 'fav'
-            ? el.dataset.sec === 'fav'
-            : Array.isArray(S.cfg.scope) && S.cfg.scope.includes(el.dataset.sec!);
+      const k = el.dataset.label!;
+      const on = S.cfg.scope === 'all' ? k === 'all' : S.cfg.scope === 'fav' ? k === 'fav' : sel(k);
       b.classList.toggle('on', on);
     });
+  };
   refreshSecs();
+
+  const applyScope = (keys: string[], wholeSet: boolean): void => {
+    const cur = Array.isArray(S.cfg.scope) ? [...S.cfg.scope] : [];
+    const allOn = keys.every((k) => cur.includes(k));
+    const next =
+      wholeSet && allOn
+        ? cur.filter((k) => !keys.includes(k))
+        : allOn
+          ? cur.filter((k) => !keys.includes(k))
+          : [...new Set([...cur, ...keys])];
+    S.cfg.scope = next.length ? next : 'all';
+    refreshSecs();
+    syncLen(); // the selection changed — retune the length slider's ceiling to it
+  };
+
+  app
+    .querySelectorAll('.cathead')
+    .forEach((b) =>
+      b.addEventListener('click', () => applyScope((b as HTMLElement).dataset.labels!.split(','), true)),
+    );
   app.querySelectorAll('.secchip').forEach((b) =>
     b.addEventListener('click', () => {
-      const el = b as HTMLElement;
-      const grp = el.dataset.grp;
-      if (grp) {
-        // Toggle the whole role: if every section is already in scope, drop them all; else add them.
-        const secs = el.dataset.secs!.split(',');
-        const cur = Array.isArray(S.cfg.scope) ? [...S.cfg.scope] : [];
-        const allOn = secs.every((k) => cur.includes(k));
-        const next = allOn ? cur.filter((k) => !secs.includes(k)) : [...new Set([...cur, ...secs])];
-        S.cfg.scope = next.length ? next : 'all';
-      } else {
-        const s = el.dataset.sec!;
-        if (s === 'all') S.cfg.scope = 'all';
-        else if (s === 'fav') S.cfg.scope = 'fav';
-        else {
-          if (!Array.isArray(S.cfg.scope)) S.cfg.scope = [];
-          const i = S.cfg.scope.indexOf(s);
-          if (i >= 0) S.cfg.scope.splice(i, 1);
-          else S.cfg.scope.push(s);
-          if (!S.cfg.scope.length) S.cfg.scope = 'all';
-        }
+      const k = (b as HTMLElement).dataset.label!;
+      if (k === 'all' || k === 'fav') {
+        S.cfg.scope = k;
+        refreshSecs();
+        syncLen();
+        return;
       }
-      refreshSecs();
-      syncLen(); // the selection changed — retune the length slider's ceiling to it
+      applyScope([k], false);
     }),
   );
   app.querySelector('#start')!.addEventListener('click', () => start());
-  const vol = app.querySelector('#vol') as HTMLInputElement;
+  // Sound is a switch, not a level. `volume` stays a 0–100 number because setVolume() and the saved
+  // settings both read it — the switch just moves it between 0 and a remembered level, so a player
+  // who had picked 35% gets 35% back rather than a hard-coded default.
+  const sndsw = app.querySelector('#sndsw') as HTMLButtonElement;
   const volnum = app.querySelector('#volnum') as HTMLElement;
-  vol.value = String(DB.settings.volume);
-  volnum.textContent = `${DB.settings.volume}%`;
-  vol.addEventListener('input', () => {
-    DB.settings.volume = Number.parseInt(vol.value, 10);
-    volnum.textContent = `${DB.settings.volume}%`;
-    setVolume();
-    saveDB();
-  });
-  vol.addEventListener('change', () => {
+  let lastLevel = DB.settings.volume > 0 ? DB.settings.volume : 60;
+  const paintSound = (): void => {
+    const on = DB.settings.volume > 0;
+    sndsw.setAttribute('aria-checked', String(on));
+    sndsw.classList.toggle('on', on);
+    volnum.textContent = on ? 'On' : 'Off';
+  };
+  paintSound();
+  sndsw.addEventListener('click', () => {
     if (DB.settings.volume > 0) {
+      lastLevel = DB.settings.volume;
+      DB.settings.volume = 0;
+    } else {
+      DB.settings.volume = lastLevel;
+      // Browsers only allow an AudioContext to start inside a user gesture — this click is it.
       audioInit();
       sndFlip();
     }
+    paintSound();
+    setVolume();
+    saveDB();
   });
   const tspeed = app.querySelector('#tspeed') as HTMLInputElement;
   const tspeednum = app.querySelector('#tspeednum') as HTMLElement;
@@ -334,13 +363,16 @@ export function setup(): void {
   const len = app.querySelector('#len') as HTMLInputElement;
   const lennum = app.querySelector('#lennum') as HTMLElement;
   const poolnum = app.querySelector('#poolcount') as HTMLElement;
-  if (typeof S.cfg.count !== 'number') S.cfg.count = 20;
-  // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer sections has to
+  // Default to the whole selection and let the player trim DOWN, rather than starting at an
+  // arbitrary 20 they have to drag up every time.
+  if (typeof S.cfg.count !== 'number') S.cfg.count = 0;
+  // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer labels has to
   // shrink the max, or "length" could exceed how many cards the selection actually contains.
+  // A UNION over labels: a card carrying two selected labels is still one card.
   const scopeCount = (): number => {
     const sc = S.cfg.scope;
     if (sc === 'fav') return CARDS.filter((c) => DB.favorites[c.id]).length;
-    if (Array.isArray(sc)) return CARDS.filter((c) => sc.includes(c.cat)).length;
+    if (Array.isArray(sc)) return CARDS.filter((c) => sc.some((l) => c.labels.includes(l))).length;
     return CARDS.length;
   };
   const syncLen = (): void => {
@@ -348,7 +380,8 @@ export function setup(): void {
     const max = Math.max(5, cnt);
     len.max = String(max);
     let v = Number.parseInt(len.value, 10);
-    if (!Number.isFinite(v)) v = S.cfg.count;
+    // 0 is the "not yet chosen" sentinel — open at the top of the current scope.
+    if (!Number.isFinite(v) || v <= 0) v = S.cfg.count || max;
     if (v > max) v = max;
     len.value = String(v);
     S.cfg.count = v;
@@ -356,7 +389,10 @@ export function setup(): void {
     // Rolling pool size: how many cards the current section/role selection contains, live as you toggle.
     poolnum.textContent = `${cnt} total cards`;
   };
-  len.value = String(Math.min(S.cfg.count, Math.max(5, scopeCount())));
+  // count 0 = not yet chosen, so open at the top of the scope rather than clamping to the minimum.
+  len.value = String(
+    S.cfg.count ? Math.min(S.cfg.count, Math.max(5, scopeCount())) : Math.max(5, scopeCount()),
+  );
   syncLen();
   len.addEventListener('input', syncLen);
   const rs = app.querySelector('#resetstats');

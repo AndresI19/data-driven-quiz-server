@@ -129,7 +129,7 @@ const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
   catColors: { A: '#5a67f2' },
   labels: [],
-    groups: [],
+    categories: [],
   // BF picks distractors out of the full card list, so it needs more than one card to choose from.
   cards: [
     card(),

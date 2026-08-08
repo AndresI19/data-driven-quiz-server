@@ -1244,6 +1244,100 @@ select.opt {
   margin-left: 6px;
   vertical-align: middle;
 }
+/* ── Category blocks: each category on its own line, its labels wrapping beneath ───────────── */
+.catrow-top {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+/* .secchips is a wrapping flex row, so a category must claim a full line of it to sit on its own. */
+.catblock {
+  flex: 0 0 100%;
+  margin: 0 0 14px;
+}
+/* The category header doubles as a select-all for the labels it owns, and carries a rule to the
+   right so the block reads as a titled group rather than a loose stack of chips. */
+.cathead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0 0 6px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--cat);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .2px;
+}
+.cathead::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  margin-left: 2px;
+  background: color-mix(in srgb, var(--cat) 35%, transparent);
+}
+.cathead .catnum {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+.cathead:hover .catname {
+  text-decoration: underline;
+}
+.cathead.on .catname::before {
+  content: "✓ ";
+}
+.catlabels {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.secchip.lc {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.secchip.lc .lcnum {
+  opacity: 0.6;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+/* ── On/off switch (sound) ─────────────────────────────────────────────────────────────────── */
+.switch {
+  width: 46px;
+  height: 26px;
+  border-radius: 99px;
+  padding: 0;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  position: relative;
+  transition: background .15s, border-color .15s;
+}
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform .15s, background .15s;
+}
+.switch.on {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: var(--accent);
+}
+.switch.on .knob {
+  transform: translateX(20px);
+  background: var(--accent);
+}
+
 .catchip {
   display: inline-block;
   font-size: 10.5px;

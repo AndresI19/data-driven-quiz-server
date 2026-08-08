@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import { z } from 'zod';
-import type { CardsPayload, GameCard, Group, Label } from './card-schema.js';
+import type { CardsPayload, Category, GameCard, Label } from './card-schema.js';
 import { type RawCard, toGameCard } from './card-transform.js';
 
 const ExtraSchema = z.object({ label: z.string(), text: z.string() }).strict();
@@ -70,10 +70,10 @@ const SectionFileSchema = z.object({ section: SectionSchema, cards: z.array(Auth
 
 const DiagramsSchema = z.record(z.string(), z.string());
 
-const GroupSchema = z
-  .object({ key: z.string(), name: z.string(), color: z.string(), sections: z.array(z.string()).min(1) })
+const CategorySchema = z
+  .object({ key: z.string(), name: z.string(), color: z.string(), labels: z.array(z.string()).min(1) })
   .strict();
-const GroupsFileSchema = z.object({ groups: z.array(GroupSchema) }).strict();
+const CategoriesFileSchema = z.object({ categories: z.array(CategorySchema) }).strict();
 
 const LabelSchema = z
   .object({ key: z.string(), name: z.string(), color: z.string(), desc: z.string() })
@@ -102,31 +102,6 @@ function readDiagrams(dir: string): Record<string, string> {
 }
 
 /**
- * Read + validate cards/_groups.yaml (the role buckets). Returns [] when absent (backward
- * compatible). Every referenced section key must exist and belong to at most one group — a typo
- * would otherwise silently drop a section from the UI, so it is a hard error, like a bad card.
- */
-function readGroups(dir: string, sectionKeys: Set<string>): Group[] {
-  const p = resolve(dir, '_groups.yaml');
-  if (!existsSync(p)) return [];
-  const parsed = GroupsFileSchema.safeParse(yaml.load(readFileSync(p, 'utf8')) ?? {});
-  if (!parsed.success) fail('_groups.yaml', parsed.error);
-  const seen = new Set<string>();
-  for (const g of parsed.data.groups) {
-    for (const k of g.sections) {
-      if (!sectionKeys.has(k))
-        throw new Error(
-          `Invalid card file "_groups.yaml": group "${g.key}" references unknown section "${k}"`,
-        );
-      if (seen.has(k))
-        throw new Error(`Invalid card file "_groups.yaml": section "${k}" appears in more than one group`);
-      seen.add(k);
-    }
-  }
-  return parsed.data.groups;
-}
-
-/**
  * Read + validate cards/_labels.yaml (the cross-cutting tag vocabulary). Returns [] when absent.
  * Duplicate keys are a hard error: two entries for one key would make the colour and description a
  * coin-flip depending on iteration order.
@@ -142,6 +117,33 @@ function readLabels(dir: string): Label[] {
     seen.add(l.key);
   }
   return parsed.data.labels;
+}
+
+/**
+ * Read + validate cards/_categories.yaml (the picker's top level). Returns [] when absent.
+ * Every label named must exist, and may belong to at most one category — a typo would otherwise
+ * silently drop that label out of the picker, which is invisible until someone goes looking for it.
+ */
+function readCategories(dir: string, labelKeys: Set<string>): Category[] {
+  const p = resolve(dir, '_categories.yaml');
+  if (!existsSync(p)) return [];
+  const parsed = CategoriesFileSchema.safeParse(yaml.load(readFileSync(p, 'utf8')) ?? {});
+  if (!parsed.success) fail('_categories.yaml', parsed.error);
+  const seen = new Set<string>();
+  for (const c of parsed.data.categories) {
+    for (const l of c.labels) {
+      if (!labelKeys.has(l))
+        throw new Error(
+          `Invalid card file "_categories.yaml": category "${c.key}" references unknown label "${l}"`,
+        );
+      if (seen.has(l))
+        throw new Error(
+          `Invalid card file "_categories.yaml": label "${l}" appears in more than one category`,
+        );
+      seen.add(l);
+    }
+  }
+  return parsed.data.categories;
 }
 
 /** Read + validate every section file (excludes files beginning with "_"), in filename order. */
@@ -188,7 +190,7 @@ export function loadCardsPayload(dir: string): CardsPayload {
     });
   }
 
-  const groups: Group[] = readGroups(dir, new Set(sections.map((s) => s.section.key)));
+  const categories: Category[] = readCategories(dir, known);
 
-  return { cats, catColors, labels, groups, cards, diagrams, multiPool };
+  return { cats, catColors, labels, categories, cards, diagrams, multiPool };
 }

@@ -38,7 +38,9 @@ export interface Brush {
 }
 
 export const S = {
-  cfg: { direction: 'mixed', scope: 'all', count: 20, weak: false } as Cfg,
+  // count 0 means EVERYTHING in scope — the slider opens at max and the player trims down.
+  // session.start() already reads it that way: `if (S.cfg.count) cards = cards.slice(...)`.
+  cfg: { direction: 'mixed', scope: 'all', count: 0, weak: false } as Cfg,
   ses: null as Session | null,
   keyHandler: null as ((e: KeyboardEvent) => void) | null,
   ticker: null as ReturnType<typeof setInterval> | null,
