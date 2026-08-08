@@ -12,7 +12,7 @@ groups:
   - key: backend
     name: Backend & Distributed
     color: "#6366f1"
-    sections: [A, D, E, P, Q, R]
+    sections: [A, D, E, P, Q, R, S]
   - key: ai
     name: AI / ML Engineering
     color: "#22c55e"
