@@ -613,3 +613,58 @@ cards:
         - Long polling
         - Polling on a one-second timer
       answerIndex: 0
+
+  - topic: "Publish/subscribe (and how it differs from a queue)"
+    desc: "Publishers send to a named TOPIC rather than to recipients; subscribers register interest in
+      that topic. Neither side knows the other exists — that decoupling is the entire point, and every
+      benefit and every cost follows from it. The distinction people blur is what the message is FOR: a
+      queue distributes work, a topic distributes facts."
+    table:
+      - - ""
+        - Point-to-point queue
+        - Pub/sub topic
+      - - Copies per message
+        - one consumer takes it
+        - every subscriber gets one
+      - - Purpose
+        - divide the work
+        - broadcast a fact
+      - - Adding a consumer
+        - more throughput
+        - another recipient
+      - - Producer knows
+        - the queue
+        - nothing about subscribers
+    extras:
+      - label: Say
+        text: “A queue hands out work — one message, one worker. A topic announces something happened —
+          one message, every subscriber. Choosing wrong gives you either three services each doing a third
+          of the job, or one job done three times.”
+      - label: e.g.
+        text: "implementations differ in WHERE the copy happens. SNS fanning into SQS queues, or a RabbitMQ
+          exchange bound to several queues, physically copy the message per subscriber — N subscribers means
+          N writes. Kafka stores ONE copy and each consumer group keeps its own offset, so a new subscriber
+          costs a cursor rather than a copy, and can replay history it was never present for."
+      - label: e.g.
+        text: "consumer groups give you both semantics from one primitive: within a group consumers compete
+          and it behaves like a queue; across groups every group gets a copy and it behaves like pub/sub."
+      - label: Trap
+        text: "decoupling cuts both ways. Nobody can see who consumes an event, so the dependency graph
+          vanishes from the code, there is no call stack to follow across the gap, and changing the message
+          shape is a contract change with consumers you cannot enumerate. Version the payload and add
+          fields rather than repurposing them."
+    cloze:
+      text: In publish/subscribe, producers send to a named {} rather than to recipients, and subscribers
+        register interest — so neither side knows the other.
+      answer: topic
+    hint: The producer does not know who is listening. That is both the feature and the bill.
+    mcq:
+      prompt: A team adds a second consumer to a queue expecting both consumers to see every message, but
+        each message is still handled only once, by whichever consumer picks it up first. What did they
+        actually need?
+      options:
+        - A pub/sub topic, or a second consumer group — a queue hands each message to exactly one consumer
+        - A longer visibility timeout so both can read it
+        - A larger consumer prefetch setting
+        - A second queue chained behind the first
+      answerIndex: 0
