@@ -1,0 +1,579 @@
+section:
+  key: Q
+  name: "Scale & Napkin Math"
+  color: "#ec4899"
+cards:
+  - topic: "Per day → per second (the 86,400 rule)"
+    desc: "The first conversion in every estimate, because requirements arrive as 'per day' and designs are
+      decided by 'per second'. A day is 86,400 seconds — round it to 100,000 and the arithmetic becomes
+      mental. The point is not precision, it is finding out which league the problem is in."
+    table:
+      - - Per day
+        - Per second
+        - What it means
+      - - "1 million"
+        - "~12"
+        - one small server, no cleverness needed
+      - - "10 million"
+        - "~120"
+        - still one server; cache anything hot
+      - - "100 million"
+        - "~1,200"
+        - one primary DB plus replicas
+      - - "1 billion"
+        - "~12,000"
+        - now sharding and caching are structural
+    extras:
+      - label: Threshold
+        text: "roughly 1,000 requests/sec is where a single well-tuned node stops being obviously enough
+          and you start justifying tiers. Below it, adding machinery is over-engineering you will be asked
+          to defend."
+      - label: Say
+        text: “10 million links a day is about 120 writes a second. That is nothing — so I am not going to
+          shard for write throughput, and I will spend my design time on the read path instead.”
+      - label: Trap
+        text: dividing by 86,400 gives the AVERAGE. Nothing runs at its average — see the peak multiplier
+          before you size anything.
+    cloze:
+      text: To convert a daily volume into a per-second rate, divide by {} — the number of seconds in a day.
+      answer: "86,400"
+      alts:
+        - "86400"
+    hint: The one division that starts every capacity estimate.
+    mcq:
+      prompt: A product expects 100 million API calls per day. Roughly what average rate is that, and what
+        does it imply?
+      options:
+        - "~1,200/sec — a single primary with read replicas handles it"
+        - "~12,000/sec — sharding is required from day one"
+        - "~120/sec — a single small instance is plenty"
+        - "~12/sec — this barely needs a server"
+      answerIndex: 0
+
+  - topic: "Peak vs. average (the multiplier that sizes your fleet)"
+    desc: "You divide by 86,400 to get an average, but you provision for the peak. Ordinary consumer traffic
+      peaks at roughly 2–3x its daily average, because usage clusters into waking hours. Synchronised events
+      — a product launch, a sports final, a breaking news story — go far beyond that."
+    items:
+      - "Steady business traffic: peak ≈ 2x average"
+      - "Consumer app with a daily rhythm: peak ≈ 3x average"
+      - "Synchronised event or flash sale: peak ≈ 10x or more, and arrives in seconds"
+    extras:
+      - label: Threshold
+        text: "past about 5x, autoscaling stops saving you — instances take minutes to boot and a spike
+          that arrives in seconds is already over. That is the point where you pre-provision, queue, or shed
+          load instead of scaling."
+      - label: Say
+        text: “12,000 reads a second average, so I will design for 35,000 at peak. I size the fleet for
+          peak and I am paying for peak most of the time — which is the actual argument for making the read
+          path cacheable rather than just adding servers.”
+      - label: Trap
+        text: peak load and peak DIFFICULTY often coincide with an incident — error rates rise, retries
+          multiply, and cardinality grows exactly when the system is least healthy. Headroom is not waste.
+    cloze:
+      text: Ordinary consumer traffic peaks at roughly {} times its daily average, and you provision for the
+        peak rather than the average.
+      answer: "3"
+      alts:
+        - two to three
+        - "2-3"
+    hint: You compute the average, but nothing ever runs at it.
+    mcq:
+      prompt: A service averages 4,000 requests/sec and must absorb a flash sale that arrives within about
+        thirty seconds. Why is horizontal autoscaling a poor primary defence?
+      options:
+        - New instances take minutes to become ready, so the spike is over before capacity arrives
+        - Autoscaling cannot exceed a 3x multiplier
+        - Load balancers cannot redistribute fast enough
+        - The database would scale automatically anyway
+      answerIndex: 0
+
+  - topic: "What one machine can actually do"
+    desc: "The single most useful antidote to over-engineering. Modern hardware is far more capable than
+      most designs assume, and a candidate who reaches for a distributed system at 300 requests per second
+      is signalling that they have never measured anything."
+    table:
+      - - Component
+        - Rough single-node ceiling
+      - - Postgres, simple indexed writes
+        - "10,000–50,000/sec"
+      - - Postgres, complex joins
+        - "~1,000/sec"
+      - - Redis, in-memory ops
+        - "100,000+/sec"
+      - - nginx, static or proxy
+        - "50,000+ req/sec"
+      - - "1 Gbps NIC"
+        - "125 MB/sec"
+      - - Commodity server
+        - "64–192 cores, 256 GB–2 TB RAM"
+    extras:
+      - label: Threshold
+        text: "the honest trigger for sharding is not a request rate — it is when the working set stops
+          fitting in one machine's RAM, or one node's write throughput is genuinely saturated. Say which of
+          those you hit."
+      - label: Say
+        text: “At 350 writes a second I am nowhere near a single primary's limit, so I am explicitly NOT
+          sharding. I will say what number would change my mind — around 10,000 writes a second sustained,
+          or when the data stops fitting on one box.”
+      - label: Trap
+        text: quoting these as guarantees. They are order-of-magnitude anchors that vary hugely with schema,
+          indexes, payload size and access pattern. Use them to reject the obviously-wrong answer, not to
+          promise a number.
+    cloze:
+      text: A single well-tuned Postgres instance handles roughly {} simple indexed writes per second —
+        which is why sharding at a few hundred writes per second is premature.
+      answer: "10,000"
+      alts:
+        - tens of thousands
+    hint: The number that tells you when NOT to distribute.
+    mcq:
+      prompt: A design calls for sharding a database that will take about 300 writes per second and hold
+        under 2 TB. What is the strongest objection?
+      options:
+        - A single primary handles that comfortably, so sharding adds cost and complexity for nothing
+        - Sharding requires a minimum of four nodes to be effective
+        - Replication would be cheaper than sharding at that rate
+        - 2 TB exceeds what one node can store
+      answerIndex: 0
+
+  - topic: "The latency ladder"
+    desc: "Every design decision that involves 'where should this live' is really a question about this
+      ladder. The jumps are orders of magnitude, and the one that matters most is the cliff between a local
+      operation and a network round trip."
+    table:
+      - - Operation
+        - Rough time
+      - - Main memory read
+        - "100 nanoseconds"
+      - - SSD random read
+        - "~100 microseconds"
+      - - Round trip, same availability zone
+        - "~0.5 ms"
+      - - Round trip, cross-region (US coast to coast)
+        - "~40 ms"
+      - - Round trip, trans-atlantic
+        - "~80 ms"
+      - - Spinning disk seek
+        - "~10 ms"
+    extras:
+      - label: Threshold
+        text: "a same-zone round trip (~0.5 ms) is affordable on almost any hot path. A cross-region round
+          trip (~40 ms) is affordable on almost none — which is why a shared rate-limiter store must live in
+          the same zone as the gateway, and why the speed of light forces per-region designs."
+      - label: Say
+        text: “With a 100 ms end-to-end budget and 40 ms of that spent on the network before I do anything,
+          I have perhaps 50 ms of server time. That rules out searching at request time, so the answer has
+          to be precomputed.”
+      - label: e.g.
+        text: memory is about a thousand times faster than SSD, and SSD is about a hundred times faster
+          than a spinning disk seek. Cross-region is roughly 80x a same-zone hop.
+    cloze:
+      text: A network round trip within one availability zone costs about {} milliseconds, while a
+        cross-region round trip costs tens of milliseconds.
+      answer: "0.5"
+      alts:
+        - half a
+        - "0.5 ms"
+    hint: The cliff is between staying on the machine and leaving it.
+    mcq:
+      prompt: An autocomplete endpoint has a 100 ms perceived budget and users 3,000 km away. Roughly 40 ms
+        goes to network round trip. Which design consequence follows most directly?
+      options:
+        - The answer must be precomputed, because ~50 ms of server time cannot search a large corpus
+        - The database needs a faster disk
+        - The response should be compressed more aggressively
+        - The client should retry on slow responses
+      answerIndex: 0
+
+  - topic: "Storage magnitudes (when data stops fitting)"
+    desc: "Row size times row count, then compare against what one machine holds. The arithmetic is trivial;
+      the value is in knowing the ceilings you are comparing against."
+    table:
+      - - Rows at ~1 KB each
+        - Total
+        - Fits where
+      - - "1 million"
+        - "1 GB"
+        - trivially in RAM
+      - - "100 million"
+        - "100 GB"
+        - RAM on a big box, easily on one SSD
+      - - "1 billion"
+        - "1 TB"
+        - one SSD; too big for most RAM
+      - - "100 billion"
+        - "100 TB"
+        - must be distributed
+    extras:
+      - label: Threshold
+        text: "~1 TB is where a working set stops fitting in one machine's memory, and ~10–20 TB is where
+          it stops fitting on one server's disks. Those two numbers, not request rate, are the honest
+          triggers for partitioning."
+      - label: Say
+        text: “Five gigabytes a day is 1.8 terabytes a year. That is not a scale problem this year, it is a
+          five-year problem — so I will mention partitioning and deliberately not design for it now.”
+      - label: Trap
+        text: "estimate the ROW, not just the field you care about. Indexes, padding, and per-row overhead
+          often double what you calculated, and a UUID stored as text is 36 bytes where the binary form is
+          16."
+    cloze:
+      text: One billion rows at roughly 1 KB each comes to about {} of storage.
+      answer: "1 TB"
+      alts:
+        - a terabyte
+        - "1TB"
+    hint: Multiply row size by row count, then compare to one machine.
+    mcq:
+      prompt: A table will reach 1.8 TB after a year of growth and is queried only by primary key. What is
+        the appropriate response in a design interview?
+      options:
+        - Note that it fits one node for years and explicitly defer partitioning
+        - Shard immediately by primary key
+        - Move it to object storage
+        - Add read replicas to spread the storage
+      answerIndex: 0
+
+  - topic: "Bytes per day → bandwidth"
+    desc: "The conversion that decides whether data may pass through your application servers. Divide the
+      daily byte volume by 86,400 to get bytes per second, then multiply by 8 for bits — and compare it
+      against what one machine's network interface can carry."
+    items:
+      - "1 TB/day ≈ 12 MB/sec ≈ 92 Mbps — unremarkable"
+      - "10 TB/day ≈ 116 MB/sec ≈ 0.9 Gbps — saturates a 1 Gbps NIC"
+      - "50 TB/day ≈ 580 MB/sec ≈ 4.6 Gbps — needs multiple 10 Gbps machines doing nothing else"
+    extras:
+      - label: Threshold
+        text: "around 1 Gbps sustained is where proxying bytes through your own servers stops being
+          incidental and becomes a fleet you are paying for. Past that, hand the client a presigned URL and
+          keep the payload off your infrastructure entirely."
+      - label: Say
+        text: “4.6 gigabits a second on ingress means dozens of machines whose only job is copying bytes
+          from one socket to another — cost, latency and a failure point in exchange for nothing.”
+      - label: Trap
+        text: egress is usually several times ingress for a storage product, and egress is the expensive
+          direction on every cloud. Estimate both.
+    cloze:
+      text: A service ingesting 50 TB per day sustains roughly {} gigabits per second, which is why the
+        bytes must bypass the application tier.
+      answer: "4.6"
+      alts:
+        - "5"
+        - "4.6 Gbps"
+    hint: Bytes per day, over 86,400, times 8.
+    mcq:
+      prompt: An upload service will ingest 50 TB/day. Which conclusion follows from converting that to
+        bandwidth?
+      options:
+        - Clients must upload directly to object storage via presigned URLs
+        - The API tier needs more CPU
+        - Uploads should be compressed client-side
+        - The database needs a larger write buffer
+      answerIndex: 0
+
+  - topic: "Read:write ratio (where to spend the design)"
+    desc: "One ratio tells you which half of the system deserves your attention, and it is the number most
+      candidates never compute. Say it out loud early and let every later decision cite it."
+    table:
+      - - Ratio
+        - Example
+        - Where the design goes
+      - - "1:1"
+        - a chat system
+        - both paths matter; the write path is real work
+      - - "10:1"
+        - a typical CRUD product
+        - cache the hot reads, nothing exotic
+      - - "100:1"
+        - a URL shortener
+        - the read path IS the system; cache everything
+      - - "1000:1"
+        - a popular content feed
+        - CDN and precomputation; origin should be nearly idle
+    extras:
+      - label: Threshold
+        text: "past roughly 10:1 a read-through cache stops being an optimisation and becomes structural —
+          the design assumes it, and losing it is an outage rather than a slowdown."
+      - label: Say
+        text: “Reads are a hundred times writes, so writes are trivial and the entire design is about the
+          redirect. I will not shard for write throughput; I will put a cache in front of the read path and
+          make sure a cache miss is cheap.”
+      - label: Trap
+        text: a high ratio makes the COLD CACHE your biggest risk. At a 90% hit rate, losing the cache
+          multiplies origin load by ten instantly.
+    cloze:
+      text: A read-heavy system with a {}:1 read-to-write ratio, like a URL shortener, should have nearly
+        all of its design attention on the read path.
+      answer: "100"
+    hint: The one division that tells you which half of the system matters.
+    mcq:
+      prompt: You establish that a system does 12,000 reads/sec and 120 writes/sec. What is the primary
+        design consequence?
+      options:
+        - Writes are trivial; the read path needs caching and gets the design attention
+        - Both paths need sharding
+        - The write path needs a queue
+        - Read replicas are unnecessary at this ratio
+      answerIndex: 0
+
+  - topic: "Cache hit rate arithmetic"
+    desc: "Hit rate does not reduce origin load linearly — it reduces it by the reciprocal of the miss rate.
+      That is why the last few percent are worth so much, and why losing a cache is so violent."
+    table:
+      - - Hit rate
+        - Origin sees
+        - Reduction
+      - - "50%"
+        - half the traffic
+        - "2x"
+      - - "90%"
+        - a tenth
+        - "10x"
+      - - "99%"
+        - a hundredth
+        - "100x"
+      - - "99.9%"
+        - a thousandth
+        - "1000x"
+    extras:
+      - label: Threshold
+        text: "going from 90% to 99% is another 10x reduction — the same relative win as going from 0% to
+          90%. That is why chasing the tail of the hit rate is usually worth more than adding origin
+          capacity."
+      - label: Trap
+        text: "run it backwards, because that is the failure: at a 90% hit rate a cold cache multiplies
+          origin load by TEN in one step. 3,500 reads/sec becomes 35,000 against a database sized for a
+          tenth of it. Size the origin for partial cache loss, and coalesce concurrent misses."
+      - label: Say
+        text: “A 90% hit rate means the database sees 3,500 of the 35,000 reads a second. I would provision
+          it above that steady state deliberately, so a cache node restarting is a latency event and not an
+          outage.”
+    cloze:
+      text: Raising a cache hit rate from 90% to 99% reduces origin load by a further factor of {}.
+      answer: "10"
+      alts:
+        - ten
+    hint: Origin load is the miss rate, so think in reciprocals.
+    mcq:
+      prompt: A cache tier running at a 90% hit rate restarts cold. What happens to the origin database?
+      options:
+        - It receives roughly ten times its steady-state load, in one step
+        - It receives about 10% more load
+        - Load is unchanged because the cache refills gradually
+        - It receives double the load
+      answerIndex: 0
+
+  - topic: "Availability nines → actual downtime"
+    desc: "An availability target is a budget measured in time, and converting the percentage into minutes
+      is what makes it concrete enough to argue about."
+    table:
+      - - Target
+        - Downtime per year
+        - Per month
+      - - "99%"
+        - "3.65 days"
+        - "~7 hours"
+      - - "99.9%"
+        - "8.8 hours"
+        - "~44 minutes"
+      - - "99.99%"
+        - "53 minutes"
+        - "~4 minutes"
+      - - "99.999%"
+        - "5 minutes"
+        - "~26 seconds"
+    extras:
+      - label: Threshold
+        text: "99.9% is achievable with one well-run region and careful deploys. 99.99% forces multi-region
+          with automated failover, because 53 minutes a year is less than a single bad deploy. That jump is
+          where cost multiplies."
+      - label: Trap
+        text: "dependencies MULTIPLY. Five services in series at 99.9% each give 0.999^5 ≈ 99.5%, or about
+          44 hours a year — so a chain of individually-good services is a bad service. Fewer synchronous
+          dependencies buys more availability than making each one better."
+      - label: Say
+        text: “Before committing to a number I would ask what the business actually loses per minute, because
+          the step from three nines to four multiplies infrastructure cost and constrains how we deploy.”
+    cloze:
+      text: An availability target of 99.99% permits roughly {} minutes of downtime per year.
+      answer: "53"
+      alts:
+        - "52"
+        - fifty-three
+    hint: Convert the percentage into a time budget before arguing about it.
+    mcq:
+      prompt: A request path traverses five independent services, each with 99.9% availability. What is the
+        approximate availability of the whole path?
+      options:
+        - "~99.5% — availabilities multiply along a dependency chain"
+        - "99.9% — the chain is as available as its members"
+        - "~99.99% — redundancy improves the total"
+        - "~95% — each service compounds tenfold"
+      answerIndex: 0
+
+  - topic: "Fan-out amplification"
+    desc: "The multiplication that turns a small write rate into an enormous one, and the reason a nominally
+      read-heavy system can become write-bound. Compute it explicitly — it is the single number that decides
+      the design in any publish-to-many system."
+    items:
+      - "Write rate × recipients per write = downstream write rate"
+      - "1,200 posts/sec × 200 average followers = 240,000 timeline writes/sec"
+      - "One post × 50,000,000 followers = 50 million writes for a single action"
+    extras:
+      - label: Threshold
+        text: "the moment the amplified write rate exceeds your read rate, 'read-heavy' has stopped being
+          true and the write path is now the system. That inversion is the trigger for a hybrid strategy."
+      - label: Say
+        text: “The average says fan-out on write is affordable; the tail says it is impossible. That
+          contradiction is what forces the hybrid — not a preference for hybrids.”
+      - label: Trap
+        text: always compute BOTH the average case and the extreme case. A design justified only by the mean
+          will be destroyed by the tail, and heavy-tailed distributions are the norm in social graphs, file
+          sizes and request popularity.
+    cloze:
+      text: Multiplying the write rate by the number of recipients per write gives the fan-out {} — the
+        number that can make a read-heavy system write-bound.
+      answer: amplification
+      alts:
+        - multiplier
+    hint: One action, many resulting writes.
+    mcq:
+      prompt: A feed takes 1,200 posts/sec and the average author has 200 followers. Under fan-out on write,
+        what is the downstream write rate, and what does it imply?
+      options:
+        - "240,000 writes/sec — the write path now exceeds the read path"
+        - "1,200 writes/sec — fan-out happens at read time"
+        - "6 writes/sec — followers are amortised"
+        - "200 writes/sec — one per follower per second"
+      answerIndex: 0
+
+  - topic: "Cloud cost intuition (and the egress trap)"
+    desc: "Rough order-of-magnitude monthly prices. You will not be graded on accuracy, but knowing which
+      line item dominates changes designs — and it is almost never the one people expect."
+    table:
+      - - Resource
+        - Rough cost
+      - - Object storage
+        - "~$0.02 per GB-month"
+      - - Block SSD
+        - "~$0.10 per GB-month"
+      - - RAM
+        - "~$3–5 per GB-month"
+      - - Cross-zone transfer
+        - "~$0.01 per GB, each way"
+      - - "Egress to the internet"
+        - "$0.05–0.09 per GB"
+    extras:
+      - label: Threshold
+        text: "egress is the line that surprises people. A service serving 50 TB a day outbound is 1.5 PB a
+          month — around $75,000 at $0.05/GB. That single number, not compute, is the business case for a
+          CDN."
+      - label: Say
+        text: “Storing a petabyte is roughly twenty thousand dollars a month; serving a petabyte out is
+          fifty thousand. So the design question is not where the bytes live, it is how often they cross
+          the internet boundary.”
+      - label: Trap
+        text: cross-zone traffic is billed in BOTH directions and is easy to generate accidentally — a
+          chatty service mesh spread across three zones can quietly cost more than the compute it runs on.
+    cloze:
+      text: The cloud line item that most often dominates a content-serving bill, at roughly five to nine
+        cents per gigabyte, is {}.
+      answer: egress
+      alts:
+        - egress to the internet
+        - data transfer out
+    hint: Storing bytes is cheap; moving them across the internet boundary is not.
+    mcq:
+      prompt: A media service serves 50 TB/day to users and is shocked by its bill. Which line item is most
+        likely dominant, and what is the standard mitigation?
+      options:
+        - Internet egress — put a CDN in front so most bytes are served from cache
+        - Object storage — move to a colder storage class
+        - Compute — right-size the instances
+        - Block storage IOPS — switch to cheaper volumes
+      answerIndex: 0
+
+  - topic: "Human latency thresholds"
+    desc: "The budgets that decide what a system is allowed to do, and they come from human perception rather
+      than from hardware. Anchoring a design in these is what turns 'make it fast' into an engineering
+      constraint."
+    table:
+      - - Budget
+        - How it feels
+        - Design consequence
+      - - "~100 ms"
+        - instantaneous
+        - no request-time computation; precompute
+      - - "~1 second"
+        - flow is maintained
+        - one round trip plus modest work
+      - - "~10 seconds"
+        - attention is lost
+        - show progress, or make it a background job
+    extras:
+      - label: Threshold
+        text: "the 100 ms line is the important one, because a cross-country round trip alone can eat 40 ms
+          of it. Anything with a 100 ms budget is really a precomputation-and-caching problem, and often a
+          geographic one."
+      - label: Say
+        text: “Autocomplete has roughly 100 milliseconds. After network I have perhaps 50, and realistically
+          the lookup gets 10 to 20 — which eliminates every design that searches at request time.”
+      - label: Trap
+        text: "past about ten seconds the right answer is usually to stop making the user wait at all:
+          accept the request, return an identifier, and let them poll or receive a notification. That turns
+          a latency problem into a job-queue problem."
+    cloze:
+      text: A response under about {} milliseconds is perceived as instantaneous, which is the budget that
+        forces precomputation.
+      answer: "100"
+    hint: Three numbers from perception research, not from hardware.
+    mcq:
+      prompt: A report takes about 45 seconds to generate. What is the appropriate design response?
+      options:
+        - Accept the request, return an id, and deliver the result asynchronously
+        - Optimise until it fits inside one second
+        - Stream partial results over a WebSocket
+        - Increase the client timeout
+      answerIndex: 0
+
+  - topic: "Field sizes & powers of two"
+    desc: "The building blocks of any storage estimate. Knowing what a field actually costs lets you size a
+      row in your head instead of guessing, and the powers of two let you move between units without
+      arithmetic."
+    table:
+      - - Thing
+        - Size
+      - - "Integer (int64) / timestamp"
+        - "8 bytes"
+      - - "UUID, binary"
+        - "16 bytes"
+      - - "UUID, as text"
+        - "36 bytes"
+      - - "IPv4 / IPv6 address"
+        - "4 / 16 bytes"
+      - - "2^10 / 2^20 / 2^30 / 2^40"
+        - "KB / MB / GB / TB"
+    extras:
+      - label: Trap
+        text: "storing a UUID as text costs 36 bytes instead of 16 — more than double, on a column that is
+          usually the primary key and therefore repeated in every index. At a billion rows that is 20 GB of
+          pure waste."
+      - label: Say
+        text: “A link row is roughly 500 bytes once I count the long URL, the key, owner, timestamps and
+          index overhead. Ten million a day is 5 GB a day, so 1.8 TB a year.”
+      - label: e.g.
+        text: "useful anchors: a short text message ~200 bytes, a metrics sample 16 bytes raw, a typical
+          JSON API response 1–10 KB, a photo 1–5 MB, a minute of video ~50 MB."
+    cloze:
+      text: A UUID stored in binary form takes 16 bytes, but stored as text it takes {} bytes.
+      answer: "36"
+    hint: Size the row, not just the field you were thinking about.
+    mcq:
+      prompt: A table of one billion rows uses a text-encoded UUID primary key instead of binary. Roughly
+        how much extra storage does that choice cost, before indexes?
+      options:
+        - "~20 GB"
+        - "~2 GB"
+        - "~200 GB"
+        - "negligible — the database normalises it"
+      answerIndex: 0
