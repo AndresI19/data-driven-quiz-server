@@ -1228,6 +1228,22 @@ select.opt {
   border-left: 3px solid var(--accent);
   animation: cardIn .2s;
 }
+/* Cross-cutting label chips, drawn beside the section chip. Outlined rather than filled so the
+   solid .catchip stays the primary identifier and several labels can sit together without shouting. */
+.lblchip {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-weight: 700;
+  color: var(--lbl);
+  background: color-mix(in srgb, var(--lbl) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lbl) 45%, transparent);
+  border-radius: 99px;
+  padding: 3px 9px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 .catchip {
   display: inline-block;
   font-size: 10.5px;

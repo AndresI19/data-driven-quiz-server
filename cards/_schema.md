@@ -33,6 +33,7 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 
 | Field | Type | Purpose |
 |-------|------|---------|
+| `labels` | list of string | Cross-cutting tags, validated against `_labels.yaml`. See below. |
 | `topic` | string | Card front / the thing being tested. |
 | `desc` | string | The answer body. |
 | `extras` | list of `{label, text}` | Labeled notes under the answer (e.g. `label: "e.g."`). |
@@ -51,6 +52,27 @@ All fields except `topic` are optional. `desc` is effectively required (it's the
 | `categorize` | `{columns: [{header, items}]}` | Sort a pool of items into category columns (many-to-one, unlike match). ≥2 columns; the pool is the union of all `items` — no dummies. Norm: ≤3 columns. |
 | `code` | `{lang?, text}` | A code block (`text` is the whole block). Enables read-the-code (pick what it does). |
 | `codeselect` | `{prompt, answer}` | With `code`: select-the-lines. `answer` is the 0-based indices of the correct lines. |
+| `mcq` | `{prompt, options, answerIndex}` | A self-contained multiple-choice question with its OWN prompt (unlike `mc`, which only adds distractor topics to the identify grid). `answerIndex` is 0-based. |
+| `order` | list of string | Steps in their CORRECT sequence → enables put-in-order. |
+
+## Labels vs. sections
+
+Sections **partition** the deck — one lettered file, one `cat` per card. Labels **cut across** it: a
+card may carry several, and any label may appear in any section. That difference is the point.
+Section A holds both "Data partitioning / sharding" (`system-design`) and "TLS handshake"
+(`fundamentals`), and no lettered deck could separate them.
+
+```yaml
+  - labels: [fundamentals, security]
+    topic: TLS handshake (how HTTPS is set up)
+```
+
+The vocabulary lives in `_labels.yaml`, each entry carrying a `key`, `name`, `color` and a `desc`
+that states the authoring rule. **A label not declared there is a hard error**, like an unknown
+field — a silently-dropped tag would exclude the card from every filter that should have found it.
+Duplicate keys in the registry are an error too.
+
+Keep the vocabulary small. A label that applies to almost everything sorts nothing.
 
 ## Derived behavior (no authoring needed)
 

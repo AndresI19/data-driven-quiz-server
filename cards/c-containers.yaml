@@ -3,7 +3,8 @@ section:
   name: Containers
   color: "#14b8a6"
 cards:
-  - topic: Containers vs. VMs
+  - labels: [cloud-native, fundamentals]
+    topic: Containers vs. VMs
     desc: Process-level isolation sharing the host kernel vs. a full guest OS — and the weight/speed tradeoff.
     cloze:
       text: Containers share the host {}, whereas each VM ships a full guest OS.
@@ -17,7 +18,8 @@ cards:
       - it skips the hypervisor's scheduler
       - it caches a guest kernel image
       answerIndex: 0
-  - topic: "OS layers: node → pod → container"
+  - labels: [cloud-native, fundamentals]
+    topic: "OS layers: node → pod → container"
     desc: "The nesting on ONE shared kernel: a node has a single Linux kernel; a pod groups containers that share a network namespace (1 IP); a container is an isolated process with its own filesystem. Containers ship userspace, not a kernel."
     diagram: nested_layers
     match:
@@ -39,7 +41,8 @@ cards:
       - the same namespace
       - the same Deployment
       answerIndex: 0
-  - topic: What's shared vs. isolated across the folds
+  - labels: [cloud-native, fundamentals]
+    topic: What's shared vs. isolated across the folds
     desc: "Who shares what as you nest node → pod → container:"
     extras:
       - label: namespace
@@ -71,7 +74,8 @@ cards:
       - - Container
         - isolates filesystem, PID, cgroup
     hint: As you nest node→pod→container, who shares what and who isolates what?
-  - topic: Worker-node scaling (pods vs. nodes)
+  - labels: [cloud-native, fundamentals]
+    topic: Worker-node scaling (pods vs. nodes)
     desc: "Two independent loops: the HPA adds/removes PODS on existing nodes; the Cluster Autoscaler (or Karpenter) adds/removes NODES — actual cloud VMs — when pods can't be scheduled or nodes sit idle."
     extras:
       - label: e.g.
@@ -100,7 +104,8 @@ cards:
       - kube-proxy
       - kube-scheduler
       answerIndex: 0
-  - topic: Docker commands (basic → advanced)
+  - labels: [cloud-native, fundamentals]
+    topic: Docker commands (basic → advanced)
     desc: Docker builds images (blueprints) and runs them as containers (running instances). Commands roughly basic → advanced.
     extras:
       - label: Trap
@@ -127,7 +132,8 @@ cards:
       - docker create
       - docker exec
       answerIndex: 0
-  - topic: Namespaces vs cgroups (see vs use)
+  - labels: [cloud-native, fundamentals]
+    topic: Namespaces vs cgroups (see vs use)
     desc: A kernel namespace isolates what a process can SEE — its own network stack, PID tree, or filesystem view.
     cloze:
       text: A kernel {} isolates what a process can SEE — its own network stack, PID tree, or filesystem view.
@@ -140,7 +146,8 @@ cards:
       - capabilities
       - seccomp
       answerIndex: 0
-  - topic: Multi-stage builds
+  - labels: [cloud-native, fundamentals]
+    topic: Multi-stage builds
     desc: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a multi-stage build that copies only artifacts into a slim final stage.
     cloze:
       text: Shipping compilers and build tools inside the final runtime image bloats it and widens attack surface; the fix is a {} build that copies only the compiled artifacts into a slim final image.
@@ -153,7 +160,8 @@ cards:
       - Base-image pinning
       - Build arguments
       answerIndex: 0
-  - topic: Running as non-root
+  - labels: [cloud-native, fundamentals]
+    topic: Running as non-root
     desc: By default a container process runs as UID 0, so a breakout inherits host root; the hardening step sets a non-root runAsUser in the securityContext.
     cloze:
       text: By default a container process runs as UID 0, so a breakout inherits host root; the hardening step sets a non-root {} in the securityContext.
@@ -166,7 +174,8 @@ cards:
       - Pin the image tag
       - Enable a liveness probe
       answerIndex: 0
-  - topic: Layer-cache ordering
+  - labels: [cloud-native, fundamentals]
+    topic: Layer-cache ordering
     desc: Placing `COPY . .` before the dependency install in a Dockerfile busts the install layer on every source edit; the fix is to copy the lockfile first.
     cloze:
       text: Placing `COPY . .` before the dependency install in a Dockerfile busts the install layer on every source edit; the fix is to copy the {} first.
@@ -179,7 +188,8 @@ cards:
       - Merge both COPY steps
       - Move install to the top
       answerIndex: 0
-  - topic: PID 1 signal handling
+  - labels: [cloud-native, fundamentals]
+    topic: PID 1 signal handling
     desc: A shell-form CMD makes your app a child of /bin/sh, which swallows SIGTERM, so Kubernetes must SIGKILL it after the grace period; run it as PID 1 with exec-form instead.
     cloze:
       text: A shell-form CMD makes your app a child of /bin/sh, which swallows SIGTERM, so Kubernetes must SIGKILL it after the grace period; run it as PID {} with exec-form instead.

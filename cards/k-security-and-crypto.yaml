@@ -6,7 +6,8 @@ section:
   color: "#e11d48"
 
 cards:
-  - topic: "Password storage: why a SLOW hash, not SHA-256"
+  - labels: [security]
+    topic: "Password storage: why a SLOW hash, not SHA-256"
     desc: "Never store passwords in plaintext or under a fast hash (SHA-256, MD5). Use a deliberately slow, memory-hard key-derivation function (KDF) — bcrypt, scrypt, or Argon2 — so an attacker who steals the database can only try a few thousand guesses per second instead of billions."
     extras:
       - label: Why
@@ -29,7 +30,8 @@ cards:
       - Argon2
       answerIndex: 0
 
-  - topic: "Salt vs pepper"
+  - labels: [security]
+    topic: "Salt vs pepper"
     desc: "Two different secrets defending against two different attacks. A SALT is random, per-row, and stored NEXT TO the hash. A PEPPER is a single secret, shared across all rows, kept OUTSIDE the database (an environment variable or sealed secret)."
     extras:
       - label: Salt defeats
@@ -49,7 +51,8 @@ cards:
       - seed
       answerIndex: 0
 
-  - topic: "Why a random token can use a fast hash but a password cannot"
+  - labels: [security]
+    topic: "Why a random token can use a fast hash but a password cannot"
     desc: "A high-entropy, server-generated token (e.g. 34 billion possibilities) can be stored as a fast KEYED hash — HMAC(pepper, token) — because it is deterministic (so login is a single INDEXED lookup) and un-guessable even at billions of tries/sec. A user-CHOSEN password is low-entropy, so it needs a slow, per-row-SALTED hash, which cannot be indexed."
     cloze:
       text: "A high-entropy random token can be stored with a fast keyed hash such as {} because it is deterministic (indexed lookup) and un-guessable — a low-entropy password cannot."
@@ -68,7 +71,8 @@ cards:
       - Non-deterministic
       answerIndex: 0
 
-  - topic: "Timing attack: username enumeration"
+  - labels: [security]
+    topic: "Timing attack: username enumeration"
     desc: "If a login returns 'no such user' FASTER than 'wrong password' (because it skips the expensive hash on a missing user), an attacker can measure response time to discover which usernames exist. Defence: do the same work either way — verify the supplied password against a DUMMY hash even when the user doesn't exist — and return one generic error."
     extras:
       - label: Rule
@@ -89,7 +93,8 @@ cards:
       - scryptSync
       answerIndex: 0
 
-  - topic: "CWE-312: clear-text storage of sensitive data"
+  - labels: [security]
+    topic: "CWE-312: clear-text storage of sensitive data"
     desc: "Storing a secret unencrypted where it can be read back — a password in a cookie, a token in localStorage, credentials in logs. The risk is anything that reads that store (XSS, a shared machine, a log aggregator) gets the secret."
     extras:
       - label: Trade-off
@@ -109,7 +114,8 @@ cards:
       - "CWE-89: SQL injection"
       - "CWE-352: cross-site request forgery (CSRF)"
 
-  - topic: "JWT signing: HS256 vs RS256"
+  - labels: [security]
+    topic: "JWT signing: HS256 vs RS256"
     desc: "HS256 is SYMMETRIC — one shared secret both signs and verifies, so every service that can CHECK a token can also FORGE one. RS256 is ASYMMETRIC — the issuer holds the private key and signs; everyone else fetches the PUBLIC key (via a JWKS endpoint) and can only verify. Compromise a verifier and it still cannot mint tokens."
     extras:
       - label: Say
@@ -128,7 +134,8 @@ cards:
       - HS512
       answerIndex: 0
 
-  - topic: "Access token vs refresh token"
+  - labels: [security]
+    topic: "Access token vs refresh token"
     desc: "An ACCESS token is short-lived (minutes to a day) and sent on every request. A REFRESH token is long-lived and used only to mint new access tokens without re-authenticating. Splitting them limits the blast radius: a leaked access token expires soon; the refresh token is exposed rarely."
     cloze:
       text: "A {} token is long-lived and used only to mint new short-lived access tokens without re-authenticating."
@@ -139,7 +146,8 @@ cards:
       - label: Storage
         text: "httpOnly cookie resists XSS reads but needs CSRF defence; localStorage is XSS-readable but immune to CSRF. Pick per threat model."
 
-  - topic: "Rate limiting: what it can and cannot protect"
+  - labels: [security]
+    topic: "Rate limiting: what it can and cannot protect"
     desc: "Per-IP and global request limits are the ONLY defence a credential has against ONLINE guessing — walking the keyspace through the live login endpoint. It protects the SERVICE from being walked quickly; it does NOT protect an individual weak password from a patient, distributed attacker."
     cloze:
       text: "Rate limiting protects the service from being walked quickly through the login endpoint, but it does NOT protect an individual {} password from a patient, distributed attacker."
@@ -158,7 +166,8 @@ cards:
       - A per-row salt
       answerIndex: 0
 
-  - topic: "The three layers protecting a stored password"
+  - labels: [security]
+    topic: "The three layers protecting a stored password"
     desc: "Defence in depth: each layer covers what the next cannot."
     items:
       - "Per-row SALT — so one cracked password doesn't crack the rest, and identical passwords don't collide."
@@ -169,7 +178,8 @@ cards:
       - slow KDF
       - pepper
 
-  - topic: "TLS handshake & the x509 'valid for X, not Y' error"
+  - labels: [security]
+    topic: "TLS handshake & the x509 'valid for X, not Y' error"
     desc: "In the handshake the server presents a CERTIFICATE (its public key + identity, signed by a CA). The client accepts it only if TWO checks pass: the signature chains up to a CA it trusts, AND the hostname it dialed appears in the cert's SAN (Subject Alternative Name). `x509: certificate is valid for api.foo.com, not api.bar.com` is the SECOND check failing — the cert is genuine, just issued for a different name."
     extras:
       - label: How
@@ -185,7 +195,8 @@ cards:
         - "Subject Alternative Name"
         - "subject alternative name"
     hint: "Two checks — the signing chain, and whether the hostname you dialed is on the cert. Which one does 'valid for X, not Y' fail?"
-  - topic: Parameterized queries vs SQL injection
+  - labels: [security]
+    topic: Parameterized queries vs SQL injection
     desc: Building a query by concatenating user input lets an attacker alter its structure; the fix is a parameterized query, also called a prepared statement.
     cloze:
       text: Building a query by concatenating user input lets an attacker alter its structure; the fix is a parameterized query, also called a prepared {}.
@@ -198,7 +209,8 @@ cards:
       - Rate limiting
       - A firewall rule
       answerIndex: 0
-  - topic: Least privilege limits blast radius
+  - labels: [security]
+    topic: Least privilege limits blast radius
     desc: Granting a service the narrowest permissions it needs, so a compromise touches as little as possible, is the principle of least privilege.
     cloze:
       text: Granting a service the narrowest permissions it needs, so a compromise touches as little as possible, is the principle of least {}.
@@ -211,7 +223,8 @@ cards:
       - Zero trust
       - Fail closed
       answerIndex: 0
-  - topic: CSRF vs XSS
+  - labels: [security]
+    topic: CSRF vs XSS
     desc: An attack that rides a logged-in user's cookies to perform an unwanted state-changing request from another site is CSRF — defeated by anti-forgery tokens.
     cloze:
       text: An attack that rides a logged-in user's cookies to perform an unwanted state-changing request from another site is {} — defeated by anti-forgery tokens.

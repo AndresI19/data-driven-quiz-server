@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
 import { z } from 'zod';
-import type { CardsPayload, GameCard, Group } from './card-schema.js';
+import type { CardsPayload, GameCard, Group, Label } from './card-schema.js';
 import { type RawCard, toGameCard } from './card-transform.js';
 
 const ExtraSchema = z.object({ label: z.string(), text: z.string() }).strict();
@@ -41,6 +41,7 @@ const CodeSelectSchema = z
 
 const AuthoredCardSchema = z
   .object({
+    labels: z.array(z.string()).optional(),
     topic: z.string(),
     desc: z.string().optional(),
     extras: z.array(ExtraSchema).optional(),
@@ -73,6 +74,11 @@ const GroupSchema = z
   .object({ key: z.string(), name: z.string(), color: z.string(), sections: z.array(z.string()).min(1) })
   .strict();
 const GroupsFileSchema = z.object({ groups: z.array(GroupSchema) }).strict();
+
+const LabelSchema = z
+  .object({ key: z.string(), name: z.string(), color: z.string(), desc: z.string() })
+  .strict();
+const LabelsFileSchema = z.object({ labels: z.array(LabelSchema) }).strict();
 
 /** A validated section file plus its source filename (for stable ordering + errors). */
 interface LoadedSection {
@@ -120,6 +126,24 @@ function readGroups(dir: string, sectionKeys: Set<string>): Group[] {
   return parsed.data.groups;
 }
 
+/**
+ * Read + validate cards/_labels.yaml (the cross-cutting tag vocabulary). Returns [] when absent.
+ * Duplicate keys are a hard error: two entries for one key would make the colour and description a
+ * coin-flip depending on iteration order.
+ */
+function readLabels(dir: string): Label[] {
+  const p = resolve(dir, '_labels.yaml');
+  if (!existsSync(p)) return [];
+  const parsed = LabelsFileSchema.safeParse(yaml.load(readFileSync(p, 'utf8')) ?? {});
+  if (!parsed.success) fail('_labels.yaml', parsed.error);
+  const seen = new Set<string>();
+  for (const l of parsed.data.labels) {
+    if (seen.has(l.key)) throw new Error(`Invalid card file "_labels.yaml": duplicate label key "${l.key}"`);
+    seen.add(l.key);
+  }
+  return parsed.data.labels;
+}
+
 /** Read + validate every section file (excludes files beginning with "_"), in filename order. */
 function readSections(dir: string): LoadedSection[] {
   const files = readdirSync(dir)
@@ -138,17 +162,26 @@ function readSections(dir: string): LoadedSection[] {
 export function loadCardsPayload(dir: string): CardsPayload {
   const diagrams = readDiagrams(dir);
   const sections = readSections(dir);
+  const labels = readLabels(dir);
+  const known = new Set(labels.map((l) => l.key));
 
   const cats: Record<string, string> = {};
   const catColors: Record<string, string> = {};
   const cards: GameCard[] = [];
   const multiPool: Record<string, string[]> = {};
 
-  for (const { section, cards: authored } of sections) {
+  for (const { file, section, cards: authored } of sections) {
     cats[section.key] = section.name;
     catColors[section.key] = section.color;
     authored.forEach((a, i) => {
-      const raw: RawCard = { ...a, id: `${section.key}${i + 1}`, cat: section.key, desc: a.desc ?? '' };
+      const id = `${section.key}${i + 1}`;
+      // An unknown or misspelled label is an error, like an unknown field: a silently-dropped tag
+      // would quietly exclude the card from every filter that should have found it.
+      for (const l of a.labels ?? []) {
+        if (!known.has(l))
+          throw new Error(`Invalid card file "${file}": card ${id} has unknown label "${l}"`);
+      }
+      const raw: RawCard = { ...a, id, cat: section.key, desc: a.desc ?? '' };
       const gc = toGameCard(raw, diagrams);
       cards.push(gc);
       if (gc.multi) multiPool[gc.id] = gc.multi;
@@ -157,5 +190,5 @@ export function loadCardsPayload(dir: string): CardsPayload {
 
   const groups: Group[] = readGroups(dir, new Set(sections.map((s) => s.section.key)));
 
-  return { cats, catColors, groups, cards, diagrams, multiPool };
+  return { cats, catColors, labels, groups, cards, diagrams, multiPool };
 }

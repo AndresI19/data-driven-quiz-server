@@ -41,6 +41,7 @@ const DIR: Record<string, string> = {
 const card = (over: Partial<GameCard> = {}): GameCard => ({
   id: 'A1',
   cat: 'A',
+  labels: [],
   topic: 'Load balancer',
   back: '<p>Spreads traffic across servers.</p>',
   printBack: '<p>Spreads traffic across servers.</p>',
@@ -98,6 +99,7 @@ const CARDS: GameCard[] = [
 const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
   catColors: { A: '#5a67f2' },
+  labels: [],
   groups: [],
   cards: CARDS,
   diagrams: {},

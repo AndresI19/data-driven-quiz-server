@@ -3,7 +3,8 @@ section:
   name: Observability
   color: "#8b5cf6"
 cards:
-  - topic: "Three pillars: logs, metrics, traces"
+  - labels: [operations]
+    topic: "Three pillars: logs, metrics, traces"
     desc: The complementary signal types that together explain what a system is doing.
     extras:
       - label: e.g.
@@ -29,7 +30,8 @@ cards:
       - Logs
       - Profiles
       answerIndex: 1
-  - topic: OpenTelemetry
+  - labels: [operations]
+    topic: OpenTelemetry
     desc: The vendor-neutral standard for emitting traces, metrics, and logs.
     extras:
       - label: e.g.
@@ -49,7 +51,8 @@ cards:
       - StatsD
       - Jaeger
       answerIndex: 3
-  - topic: Prometheus & Grafana
+  - labels: [operations]
+    topic: Prometheus & Grafana
     desc: "The de-facto open-source metrics stack in K8s: Prometheus COLLECTS + STORES the numbers, Grafana VISUALIZES them. They're two halves — one is the database, the other is the dashboard."
     extras:
       - label: Grafana
@@ -77,7 +80,8 @@ cards:
       - PromQL
       - Prometheus
       answerIndex: 1
-  - topic: SLI / SLO / SLA
+  - labels: [operations]
+    topic: SLI / SLO / SLA
     desc: How you measure, target, and contractually promise reliability.
     extras:
       - label: e.g.
@@ -107,7 +111,8 @@ cards:
       - KPI
       - SLI
       answerIndex: 3
-  - topic: LLM/agent-specific observability
+  - labels: [operations]
+    topic: LLM/agent-specific observability
     desc: Tracing prompts, tokens, tool calls, and agent steps — the novel part of the product.
     extras:
       - label: e.g.
@@ -125,7 +130,8 @@ cards:
       - Weights & Biases
       answerIndex: 1
 
-  - topic: "A check that depends on nothing"
+  - labels: [operations]
+    topic: "A check that depends on nothing"
     desc: "The most reliable health signal doesn't trust any component to report its own success — it independently compares 'what IS running' to 'what SHOULD be'. Deploys drift silently, so a check that reads the live version (e.g. /api/versions) and diffs it against the latest release tag catches a failed deploy that every other signal reported as fine."
     cloze:
       text: "The most reliable health check trusts no component to report its own success — it independently compares what IS running to what {} be running, catching silent drift."
@@ -136,7 +142,8 @@ cards:
       - label: Principle
         text: "Prefer end-state verification over step-success. 'Every step returned 0' can still leave you running old code."
 
-  - topic: "Pull signals vs push alerts"
+  - labels: [operations]
+    topic: "Pull signals vs push alerts"
     desc: "A PULL signal waits for you to go look — a red ✗ in a CI list, a dashboard you have to open. A PUSH alert comes to you — a message to Slack/Discord, a page. Silent failure thrives on pull-only signals, so anything that must not be missed should PUSH."
     extras:
       - label: Balance
@@ -146,7 +153,8 @@ cards:
     match:
       - ["pull signal", "you go look — a red ✗, a dashboard"]
       - ["push alert", "it comes to you — Slack/Discord, a page"]
-  - topic: A health check that trusts no component
+  - labels: [operations]
+    topic: A health check that trusts no component
     desc: When a deploy silently reverts to old code even though every step reported success, the undetected gap between what is running and what should be running is called drift.
     cloze:
       text: When a deploy silently reverts to old code even though every step reported success, the undetected gap between what is running and what should be running is called {}.
@@ -159,7 +167,8 @@ cards:
       - Heartbeat polling
       - End-state verification
       answerIndex: 3
-  - topic: Metric cardinality explosion
+  - labels: [operations]
+    topic: Metric cardinality explosion
     desc: Putting a unique value like user_id or request_id into a Prometheus metric label multiplies the time-series count until the store falls over.
     cloze:
       text: Putting a unique value like user_id or request_id into a Prometheus metric {} multiplies the time-series count until the store falls over.
@@ -172,7 +181,8 @@ cards:
       - Clock skew
       - Log truncation
       answerIndex: 0
-  - topic: RED vs USE method
+  - labels: [operations]
+    topic: RED vs USE method
     desc: For a request-driven service you watch Rate, Errors, and Duration — the RED method — rather than host utilization metrics.
     cloze:
       text: For a request-driven service you watch Rate, Errors, and Duration — the {} method — rather than host utilization metrics.
@@ -185,7 +195,8 @@ cards:
       - Golden ratios
       - Apdex scoring
       answerIndex: 0
-  - topic: Tail-based trace sampling
+  - labels: [operations]
+    topic: Tail-based trace sampling
     desc: Recording a trace for every request is too costly at scale, so tracing systems keep only a fraction through sampling.
     cloze:
       text: Recording a trace for every request is too costly at scale, so tracing systems keep only a fraction through {}.
@@ -198,7 +209,8 @@ cards:
       - Rate limiting
       - Downsampling
       answerIndex: 0
-  - topic: Alert on symptoms, not causes
+  - labels: [operations]
+    topic: Alert on symptoms, not causes
     desc: Paging on every CPU blip trains responders to ignore the pager; mature on-call alerts on user-facing symptoms instead of internal causes.
     cloze:
       text: Paging on every CPU blip trains responders to ignore the pager; mature on-call alerts on user-facing {} instead of internal causes.
@@ -211,7 +223,8 @@ cards:
       - Shorten every timeout
       - Page two people each time
       answerIndex: 0
-  - topic: Error budget policy
+  - labels: [operations]
+    topic: Error budget policy
     desc: One minus the SLO is the error budget — the unreliability you are allowed to spend before feature work must stop and reliability work takes over.
     cloze:
       text: One minus the SLO is the error {} — the unreliability you are allowed to spend before feature work must stop and reliability work takes over.
@@ -224,7 +237,8 @@ cards:
       - The toil quota
       - The blast radius
       answerIndex: 0
-  - topic: Blameless postmortem
+  - labels: [operations]
+    topic: Blameless postmortem
     desc: After an incident, a blameless postmortem focuses on the systems and conditions that allowed the failure, not on punishing the engineer who triggered it.
     cloze:
       text: After an incident, a {} postmortem focuses on the systems and conditions that allowed the failure, not on punishing the engineer who triggered it.
@@ -237,7 +251,8 @@ cards:
       - Skip-if-minor
       - Manager-only
       answerIndex: 0
-  - topic: Toil reduction
+  - labels: [operations]
+    topic: Toil reduction
     desc: Repetitive, manual, automatable operational work that scales with service size but adds no lasting value is called toil, and SRE's job is to automate it away.
     cloze:
       text: Repetitive, manual, automatable operational work that scales with service size but adds no lasting value is called {}, and SRE's job is to automate it away.
@@ -249,4 +264,124 @@ cards:
       - Incident response
       - Capacity planning
       - Code review
+      answerIndex: 0
+  - labels: [operations, fundamentals]
+    topic: "Delta-of-delta timestamp encoding"
+    desc: "Time-series samples arrive on a fixed interval, so instead of storing each 8-byte timestamp you
+      store the gap from the previous one — and because those gaps are nearly always identical, you store
+      the change in the gap, which is almost always ZERO. A zero costs a single bit. This is why a scrape
+      every 15 seconds compresses to almost nothing on the timestamp side."
+    extras:
+      - label: e.g.
+        text: "timestamps 10:00:00, 10:00:15, 10:00:30, 10:00:45 → deltas 15, 15, 15 → delta-of-deltas 0,
+          0. Three timestamps that cost 24 bytes raw are now a handful of bits."
+      - label: Say
+        text: “It only degrades when the interval jitters. A scrape that lands at 15.001 seconds produces
+          a non-zero delta-of-delta, so a small variable-length encoding covers the drift — you spend a few
+          bits, not another 8 bytes.”
+      - label: Trap
+        text: it assumes REGULAR arrival. Irregular event data — logs, traces, user actions — has no fixed
+          interval, so the delta-of-delta is never zero and this buys you very little. It is a time-series
+          trick, not a general compression trick.
+    cloze:
+      text: Storing the change in the gap between successive timestamps, rather than the timestamps themselves,
+        is called {} encoding.
+      answer: delta-of-delta
+      alts:
+        - delta of delta
+    hint: Regular intervals mean the gap between gaps is almost always the same number.
+    mcq:
+      prompt: A metrics store scrapes every 15 seconds and needs to store millions of timestamps cheaply.
+        Which encoding exploits the fixed interval to reduce most timestamps to about one bit?
+      options:
+        - Delta-of-delta
+        - Run-length encoding
+        - Dictionary compression
+        - Huffman coding
+      answerIndex: 0
+  - labels: [operations, fundamentals]
+    topic: "XOR value encoding (Gorilla)"
+    desc: "The other half of time-series compression. Consecutive readings of the same metric are usually
+      similar — CPU 41.2% then 41.3% — and two similar IEEE-754 floats share most of their leading bits. XOR
+      the new value against the previous one and the result is mostly zeros, which pack away to almost
+      nothing. Together with delta-of-delta this takes 16 bytes per sample to under two, roughly a 10x
+      reduction."
+    table:
+      - - ""
+        - Naive
+        - Gorilla-style
+      - - Timestamp
+        - 8 bytes
+        - ~1 bit when regular
+      - - Value
+        - 8 bytes
+        - a few bits when stable
+      - - Per sample
+        - 16 bytes
+        - "~1.4 bytes"
+      - - "333k samples/s"
+        - 460 GB/day
+        - "~45 GB/day"
+    extras:
+      - label: Say
+        text: “The compression ratio is a property of the DATA, not the algorithm — it works because metrics
+          are slow-moving. A metric that genuinely jumps around randomly compresses badly, and that is fine
+          because real infrastructure metrics do not behave that way.”
+      - label: e.g.
+        text: named after Facebook's Gorilla paper (2015), and it is what Prometheus, InfluxDB and
+          VictoriaMetrics all use in some form.
+      - label: Trap
+        text: this is the argument for a purpose-built time-series store over a relational one. A row store
+          holding 460 GB a day of (timestamp, value) pairs is paying 10x for data whose shape it cannot
+          exploit.
+    cloze:
+      text: Compressing a numeric sample by {}-ing it against the previous value, leaving mostly zero bits,
+        is the value half of Gorilla encoding.
+      answer: XOR
+    hint: Two nearly-equal floats differ in only their trailing bits.
+    mcq:
+      prompt: A time-series database stores 333,000 samples per second. Naively that is 460 GB/day, but it
+        actually writes about 45 GB/day. Which pair of techniques accounts for the roughly tenfold reduction?
+      options:
+        - Delta-of-delta timestamps plus XOR-encoded values
+        - Gzip plus deduplication
+        - Downsampling plus tiered storage
+        - Column pruning plus dictionary encoding
+      answerIndex: 0
+  - labels: [operations]
+    topic: "Downsampling & retention tiers"
+    desc: "Compression shrinks each sample; downsampling throws samples away. Nobody queries 15-second
+      resolution from eight months ago — they query a monthly trend — so keep raw data briefly, then roll it
+      up. Storage drops by orders of magnitude and the query layer picks the resolution from the requested
+      time range."
+    items:
+      - "Raw 15-second samples — retained ~15 days"
+      - "5-minute rollups — retained ~90 days"
+      - "1-hour rollups — retained ~2 years"
+    extras:
+      - label: Trap
+        text: "roll up SKETCHES, not averages. Averaging pre-averaged data destroys your ability to compute
+          percentiles over long windows, and the mean of per-window p99s is not the p99 — store mergeable
+          histogram buckets or a t-digest instead."
+      - label: Say
+        text: “Keep min, max, sum and count per bucket rather than just the mean. Those four are mergeable,
+          so a monthly view can be assembled from hourly rollups without ever touching raw data.”
+      - label: e.g.
+        text: dropping a whole time-bounded block is also why blocks are organised by time — expiring old
+          data is deleting a file, never a row-by-row scan.
+    cloze:
+      text: Replacing old high-resolution samples with coarser aggregates to cut storage is called {}.
+      answer: downsampling
+      alts:
+        - down-sampling
+        - rollup
+    hint: You keep the shape of old data without keeping every point.
+    mcq:
+      prompt: A team downsamples year-old metrics by storing only the average of each hour, and later finds
+        it can no longer produce a meaningful p99 for that period. What should they have stored instead?
+      options:
+        - Mergeable histogram buckets or a sketch
+        - The maximum of each hour
+        - A larger sample of raw points
+        - The median of each hour
       answerIndex: 0
