@@ -1251,12 +1251,12 @@ select.opt {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 /* .secchips is a wrapping flex row; a category claims a whole line of it. */
 .catblock {
   flex: 0 0 100%;
-  margin: 0 0 9px;
+  margin: 0 0 6px;
 }
 /* A heading, not a button — inline-flex so the hit area is the words, not the full width. */
 .cat-title {
@@ -1265,7 +1265,7 @@ select.opt {
   gap: 7px;
   background: none;
   border: 0;
-  padding: 0 0 3px;
+  padding: 0 0 2px;
   cursor: pointer;
   color: var(--cat);
   font-size: 11.5px;
@@ -1287,7 +1287,7 @@ select.opt {
 /* The divider only formats — a hairline between the heading and the chips, no height of its own. */
 .catdiv {
   height: 1px;
-  margin: 0 0 7px;
+  margin: 0 0 5px;
   background: color-mix(in srgb, var(--cat) 40%, transparent);
 }
 .catlabels {
@@ -1301,7 +1301,12 @@ select.opt {
   text-transform: none;
   letter-spacing: 0;
   font-size: 12.5px;
-  padding: 7px 12px;
+  padding: 6px 11px;
+  /* Faint category tint while unselected — the colour coding should be legible at rest, not only
+     once a chip is picked. Selected still jumps to the solid fill below. */
+  border-color: color-mix(in srgb, var(--cat) 34%, var(--line));
+  background: color-mix(in srgb, var(--cat) 7%, var(--panel-2));
+  color: color-mix(in srgb, var(--cat) 55%, var(--muted));
 }
 .secchip.lc .lcnum {
   margin-left: 7px;
