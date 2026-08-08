@@ -24,6 +24,14 @@ labels:
       it. Protocols, handshakes, resolution paths, data models. "How does HTTPS work", not
       "should we use HTTPS here".
 
+  - key: industry-systems
+    name: Industry Systems
+    color: "#a855f7"
+    desc: >-
+      How a whole real-world system works end to end, outside the cloud-backend core — search
+      engines, video delivery, graphics pipelines, storage-engine internals, language runtimes.
+      Pairs with `fundamentals`: that label is the mechanism, this one is the scope.
+
   - key: cloud-native
     name: Cloud & Containers
     color: "#0ea5e9"

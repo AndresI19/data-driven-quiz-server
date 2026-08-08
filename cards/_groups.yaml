@@ -12,7 +12,7 @@ groups:
   - key: backend
     name: Backend & Distributed
     color: "#6366f1"
-    sections: [A, D, E, P, Q, R, S]
+    sections: [A, D, E, P, Q, R, S, T]
   - key: ai
     name: AI / ML Engineering
     color: "#22c55e"
@@ -21,6 +21,10 @@ groups:
     name: Product & Craft
     color: "#f59e0b"
     sections: [H, M, O, I]
+  - key: internals
+    name: Systems & Internals
+    color: "#a855f7"
+    sections: [U]
   - key: security
     name: Security
     color: "#ef4444"
