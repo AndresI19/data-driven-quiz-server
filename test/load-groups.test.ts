@@ -66,9 +66,11 @@ test('groups: a section in two groups is a hard error', () => {
   }
 });
 
-test('groups: the shipped deck folds all 15 sections into 5 roles, each exactly once', () => {
+test('groups: the shipped deck folds all 21 sections into 6 roles, each exactly once', () => {
   const { groups, cats } = loadCardsPayload(resolve(__dirname, '../cards'));
-  assert.equal(groups.length, 5);
+  // Pinned on purpose: adding a group should be a deliberate act, not a side effect of adding a
+  // section. Update this number when you mean to, which is exactly when this test should fail.
+  assert.equal(groups.length, 6);
   const covered = groups.flatMap((g) => g.sections);
   assert.equal(covered.length, new Set(covered).size, 'no section is in two groups');
   assert.deepEqual(

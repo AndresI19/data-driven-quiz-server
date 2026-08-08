@@ -31,6 +31,7 @@ import type { CardsPayload, GameCard } from '../src/shared/card-schema.js';
 const card = (over: Partial<GameCard> = {}): GameCard => ({
   id: 'A1',
   cat: 'A',
+  labels: [],
   topic: 'Load balancer',
   back: '<p>Spreads traffic across servers.</p>',
   printBack: '<p>Spreads traffic across servers.</p>',
@@ -127,7 +128,8 @@ const CODESELECT = card({
 const PAYLOAD: CardsPayload = {
   cats: { A: 'Scalability & System Design' },
   catColors: { A: '#5a67f2' },
-  groups: [],
+  labels: [],
+    groups: [],
   // BF picks distractors out of the full card list, so it needs more than one card to choose from.
   cards: [
     card(),

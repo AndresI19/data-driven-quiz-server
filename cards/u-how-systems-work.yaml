@@ -1,0 +1,510 @@
+section:
+  key: U
+  name: "How Systems Work"
+  color: "#a855f7"
+cards:
+  # ── Search ────────────────────────────────────────────────────────────────
+  - labels: [fundamentals, industry-systems]
+    topic: "The inverted index"
+    desc: "The data structure every search engine is built on. Instead of mapping document → words (which
+      would force you to read every document), it maps word → the list of documents containing it. Finding
+      documents with both 'red' and 'shoes' becomes an intersection of two sorted lists, not a scan."
+    items:
+      - "Term dictionary — every distinct term, sorted, with a pointer to its posting list"
+      - "Posting list — the sorted document ids containing that term, plus positions and frequencies"
+      - "Query = walk the dictionary to find each term, then intersect or union the posting lists"
+    extras:
+      - label: e.g.
+        text: "posting lists are enormous and highly compressible: store gaps between document ids rather
+          than the ids themselves (delta encoding), and the gaps are small integers that pack tightly —
+          the same trick as time-series timestamps."
+      - label: Say
+        text: “Positions in the posting list are what make phrase search possible. Without them you can
+          find documents containing both words; with them you can require that they are adjacent.”
+      - label: Trap
+        text: the index is built for READING. Updating a document means rewriting posting lists, which is
+          why search engines batch changes into new segments rather than editing in place.
+    cloze:
+      text: A search engine maps each term to the list of documents containing it — a structure called an
+        {} index.
+      answer: inverted
+    hint: The opposite direction from the one a document naturally gives you.
+    mcq:
+      prompt: Why can a search engine answer a two-word query without reading any documents?
+      options:
+        - It intersects the two terms' posting lists, which are sorted document-id lists
+        - It scans a cached copy of each document in parallel
+        - It uses a bloom filter to skip non-matching documents
+        - It relies on the database's full-text column type
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "How a search engine ranks"
+    desc: "Retrieval finds candidates; ranking orders them, and they are separate stages for cost reasons.
+      A cheap retrieval pass narrows billions of documents to a few thousand, then progressively more
+      expensive scorers re-rank a shrinking set — you cannot afford the good model on every document."
+    items:
+      - "TF-IDF / BM25 — a term is meaningful if it is frequent in this document and rare across the corpus"
+      - "Link analysis (PageRank) — a page is important if important pages link to it, computed offline"
+      - "Behavioural signals — did users click this result and stay, or bounce back and pick another"
+      - "Freshness, locality, personalisation — applied late, on a small candidate set"
+    extras:
+      - label: Say
+        text: “The staged design is the whole trick. Retrieval is optimised for recall at almost no cost
+          per document; ranking is optimised for precision at high cost per document, on a set small enough
+          to afford it.”
+      - label: Trap
+        text: behavioural signals create a feedback loop — ranking a result highly gets it clicked, which
+          raises its rank. Position-bias correction and deliberate exploration of lower-ranked results are
+          what stop the system reinforcing its own past output.
+    cloze:
+      text: The ranking function that weighs term frequency against how rare the term is across the whole
+        corpus is {}.
+      answer: BM25
+      alts:
+        - TF-IDF
+    hint: Two stages, because you cannot afford the expensive one on everything.
+    mcq:
+      prompt: Why do search engines separate retrieval from ranking rather than scoring every document?
+      options:
+        - Cheap retrieval narrows billions to thousands so expensive scoring is affordable
+        - Retrieval and ranking must run on different hardware
+        - Ranking requires the full document text, which retrieval does not load
+        - It allows the index to be sharded
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "How Elasticsearch actually works"
+    desc: "A distributed layer over Lucene. An index is split into SHARDS, each shard is an independent
+      Lucene index, and each Lucene index is a set of immutable SEGMENTS. Writes go to an in-memory buffer
+      plus a translog; a refresh turns the buffer into a new searchable segment; a merge combines small
+      segments into larger ones."
+    table:
+      - - Concept
+        - What it actually is
+      - - Index
+        - a logical name, split across shards
+      - - Shard
+        - one complete Lucene index, the unit of scaling
+      - - Replica
+        - a copy of a shard, serving reads and standing by
+      - - Segment
+        - an immutable chunk of inverted index on disk
+    extras:
+      - label: Say
+        text: “It is NEAR-real-time, not real-time. A document is not searchable until the next refresh —
+          one second by default — because searchability requires a new segment, and creating one per
+          document would be ruinous.”
+      - label: Trap
+        text: "segments are immutable, so a delete is only a tombstone and an update is a delete plus an
+          insert. The space is not reclaimed until a merge rewrites the segment — which is why heavy update
+          workloads make Elasticsearch grow and then lurch as merges run."
+      - label: Trap
+        text: shard count is fixed at index creation and cannot be changed without reindexing, because the
+          routing hash maps a document id to a shard number. Too many small shards is the most common
+          Elasticsearch misconfiguration.
+    cloze:
+      text: An Elasticsearch shard is one complete Lucene index, made up of immutable {} that are merged
+        together over time.
+      answer: segments
+    hint: Immutable pieces, plus a background process that consolidates them.
+    mcq:
+      prompt: A document is indexed into Elasticsearch and a search a moment later does not find it. Why?
+      options:
+        - It is not searchable until the next refresh creates a new segment
+        - The write was routed to a replica that has not synced
+        - The query cache returned a stale result
+        - The translog has not yet been flushed to disk
+      answerIndex: 0
+
+  # ── Video ─────────────────────────────────────────────────────────────────
+  - labels: [fundamentals, industry-systems]
+    topic: "How video streaming works (HLS/DASH)"
+    desc: "The video is not one file. It is encoded at several quality levels — the bitrate ladder — and
+      each level is cut into segments of a few seconds. A manifest lists the levels and their segment URLs.
+      The player downloads segments over ordinary HTTP, which is why streaming works through any CDN and
+      any firewall."
+    items:
+      - "Ladder — the same content at, say, 240p / 480p / 720p / 1080p / 4K"
+      - "Segments — each level chopped into 2–10 second chunks, each an independently fetchable file"
+      - "Manifest — the playlist telling the player what exists and where"
+      - "The player picks the level PER SEGMENT, so quality can change mid-stream"
+    extras:
+      - label: Say
+        text: “Because every segment is a plain HTTP GET of a static file, the whole thing caches in a CDN
+          with no special protocol. That is the design's real win — it turned video from a streaming-server
+          problem into a static-file problem.”
+      - label: e.g.
+        text: HLS (Apple) and MPEG-DASH are the two dominant formats and differ mostly in manifest syntax;
+          most services encode once and package for both.
+    cloze:
+      text: Adaptive streaming encodes the video at several bitrates and cuts each into short {} that the
+        player fetches over plain HTTP.
+      answer: segments
+      alts:
+        - chunks
+    hint: Why can a CDN cache video with no video-specific software?
+    mcq:
+      prompt: What makes adaptive bitrate streaming cacheable on an ordinary CDN?
+      options:
+        - Each quality level's segments are static files fetched by plain HTTP GET
+        - The CDN transcodes on the fly at the edge
+        - The player maintains a persistent connection to the origin
+        - Video uses UDP, which CDNs optimise for
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "Why video buffers (and how the player decides)"
+    desc: "The player keeps a buffer of already-downloaded seconds ahead of the playhead. It continuously
+      estimates available bandwidth and picks the quality of the NEXT segment to keep that buffer from
+      draining. A stall — the spinner — means the buffer hit zero, which is the one outcome the algorithm is
+      built to avoid."
+    extras:
+      - label: Say
+        text: “The trade-off is startup latency against stall risk. A big buffer nearly eliminates stalls
+          but makes playback start slowly and wastes bandwidth if the viewer skips away — so players start
+          at a LOW quality to begin fast, then step up once the buffer is healthy.”
+      - label: Trap
+        text: "quality oscillation is the other failure mode: a purely bandwidth-driven algorithm flips
+          between levels on every fluctuation, which viewers find worse than a steady lower quality. Modern
+          algorithms are buffer-based or hybrid, and they damp changes deliberately."
+      - label: e.g.
+        text: this is why a video looks blurry for the first few seconds and then sharpens — you are
+          watching the ladder climb as the buffer fills.
+    cloze:
+      text: A stall happens when the player's {} drains to zero before the next segment arrives.
+      answer: buffer
+    hint: Why does quality improve a few seconds after you press play?
+    mcq:
+      prompt: Why do adaptive players deliberately begin at a lower quality than the connection could support?
+      options:
+        - To fill the buffer and start playback quickly, then step up once it is healthy
+        - Because bandwidth cannot be measured until playback starts
+        - To reduce CDN egress costs on abandoned views
+        - Because the first segment is always the lowest quality in the manifest
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "Keyframes, and why seeking snaps"
+    desc: "Video compresses by storing differences between frames rather than whole frames. An I-frame
+      (keyframe) is a complete image; P-frames encode changes from the previous frame; B-frames reference
+      both past and future frames. Only an I-frame can be decoded on its own — so playback can only START
+      at one."
+    table:
+      - - Frame
+        - Contains
+        - Decodable alone
+      - - "I-frame"
+        - a full image
+        - "yes"
+      - - "P-frame"
+        - changes since the previous frame
+        - "no"
+      - - "B-frame"
+        - changes from both directions
+        - "no"
+    extras:
+      - label: Say
+        text: “That is why seeking jumps to a slightly different point than you clicked, and why segment
+          boundaries in streaming must align to keyframes — a segment has to be independently decodable or
+          the player cannot switch quality at it.”
+      - label: Trap
+        text: "more keyframes means better seeking and faster quality switching but a much larger file,
+          because each is a full image. The keyframe interval is a direct trade between file size and
+          responsiveness."
+      - label: e.g.
+        text: it also explains the classic corruption artefact — losing a keyframe leaves subsequent
+          P-frames applying differences to the wrong image, so the picture smears until the next keyframe.
+    cloze:
+      text: Only an {} can be decoded on its own, which is why playback and quality switches can only begin
+        at one.
+      answer: I-frame
+      alts:
+        - keyframe
+        - intra frame
+    hint: Most frames only describe what changed.
+    mcq:
+      prompt: Why must streaming segment boundaries align with keyframes?
+      options:
+        - A segment must be independently decodable for the player to switch quality at it
+        - Keyframes mark where the audio track resynchronises
+        - CDNs cache only keyframe-aligned files
+        - It keeps every segment exactly the same byte size
+      answerIndex: 0
+
+  # ── Graphics ──────────────────────────────────────────────────────────────
+  - labels: [fundamentals, industry-systems]
+    topic: "The graphics rendering pipeline"
+    desc: "Turning a 3D scene into a 2D image is a fixed sequence of stages, most of them running on the
+      GPU in parallel. Geometry goes in as vertices, gets transformed into screen space, is rasterised into
+      pixel-sized fragments, and each fragment is shaded to a colour."
+    order:
+      - Vertex shader — transform each vertex into screen space
+      - Clipping and culling — discard geometry outside the view or facing away
+      - Rasterisation — work out which pixels each triangle covers
+      - Fragment shader — compute a colour for each covered pixel
+      - Depth test and blending — resolve what is in front of what
+      - Write to the framebuffer
+    extras:
+      - label: Say
+        text: “Vertex work scales with scene complexity and fragment work scales with screen resolution and
+          overdraw — which is why the same scene can be vertex-bound on one machine and fragment-bound on
+          another, and why the fix differs completely.”
+      - label: Trap
+        text: "OVERDRAW is the classic waste: shading a pixel that a later triangle covers up. Sorting
+          front-to-back and doing a depth pre-pass means the depth test rejects hidden fragments before the
+          expensive shading runs."
+    cloze:
+      text: The stage that determines which pixels a triangle covers is called {}.
+      answer: rasterisation
+      alts:
+        - rasterization
+    hint: Six stages, from points in space to pixels in a buffer.
+    mcq:
+      prompt: A scene runs slowly and the GPU is fragment-bound. Which change helps most?
+      options:
+        - Reduce overdraw with a depth pre-pass or front-to-back sorting
+        - Reduce the polygon count of distant models
+        - Batch draw calls to reduce CPU overhead
+        - Use fewer, larger textures
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "Why a GPU is fast (and when it is not)"
+    desc: "A CPU has a few dozen powerful cores optimised for latency on branchy, sequential work. A GPU has
+      thousands of simple cores optimised for throughput on the same operation applied to many data
+      elements. Shading a million pixels is a million independent identical calculations, which is exactly
+      the shape a GPU is built for."
+    extras:
+      - label: Say
+        text: “Cores execute in lockstep groups — a warp or wavefront. If threads in a group take different
+          branches, the hardware runs BOTH paths and masks the results, so divergent branching inside a
+          shader can halve your throughput or worse.”
+      - label: Trap
+        text: "memory bandwidth is usually the real limit, not arithmetic. Modern GPUs can compute far
+          faster than they can be fed, which is why texture compression, cache-friendly access patterns and
+          minimising transfers across the PCIe bus matter so much."
+      - label: e.g.
+        text: it is also why GPUs took over machine learning — training is dense matrix multiplication,
+          which is the same "same operation, enormous amounts of data" shape as shading pixels.
+    cloze:
+      text: GPU threads execute in lockstep groups, so divergent {} inside a shader forces the hardware to
+        run both paths.
+      answer: branching
+      alts:
+        - branches
+    hint: Thousands of simple cores, all doing the same thing at once.
+    mcq:
+      prompt: Why does an `if` statement whose outcome varies per pixel hurt GPU performance?
+      options:
+        - Threads run in lockstep groups, so both branches execute and results are masked
+        - Branches flush the instruction cache on every divergence
+        - The GPU falls back to CPU execution for conditional code
+        - Each branch requires a separate draw call
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "The frame budget"
+    desc: "60 frames per second means 16.7 milliseconds per frame for EVERYTHING — input, game logic,
+      physics, culling, draw-call submission and GPU rendering. 120 fps halves it to 8.3 ms. It is a hard
+      real-time deadline, and missing it is visible in a way that missing a web latency target is not."
+    extras:
+      - label: Say
+        text: “Consistency matters more than average. A steady 30 fps feels better than a frame rate that
+          swings between 60 and 45, because the eye notices the CHANGE — which is why frame pacing is a
+          discipline of its own and why averages are the wrong metric.”
+      - label: Trap
+        text: "CPU and GPU work are pipelined, so the frame you submit is not the frame being drawn. That
+          buys throughput and costs input latency — the reason competitive players disable buffering
+          options that add a frame or two of lag."
+      - label: e.g.
+        text: the same budget logic drives dynamic resolution scaling — when the GPU is missing the
+          deadline, render at a lower internal resolution and upscale, so the frame ships on time.
+    cloze:
+      text: Hitting 60 frames per second leaves a budget of about {} milliseconds for the entire frame.
+      answer: "16.7"
+      alts:
+        - "16"
+        - "16.6"
+    hint: One second divided by the frame rate.
+    mcq:
+      prompt: Why is a steady 30 fps often preferred over a rate fluctuating between 45 and 60?
+      options:
+        - Perceived smoothness depends on consistency; the eye notices the variation
+        - 30 fps uses less power on average
+        - Fluctuating rates cause screen tearing
+        - Lower frame rates reduce input latency
+      answerIndex: 0
+
+  # ── Storage engines & runtime ─────────────────────────────────────────────
+  - labels: [fundamentals, industry-systems]
+    topic: "B-tree indexes"
+    desc: "The structure behind almost every relational index. A shallow, wide, balanced tree where each
+      node holds many keys and fits a disk page. Depth stays around 3–4 levels even for billions of rows, so
+      a lookup is a handful of page reads — and because leaves are linked in sorted order, a range scan
+      walks sideways instead of searching again."
+    extras:
+      - label: Say
+        text: “Shallow and wide is deliberate. The cost is page reads, not comparisons, so the design
+          minimises depth by maximising fan-out — hundreds of keys per node rather than the two of a binary
+          tree.”
+      - label: Trap
+        text: "it explains composite-index rules: an index on (a, b) sorts by a then b, so it serves a query
+          on `a` or on `a AND b`, but not one on `b` alone. The leftmost-prefix rule is a property of the
+          sort order, not an arbitrary restriction."
+      - label: Trap
+        text: random inserts cause page splits and fragmentation, which is why monotonically increasing
+          keys are kinder to a B-tree — and why write-heavy workloads sometimes prefer an LSM tree instead.
+    cloze:
+      text: A B-tree stays about three or four levels deep even at billions of rows because each node has a
+        very high {}.
+      answer: fan-out
+    hint: Wide and shallow, because the expensive thing is reading a page.
+    mcq:
+      prompt: An index exists on (last_name, first_name). Which query can use it efficiently?
+      options:
+        - One filtering on last_name alone
+        - One filtering on first_name alone
+        - One filtering on first_name with last_name sorted
+        - Neither, without a separate index on each column
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "LSM trees (and why write-heavy stores use them)"
+    desc: "The log-structured merge tree inverts the B-tree's trade. Writes go to an in-memory table and an
+      append-only log — no random disk writes at all. When the memtable fills it is flushed as an immutable
+      sorted file, and background compaction merges those files. Writes become sequential; reads may have to
+      check several files."
+    table:
+      - - ""
+        - B-tree
+        - LSM tree
+      - - Writes
+        - in-place, random
+        - sequential append
+      - - Reads
+        - one path down the tree
+        - may check several files
+      - - Space
+        - fragmentation
+        - dead data until compaction
+      - - Used by
+        - Postgres, MySQL
+        - Cassandra, RocksDB, LevelDB
+    extras:
+      - label: Say
+        text: “A bloom filter per file is what makes reads viable — it answers 'this file definitely does
+          not contain the key' cheaply, so most files are skipped without a disk read.”
+      - label: Trap
+        text: "compaction is the hidden cost. It is background I/O that competes with live traffic, so an
+          LSM store can show sudden latency spikes with no change in application load — the classic
+          'why did p99 jump at 3am' answer."
+    cloze:
+      text: An LSM tree turns random writes into sequential ones by buffering in memory and flushing
+        immutable sorted files, which are later combined by {}.
+      answer: compaction
+    hint: Never write in place; write forward and tidy up later.
+    mcq:
+      prompt: Why can an LSM-based store show latency spikes with no change in application traffic?
+      options:
+        - Background compaction competes with live requests for disk I/O
+        - Bloom filters are rebuilt on a fixed schedule
+        - The memtable is flushed synchronously on every write
+        - Reads must scan every file when no index exists
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "Garbage collection and tail latency"
+    desc: "A managed runtime reclaims unreferenced memory automatically. Generational collectors exploit the
+      observation that most objects die young — collect the young generation frequently and cheaply, promote
+      survivors, and collect the old generation rarely but expensively. That rare expensive pass is where
+      your p99 goes."
+    extras:
+      - label: Say
+        text: “A stop-the-world pause is invisible in average latency and obvious in p99. It is also
+          correlated across a fleet under similar load, so several replicas can pause near-simultaneously —
+          which is why hedged requests to another replica help less than you would expect.”
+      - label: Trap
+        text: "allocation rate, not heap size, usually drives pause frequency. Reducing garbage created per
+          request is more effective than enlarging the heap, which often just makes each pause longer."
+      - label: e.g.
+        text: it is the main argument for Go, Rust or C++ in latency-critical paths — Go has a concurrent
+          collector with sub-millisecond pauses, and Rust has none at all.
+    cloze:
+      text: Generational collectors work because most objects {} young, so the young generation can be
+        collected cheaply and often.
+      answer: die
+    hint: It does not show up in the average at all.
+    mcq:
+      prompt: A service has a good median latency and a poor p99 that correlates with heap growth. What most
+        directly reduces the pauses?
+      options:
+        - Reducing allocation rate per request
+        - Increasing the heap size
+        - Adding more replicas behind the load balancer
+        - Enabling hedged requests to a second replica
+      answerIndex: 0
+
+  # ── Network ───────────────────────────────────────────────────────────────
+  - labels: [fundamentals, industry-systems]
+    topic: "TCP congestion control"
+    desc: "TCP does not know the network's capacity, so it discovers it by probing. It starts with a small
+      congestion window, doubles it every round trip (slow start — a misleading name, it is exponential),
+      and on detecting loss treats that as congestion and backs off sharply. Throughput is therefore a
+      function of round-trip time as well as bandwidth."
+    extras:
+      - label: Say
+        text: “This is why a long-distance transfer is slow even on a fast link. The window grows once per
+          round trip, so a 200 ms RTT means the connection needs many round trips just to reach full speed —
+          and a short connection may finish before it ever gets there.”
+      - label: Trap
+        text: "loss-based control misreads WIRELESS loss as congestion, backing off when the link was fine.
+          BBR and similar modern algorithms model bandwidth and RTT directly instead of treating every lost
+          packet as a congestion signal."
+      - label: e.g.
+        text: it is also the argument for connection reuse — HTTP keep-alive and HTTP/2 multiplexing avoid
+          paying slow start again for every request.
+    cloze:
+      text: TCP discovers available capacity by growing its congestion window each round trip, a phase
+        confusingly named {} start.
+      answer: slow
+    hint: Why is a transfer to another continent slow even on a gigabit link?
+    mcq:
+      prompt: Why does a single TCP transfer over a high-latency link underperform the available bandwidth?
+      options:
+        - The congestion window grows only once per round trip, so ramp-up takes many RTTs
+        - High latency links have higher packet loss by nature
+        - TCP caps throughput based on measured RTT
+        - The receive buffer cannot be enlarged beyond 64 KB
+      answerIndex: 0
+
+  - labels: [fundamentals, industry-systems]
+    topic: "How a CDN finds the nearest edge"
+    desc: "Two mechanisms, often combined. DNS-based routing returns a different address depending on where
+      the resolver is. Anycast advertises the SAME address from many locations and lets internet routing
+      deliver you to the closest one. The edge then serves from cache, or fetches from a parent cache or the
+      origin on a miss."
+    extras:
+      - label: Say
+        text: “A CDN is not one cache, it is a hierarchy. An edge miss goes to a regional parent before the
+          origin, so the origin sees a tiny fraction of total traffic even when edge hit rates are modest —
+          that consolidation is most of the origin offload.”
+      - label: Trap
+        text: DNS-based routing sees the RESOLVER's location, not the user's. Someone using a distant public
+          resolver can be sent to the wrong region, which is what EDNS Client Subnet exists to fix.
+      - label: e.g.
+        text: beyond caching, terminating TLS at the edge removes a full round trip's worth of handshake
+          latency from every connection — often a bigger win than the cache hit itself for small responses.
+    cloze:
+      text: Advertising the same IP address from many locations and letting internet routing pick the
+        closest is called {}.
+      answer: anycast
+    hint: Two ways to answer "where should this user go?".
+    mcq:
+      prompt: Why does a CDN reduce origin load far more than its edge hit rate alone suggests?
+      options:
+        - Edge misses go to regional parent caches, so only a fraction reach the origin
+        - Edges retry the origin less aggressively than browsers would
+        - Origin responses are compressed more heavily
+        - Anycast distributes origin fetches across regions
+      answerIndex: 0

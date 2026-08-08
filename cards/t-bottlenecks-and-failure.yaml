@@ -1,0 +1,301 @@
+section:
+  key: T
+  name: "Bottlenecks & Failure Modes"
+  color: "#dc2626"
+cards:
+  - labels: [system-design]
+    topic: "Cold cache on a read-heavy service"
+    desc: "The cache tier breaks first, and it breaks the database with it. At a 90% hit rate the store
+      sees a tenth of the reads; lose the cache and it sees all of them in one step — 3,500/sec becoming
+      35,000 against a store provisioned for a tenth of that. Origin load is the reciprocal of the miss
+      rate, so a cache does not degrade gracefully, it falls off a cliff."
+    extras:
+      - label: Mitigation
+        text: coalesce concurrent misses so a thousand simultaneous requests for one key become one origin
+          read; warm a node before it takes traffic; stagger expiry so the whole cache never lapses together;
+          and provision the store above the cached steady state.
+      - label: Say
+        text: “A cache restart is a routine operational event, not a disaster — which is exactly why the
+          system has to survive one. If a planned restart can take the database down, so can a crash.”
+    hint: What does the thing behind the cache experience at the moment the cache empties?
+    mcq:
+      prompt: "A redirect service serves 35,000 reads/sec through a cache at a 90% hit rate, backed by a
+        database sized for the resulting 3,500/sec. Which component fails first, and why?"
+      options:
+        - The database, when a cache restart sends it ten times its provisioned load in one step
+        - The cache, when its memory fills with cold entries
+        - The load balancer, from the increase in connection count
+        - The redirect service, from the CPU cost of cache misses
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Slow dependency behind a worker pool"
+    desc: "Not the queue — the workers. When a downstream call slows from 200 ms to 2 seconds, Little's law
+      says you need ten times the concurrency for the same throughput. Your fixed pool cannot provide it, so
+      throughput collapses and the backlog grows while every worker is alive, healthy, and using almost no
+      CPU."
+    extras:
+      - label: Trap
+        text: "this is invisible to the obvious metrics: every process is up, health checks pass, CPU is
+          near zero. Autoscaling on CPU actively makes it worse by scaling DOWN exactly when the backlog is
+          growing."
+      - label: Mitigation
+        text: circuit-break per dependency so calls fail fast and return to the queue, cap concurrency per
+          dependency so one sick service cannot consume the whole fleet, and alert on oldest-message age
+          rather than queue depth.
+    hint: Everything is up and CPU is idle, yet throughput has collapsed.
+    mcq:
+      prompt: "A queue-backed worker pool of 2,000 handles 10,000 jobs/sec at 200 ms each. A downstream API
+        slows to 2 seconds. Every worker is running and CPU sits near zero, but the backlog grows. What is
+        the bottleneck?"
+      options:
+        - Worker concurrency — ten times the pool is now needed for the same throughput
+        - The queue's write throughput
+        - Network bandwidth to the downstream API
+        - Database connection limits on the queue store
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "One new label on a metric"
+    desc: "Ingestion memory, driven by ACTIVE SERIES rather than sample volume. Series count is the product
+      of label cardinalities, so adding one unbounded label — a user id, a request id, a URL with query
+      parameters — multiplies the series count by that label's cardinality. The head block holds per-series
+      state, so the node is OOM-killed."
+    extras:
+      - label: Trap
+        text: on restart the node replays its write-ahead log and hits the same ceiling again. One bad
+          deploy becomes a crash loop that survives restarts, which is far worse than a single crash.
+      - label: Mitigation
+        text: per-tenant series limits enforced AT INGESTION — reject rather than accept and die. Plus
+          attribution showing which label caused a spike, and an alert on series growth RATE, because a
+          metric doubling its series in an hour is a deploy you can still roll back.
+    hint: It is not the volume of data. It is the number of distinct things.
+    mcq:
+      prompt: "A metrics platform ingests 333,000 samples/sec comfortably. An engineer adds `user_id` as a
+        label to one existing metric and ingestion nodes begin OOM-killing. What is the mechanism?"
+      options:
+        - Series count is the product of label cardinalities, and the head block holds per-series state
+        - Sample volume exceeded the disk write throughput
+        - The write-ahead log could not flush fast enough
+        - Query load from dashboards spiked simultaneously
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Losing one connection node"
+    desc: "The reconnection storm. A node holding 100,000 WebSocket connections dies and all 100,000 clients
+      reconnect at once, landing on the remaining nodes which are already near capacity — and can be taken
+      down in turn. The recovery mechanism becomes the attack."
+    extras:
+      - label: Trap
+        text: every rolling deploy does this on purpose, several times a week. If deploys are painful you
+          will deploy less, which is its own reliability problem.
+      - label: Mitigation
+        text: exponential backoff WITH JITTER on the client so the herd disperses rather than merely being
+          delayed; connection admission control on the receiving nodes; and graceful drain on deploy —
+          stop accepting, ask clients to reconnect over a spread interval, then shut down.
+    hint: What do the surviving nodes experience one second after the failure?
+    mcq:
+      prompt: "A chat service holds 10 million sockets across 100 nodes. One node is terminated. What is the
+        most likely failure, and what prevents it?"
+      options:
+        - A reconnection storm cascading across survivors, prevented by jittered client backoff
+        - Message loss for that node's users, prevented by a larger write-ahead log
+        - Registry corruption, prevented by stronger consistency
+        - Bus saturation, prevented by more partitions
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Which store limits a file service"
+    desc: "The metadata store, not the object store. Object storage scales close to linearly by adding
+      machines and has no cross-entity constraints. Metadata is transactional, richly queried, needs indexed
+      listing, and has referential integrity — so it is the piece that needs sharding and careful schema
+      work. The small data is the hard part."
+    extras:
+      - label: Trap
+        text: "there is no transaction spanning the two stores, so ordering decides the failure mode: write
+          the OBJECT first, then the metadata. An orphaned object costs storage and gets swept up; a metadata
+          row pointing at a missing object is a user-visible broken file."
+      - label: Say
+        text: “Listing a folder must be an indexed metadata query, never a scan of the object store —
+          object stores are deliberately bad at listing, and that is a design choice on their part.”
+    hint: One of the two stores has constraints, joins and ordering requirements.
+    mcq:
+      prompt: "A storage service holds an exabyte of objects and a few terabytes of metadata. Which
+        component becomes the scaling bottleneck first?"
+      options:
+        - The metadata store, because it is transactional and richly queried
+        - The object store, because it holds almost all the bytes
+        - The CDN, because egress dominates the bill
+        - The upload API, because it authorises every request
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "What is still shared after cellularising"
+    desc: "Whatever you did not partition. Cells bound a failure to a fraction of tenants, so the remaining
+      global components — the tenant-to-cell router, identity, the shared audit sink, billing — become the
+      real single points of failure. The list of shared things IS the list of ways everyone goes down at
+      once, and it should be written down explicitly."
+    extras:
+      - label: Trap
+        text: the most likely total outage is not hardware, it is a global code or CONFIGURATION change
+          applied everywhere simultaneously. Cells bound hardware failures; only staged rollout bounds
+          change failures.
+      - label: Mitigation
+        text: keep the router a dumb lookup with no logic in it, deploy cell by cell with a canary, and give
+          configuration the same staging discipline as code.
+    hint: Partitioning helps with everything except the parts you did not partition.
+    mcq:
+      prompt: "A platform splits 5,000 tenants across ten independent cells. What remains the largest
+        single point of failure?"
+      options:
+        - The shared tenant-to-cell router and other global services
+        - The largest cell, because it holds the most tenants
+        - The per-cell databases, which are now more numerous
+        - Cross-cell network latency
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "A feed during a synchronised event"
+    desc: "The fan-out queue. Posting volume spikes several times over at exactly the moment engagement
+      peaks, the queue backs up, and feed freshness degrades from seconds to minutes — worst for the users
+      who are most engaged right now, because they are the ones refreshing."
+    extras:
+      - label: Mitigation
+        text: prioritise the queue by recipient activity. Fan out to recently-active followers first so the
+          people currently looking at a screen get fresh content, and let dormant users' timelines fill in
+          behind. Degrading freshness selectively beats degrading it uniformly.
+      - label: Say
+        text: "“Load and demand peak together here, which is the general shape of the problem: the moment
+          the system is most stressed is the moment users care most. Headroom is not waste.”"
+    hint: Both the write rate and the read rate spike at the same instant.
+    mcq:
+      prompt: "During a major live event a social feed sees post volume spike 5x while engagement also
+        peaks. What degrades first?"
+      options:
+        - Fan-out queue latency, delaying timeline freshness for the most active users
+        - The post store's write throughput
+        - The read path, since timelines are precomputed
+        - The follower graph lookups
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "A hot key defeats sharding"
+    desc: "Sharding spreads load ACROSS keys and does nothing when the load is WITHIN one key. One enormous
+      customer, one viral object, or one attacker hammering a single rate-limit key saturates a single shard
+      while the rest idle. Adding shards does not help, which is what makes it confusing in production."
+    extras:
+      - label: Mitigation
+        text: "for read-hot keys, replicate the item more widely and let a cache absorb it. For write-hot
+          keys, split the key into N sub-counters and sum or enforce across them, accepting approximation
+          for the largest keys."
+      - label: Trap
+        text: popularity is unpredictable, so detection and mitigation must be automatic. By the time a
+          human notices the hot shard, it is already saturated.
+    hint: Adding more shards changes nothing. Why?
+    mcq:
+      prompt: "A rate limiter shards its counter store by limit key. One customer's traffic saturates a
+        single shard while the others idle. What fixes it?"
+      options:
+        - Split that key across sub-counters and enforce against their sum
+        - Add more shards to spread the load further
+        - Increase the shard's memory allocation
+        - Switch from hash sharding to range sharding
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "The recovery path shares the failure domain"
+    desc: "A payment provider degrades, requests time out, and thousands of payments are left in an unknown
+      state. Your recovery procedure — poll the provider for the status of each idempotency key — calls the
+      same degraded provider. The mechanism that resolves the failure depends on the thing that failed."
+    extras:
+      - label: Say
+        text: “The safe posture is to stop initiating new charges, keep the unknown ones queued for later
+          resolution, and tell customers the payment is processing rather than guessing. In this domain the
+          safe default is to do nothing and resolve later — the exact inverse of failing open on a rate
+          limiter.”
+      - label: Trap
+        text: this shape recurs. A monitoring system that cannot tell you it is down, a config service whose
+          rollback needs the config service, a DNS-based failover when DNS is the outage. Ask of any recovery
+          plan — does it depend on the thing that broke?
+    hint: Read the recovery procedure and ask what it calls.
+    mcq:
+      prompt: "A payment provider degrades and thousands of charges are left in an unknown state. Why is the
+        documented recovery — query the provider by idempotency key — insufficient?"
+      options:
+        - It depends on the same degraded provider, so recovery shares the failure domain
+        - Idempotency keys expire after 24 hours
+        - The provider does not support status lookups
+        - Querying would double-charge the customer
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Availability multiplies along a chain"
+    desc: "Five services in series at 99.9% each give 0.999^5 ≈ 99.5%, or about 44 hours a year — nearly
+      five times the downtime of any single member. A chain of individually-good services is a bad service,
+      and no amount of improving one link fixes it."
+    extras:
+      - label: Say
+        text: “Removing a synchronous dependency buys more availability than making any single dependency
+          better. That is why the strongest reliability work is usually architectural — caching a response,
+          making a call asynchronous, or tolerating its absence — rather than operational.”
+      - label: Trap
+        text: this is why static stability matters so much. A dependency you can serve without is not in the
+          chain at all.
+    hint: Multiply, do not average.
+    mcq:
+      prompt: "A request traverses five independent services, each with 99.9% availability. What is the
+        end-to-end availability, and what improves it most?"
+      options:
+        - "~99.5%; removing a synchronous dependency helps more than improving any one service"
+        - "99.9%; the chain is as available as its weakest member"
+        - "~99.99%; independent failures cancel out"
+        - "~95%; each dependency compounds tenfold"
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Read replicas and read-your-writes"
+    desc: "Replication lag. A user submits a change, the write goes to the primary, the immediate read is
+      routed to a replica that has not caught up, and the user sees their own change missing. It looks like
+      data loss to them, and it is intermittent, which makes it hard to reproduce."
+    extras:
+      - label: Mitigation
+        text: "route a user's reads to the primary for a short window after their write, or pin the session
+          to a replica known to have applied at least that write's position. The general name is
+          read-your-writes consistency, and it is a property you must deliberately provide."
+      - label: Trap
+        text: replicas raise READ capacity, never write capacity. A system that is write-bound gains nothing
+          from more replicas, and adding them can make it worse by increasing replication work.
+    hint: The write succeeded. Why did the very next read not see it?
+    mcq:
+      prompt: "Users occasionally report that a profile edit 'did not save', though the write succeeded and
+        the value appears on refresh. What is happening?"
+      options:
+        - The read was served by a replica that had not yet applied the write
+        - The write was rolled back and retried
+        - A cache served a stale entry that was never invalidated
+        - The primary rejected the write and returned success
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "A connection pool below λW"
+    desc: "The pool, not the database. Little's law applies here too: sustaining 500 queries/sec at 20 ms
+      each requires 500 × 0.02 = 10 concurrent connections. Size the pool below that and requests queue
+      waiting for a connection no matter how fast the database is — and the added latency is invisible in
+      database metrics, because the query itself was never slow."
+    extras:
+      - label: Trap
+        text: "the symptom points at the wrong component: application latency is high while the database
+          reports fast queries and low utilisation. The wait happens before the query is ever issued."
+      - label: Mitigation
+        text: instrument connection ACQUISITION time separately from query time. They are different
+          measurements and only one of them tells you the pool is too small.
+    hint: The database says every query was fast. The user says the page was slow.
+    mcq:
+      prompt: "An app shows 300 ms p99 while the database reports 20 ms queries at low utilisation. Which
+        measurement would identify the cause?"
+      options:
+        - Connection acquisition time, measured separately from query time
+        - Database CPU utilisation
+        - Network round-trip time to the database
+        - Query plan cache hit rate
+      answerIndex: 0

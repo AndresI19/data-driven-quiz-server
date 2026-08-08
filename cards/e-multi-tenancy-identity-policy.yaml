@@ -3,7 +3,8 @@ section:
   name: Multi-tenancy / Identity / Policy
   color: "#ec4899"
 cards:
-  - topic: Multi-tenancy models
+  - labels: [system-design, security]
+    topic: Multi-tenancy models
     desc: Silo vs. pool vs. bridge — how strongly you isolate one customer's data and compute from another's.
     extras:
       - label: e.g.
@@ -28,7 +29,8 @@ cards:
       - Bridge
       - Sharded
       answerIndex: 0
-  - topic: Authentication vs. authorization
+  - labels: [system-design, security]
+    topic: Authentication vs. authorization
     desc: Proving WHO you are (authn) vs. deciding WHAT you're allowed to do (authz).
     cloze:
       text: Proving who you are is authentication; deciding what you may do is {}.
@@ -44,7 +46,8 @@ cards:
       - Accounting
       - Attestation
       answerIndex: 0
-  - topic: Cookies — and how the backend knows who you are
+  - labels: [system-design, security]
+    topic: Cookies — and how the backend knows who you are
     desc: HTTP is stateless. A cookie is the server asking the browser to hold a string and hand it back — Set-Cookie on the response, a Cookie header on every matching request after.
     extras:
       - label: e.g.
@@ -63,7 +66,8 @@ cards:
       alts:
         - http only
     hint: How a stateless protocol remembers who you are between requests.
-  - topic: OAuth2 / OIDC / JWT
+  - labels: [system-design, security]
+    topic: OAuth2 / OIDC / JWT
     desc: "Three pieces of modern auth:"
     items:
       - "OAuth2 (Open Authorization 2.0) — delegation: lets an app act on your behalf via access tokens, no password sharing."
@@ -90,7 +94,8 @@ cards:
       - SAML
       - JWT
       answerIndex: 0
-  - topic: RBAC vs. ABAC
+  - labels: [system-design, security]
+    topic: RBAC vs. ABAC
     desc: Two ways to decide 'can this subject do this action?'. RBAC checks WHO YOU ARE (your role); ABAC checks the ATTRIBUTES of the request (who + what + when + where). ABAC is a superset — it can express any RBAC rule plus context — which is why fine-grained policy engines lean toward it.
     extras:
       - label: e.g.
@@ -144,7 +149,8 @@ cards:
       - MAC
       - DAC
       answerIndex: 0
-  - topic: Policy-as-code (OPA/Rego, Cedar)
+  - labels: [system-design, security]
+    topic: Policy-as-code (OPA/Rego, Cedar)
     desc: Externalizing authorization rules into an engine you evaluate at runtime — the essence of runtime 'policy enforcement'.
     extras:
       - label: e.g.
@@ -165,7 +171,8 @@ cards:
       - Kyverno
       - Sentinel
       answerIndex: 0
-  - topic: PEP vs. PDP
+  - labels: [system-design, security]
+    topic: PEP vs. PDP
     desc: "The two halves of an authorization system: the PDP (Policy Decision Point) evaluates the rules and answers 'allow or deny?'; the PEP (Policy Enforcement Point) sits in the request path and actually enforces that answer."
     extras:
       - label: e.g.
@@ -193,7 +200,8 @@ cards:
       - PAP
       - PIP
       answerIndex: 0
-  - topic: Secrets management
+  - labels: [system-design, security]
+    topic: Secrets management
     desc: Vaulting credentials and keys (HashiCorp Vault, cloud KMS) instead of hardcoding them.
     cloze:
       text: "Secrets management means vaulting credentials and keys in a tool like HashiCorp Vault or a cloud {} instead of hardcoding them."
@@ -209,7 +217,8 @@ cards:
       - HSM
       - Vault
       answerIndex: 0
-  - topic: Real-time detection & enforcement
+  - labels: [system-design, security]
+    topic: Real-time detection & enforcement
     desc: Inspecting agent actions in-flight and blocking or scoring risky ones — the runtime control-plane pitch.
     extras:
       - label: How
@@ -224,7 +233,8 @@ cards:
       - "Rate limiting — capping request volume"
       - "Audit logging — recording actions after the fact"
     hint: Inspect agent actions in-flight and block or score the risky ones.
-  - topic: "SSO: OIDC vs SAML"
+  - labels: [system-design, security]
+    topic: "SSO: OIDC vs SAML"
     desc: Both are federation protocols for Single Sign-On — log in once at an Identity Provider (IdP), reach many apps. SAML = older, XML, browser-POST, entrenched in enterprise. OIDC (OpenID Connect) = modern, JSON/JWT, built on OAuth2 — better for APIs, SPAs, mobile.
     extras:
       - label: e.g.
@@ -243,7 +253,8 @@ cards:
       - LDAP
       - Kerberos
       answerIndex: 0
-  - topic: ID vs access vs refresh tokens
+  - labels: [system-design, security]
+    topic: ID vs access vs refresh tokens
     desc: "OAuth2 / OIDC issue three token types, each with a different job and audience:"
     extras:
       - label: Trap
@@ -282,7 +293,8 @@ cards:
       - Access token
       - Bearer token
       answerIndex: 0
-  - topic: mTLS & workload identity
+  - labels: [system-design, security]
+    topic: mTLS & workload identity
     desc: How SERVICES (not users) prove identity to each other. mTLS (mutual TLS) = both client and server present certs, so each authenticates the other. Workload identity gives each service a verifiable identity + auto-rotated certs.
     extras:
       - label: e.g.
@@ -303,7 +315,8 @@ cards:
       - Kerberos
       - LDAP
       answerIndex: 0
-  - topic: Threat modeling (STRIDE)
+  - labels: [system-design, security]
+    topic: Threat modeling (STRIDE)
     desc: "Systematically enumerating how a system could be attacked BEFORE building defenses. STRIDE is the classic checklist: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege."
     extras:
       - label: How
@@ -344,7 +357,8 @@ cards:
       - Elevation of privilege
       answerIndex: 0
 
-  - topic: "The role comes from the issuer, not the caller"
+  - labels: [system-design, security]
+    topic: "The role comes from the issuer, not the caller"
     desc: "A privilege (admin, tenant, scope) must be decided by the token ISSUER and SIGNED into the token — never asserted by the client and never re-derived by each verifier. The auth service checks its private admin list at mint time and signs `admin: true`; a client cannot ask to be admin, edit the claim, or forge a token, because it doesn't hold the signing key."
     extras:
       - label: Why not check per-service
@@ -363,7 +377,8 @@ cards:
       - The bearer
       answerIndex: 0
 
-  - topic: "Pseudonymous identity (deliberately holding no PII)"
+  - labels: [system-design, security]
+    topic: "Pseudonymous identity (deliberately holding no PII)"
     desc: "An identity that ties activity to a stable handle WITHOUT collecting personally identifiable information — no email, no real name. A user is a random id plus a credential, and nothing sensitive sits behind it. The trade: there's no account RECOVERY (recovery needs an email, and an email is PII)."
     cloze:
       text: "A pseudonymous identity ties activity to a stable handle without collecting any {} — no email, no real name — so there is nothing sensitive to breach."
@@ -384,7 +399,8 @@ cards:
       - Session cookies
       answerIndex: 0
 
-  - topic: "Debugging a 403 from the Kubernetes API (kubectl auth can-i)"
+  - labels: [system-design, security]
+    topic: "Debugging a 403 from the Kubernetes API (kubectl auth can-i)"
     desc: "A pod's app gets 403 Forbidden calling the API — it authenticated fine (the API knew who it was) but RBAC denied the action. Confirm it in one command: `kubectl auth can-i <verb> <resource> --as=system:serviceaccount:<ns>:<sa>` replays the check AS that ServiceAccount and answers yes/no, so you reproduce the denial without the pod."
     extras:
       - label: How
@@ -398,7 +414,8 @@ cards:
       answer: "can-i"
     hint: "The pod authenticated but the action was refused — which command replays the permission check as that ServiceAccount?"
 
-  - topic: "OAuth2 / OIDC authorization-code flow, in order"
+  - labels: [system-design, security]
+    topic: "OAuth2 / OIDC authorization-code flow, in order"
     desc: "How an app signs a user in through an external identity provider WITHOUT ever seeing their password — the code flow, the default for web apps."
     order:
       - "The app redirects the user to the authorization server's /authorize endpoint"
@@ -413,7 +430,8 @@ cards:
       - label: e.g.
         text: "PKCE (Proof Key for Code Exchange) protects public clients — SPAs and mobile apps that can't keep a secret — with a per-request verifier in the secret's place."
     hint: "redirect → consent → code → back-channel token exchange → verify."
-  - topic: Cookie flags
+  - labels: [system-design, security]
+    topic: Cookie flags
     desc: The HttpOnly cookie flag prevents JavaScript from reading the cookie, blunting XSS token theft.
     cloze:
       text: The {} cookie flag prevents JavaScript from reading the cookie, blunting XSS token theft.
@@ -426,7 +444,8 @@ cards:
       - Secure
       - Path
       answerIndex: 0
-  - topic: Noisy neighbor in pooled tenancy
+  - labels: [system-design, security]
+    topic: Noisy neighbor in pooled tenancy
     desc: In a pooled multi-tenant database, one tenant's expensive query can starve everyone sharing the node — the classic noisy-neighbor problem.
     cloze:
       text: In a pooled multi-tenant database, one tenant's expensive query can starve everyone sharing the node — the classic {} problem.
@@ -439,7 +458,8 @@ cards:
       - Role explosion
       - Token replay
       answerIndex: 0
-  - topic: Row-level security for tenant isolation
+  - labels: [system-design, security]
+    topic: Row-level security for tenant isolation
     desc: Relying on every query to remember its tenant filter is fragile; enforcing tenant isolation inside the database uses row-level security.
     cloze:
       text: Relying on every query to remember its tenant filter is fragile; enforcing tenant isolation inside the database uses {} security.
@@ -452,7 +472,8 @@ cards:
       - A foreign key
       - A check constraint
       answerIndex: 0
-  - topic: Revoking a stateless JWT
+  - labels: [system-design, security]
+    topic: Revoking a stateless JWT
     desc: A stateless JWT stays valid until it expires because nothing checks a server-side store per request, so an urgent logout needs a token denylist list or short lifetimes.
     cloze:
       text: A stateless JWT stays valid until it expires because nothing checks a server-side store per request, so an urgent logout needs a token {} list or short lifetimes.
@@ -465,7 +486,8 @@ cards:
       - Lower future lifetimes
       - Add more scopes
       answerIndex: 0
-  - topic: Immutable audit log
+  - labels: [system-design, security]
+    topic: Immutable audit log
     desc: A SOC2 control requires proving who did what and when, so security-relevant actions are written to an append-only, tamper-evident audit log.
     cloze:
       text: A SOC2 control requires proving who did what and when, so security-relevant actions are written to an append-only, tamper-evident audit {}.
@@ -478,7 +500,8 @@ cards:
       - Short retention
       - Client-side writes
       answerIndex: 0
-  - topic: Data residency
+  - labels: [system-design, security]
+    topic: Data residency
     desc: A rule that an EU customer's data must be stored and processed only inside the EU is a data residency requirement.
     cloze:
       text: A rule that an EU customer's data must be stored and processed only inside the EU is a data {} requirement.
@@ -491,7 +514,8 @@ cards:
       - Data masking
       - Data lineage
       answerIndex: 0
-  - topic: Dynamic / rotated secrets
+  - labels: [system-design, security]
+    topic: Dynamic / rotated secrets
     desc: A long-lived database password in an env var is a standing risk; Vault reduces it by issuing short-lived, automatically rotated credentials per workload.
     cloze:
       text: A long-lived database password in an env var is a standing risk; Vault reduces it by issuing short-lived, automatically {} credentials per workload.

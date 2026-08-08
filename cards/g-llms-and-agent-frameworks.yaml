@@ -3,7 +3,8 @@ section:
   name: LLMs & Agent Frameworks
   color: "#22c55e"
 cards:
-  - topic: What an “LLM agent” is
+  - labels: [ai-agents]
+    topic: What an “LLM agent” is
     desc: An LLM given tools plus a loop, so it can take multi-step actions toward a goal instead of answering just once.
     extras:
       - label: e.g.
@@ -20,7 +21,8 @@ cards:
       - A vector index
       - A system prompt
       answerIndex: 0
-  - topic: LangChain
+  - labels: [ai-agents]
+    topic: LangChain
     desc: A framework of composable building blocks — models, prompts, tools, memory, retrieval — for wiring LLM apps together.
     multi:
       - Models
@@ -40,7 +42,8 @@ cards:
       - LlamaIndex
       - PydanticAI
       answerIndex: 0
-  - topic: LangGraph
+  - labels: [ai-agents]
+    topic: LangGraph
     desc: LangChain's graph / state-machine layer for building stateful, multi-step, cyclic agent workflows with explicit control flow.
     extras:
       - label: e.g.
@@ -59,7 +62,8 @@ cards:
       - PydanticAI
       - LlamaIndex
       answerIndex: 0
-  - topic: Chains vs. agent graphs (control flow)
+  - labels: [ai-agents]
+    topic: Chains vs. agent graphs (control flow)
     desc: A linear chain runs A→B→C once; an agent graph adds loops, branches, retries, checkpoints, and human-in-the-loop — the control flow real agents need. LangGraph models this as a state machine.
     cloze:
       text: "A linear chain runs A→B→C once; an agent {} adds the loops, branches, retries, and human-in-the-loop that real agents need."
@@ -76,7 +80,8 @@ cards:
       - A queue
       - A stack
       answerIndex: 0
-  - topic: PydanticAI
+  - labels: [ai-agents]
+    topic: PydanticAI
     desc: A type-safe agent framework from the Pydantic team — 'FastAPI for LLM agents'. You declare a Pydantic model as the agent's result_type and it validates the LLM's output into it; model-agnostic (OpenAI/Anthropic/Gemini), with dependency injection and built-in tracing via Pydantic Logfire.
     cloze:
       text: In PydanticAI you declare a Pydantic model as the agent's {} and it validates the LLM output into that shape.
@@ -99,7 +104,8 @@ cards:
       - LangGraph
       - LlamaIndex
       answerIndex: 0
-  - topic: Model Context Protocol (MCP)
+  - labels: [ai-agents]
+    topic: Model Context Protocol (MCP)
     desc: An open standard (Anthropic-originated) for connecting LLMs to external tools and data via a uniform server interface.
     cloze:
       text: "{} is Anthropic's open standard for connecting LLMs to external tools and data."
@@ -115,7 +121,8 @@ cards:
       - OpenAI plugins
       - LangChain tools
       answerIndex: 0
-  - topic: Custom orchestrators
+  - labels: [ai-agents]
+    topic: Custom orchestrators
     desc: The orchestrator is the engine that DRIVES an agent's loop — routing tool calls, tracking state, handling retries/branching — while the 'agent' is the LLM brain deciding what to do next. LangChain/LangGraph are orchestrators; a custom one is a team's hand-rolled loop.
     cloze:
       text: "The {} is the engine that drives an agent's loop — routing tool calls, tracking state, handling retries — while the agent is the LLM brain deciding what to do next."
@@ -134,7 +141,8 @@ cards:
       - A retriever
       - A planner
       answerIndex: 0
-  - topic: Tool / function calling
+  - labels: [ai-agents]
+    topic: Tool / function calling
     desc: The mechanism by which an LLM invokes external code — the exact surface a control plane governs.
     cloze:
       text: "The mechanism by which an LLM invokes external code — the exact surface a control plane governs — is tool or {} calling."
@@ -148,7 +156,8 @@ cards:
       - Retrieval
       - Chain-of-thought
       answerIndex: 0
-  - topic: RAG (retrieval-augmented generation)
+  - labels: [ai-agents]
+    topic: RAG (retrieval-augmented generation)
     desc: Grounding an LLM in retrieved documents/embeddings at query time to reduce hallucination.
     extras:
       - label: e.g.
@@ -172,7 +181,8 @@ cards:
       - Distillation
       - RLHF
       answerIndex: 0
-  - topic: Agent state & checkpointing
+  - labels: [ai-agents]
+    topic: Agent state & checkpointing
     desc: How an agent's progress is persisted so it can pause, resume, or be audited — ties straight back to stateful vs. stateless.
     cloze:
       text: "Persisting an agent's progress so it can pause, resume, or be audited is called {}."
@@ -191,7 +201,8 @@ cards:
       - Rollback
       - Retrying
       answerIndex: 0
-  - topic: Prompt injection & agent guardrails
+  - labels: [ai-agents]
+    topic: Prompt injection & agent guardrails
     desc: "The #1 agent security threat: untrusted text the model reads as INSTRUCTIONS instead of data, hijacking its tool calls. DIRECT = the user types it. INDIRECT = it hides in content the agent fetches (a web page, an email, a tool result) — the dangerous one, because the attacker never even talks to your agent."
     extras:
       - label: Say
@@ -215,7 +226,8 @@ cards:
       - Model inversion
       - Jailbreaking
       answerIndex: 0
-  - topic: Agent security controls (defense-in-depth)
+  - labels: [ai-agents]
+    topic: Agent security controls (defense-in-depth)
     desc: Layered defenses so no single failure is catastrophic — because you can't trust the model to police itself. Assume the prompt is attacker-controlled and constrain what the agent can DO.
     extras:
       - label: Say
@@ -242,7 +254,8 @@ cards:
       - Human-in-the-loop
       - Output filtering
       answerIndex: 0
-  - topic: Context-window management
+  - labels: [ai-agents]
+    topic: Context-window management
     desc: An agent whose conversation outgrows the model's context window silently loses its earliest messages unless it summarizes or offloads them into external memory.
     cloze:
       text: An agent whose conversation outgrows the model's context window silently loses its earliest messages unless it summarizes or {} them into external memory.
@@ -255,7 +268,8 @@ cards:
       - Add more tools
       - Retry failed steps
       answerIndex: 0
-  - topic: Structured / constrained output
+  - labels: [ai-agents]
+    topic: Structured / constrained output
     desc: Parsing an LLM's free-text reply with a regex is brittle; forcing the model to emit a schema-validated object uses structured output.
     cloze:
       text: Parsing an LLM's free-text reply with a regex is brittle; forcing the model to emit a schema-validated object uses {} output.
@@ -268,7 +282,8 @@ cards:
       - A bigger model
       - More few-shot examples
       answerIndex: 0
-  - topic: Human-in-the-loop for risky actions
+  - labels: [ai-agents]
+    topic: Human-in-the-loop for risky actions
     desc: Before an agent runs an irreversible action like deleting production data, a safe design pauses for a human approval step.
     cloze:
       text: Before an agent runs an irreversible action like deleting production data, a safe design pauses for a human {} step.

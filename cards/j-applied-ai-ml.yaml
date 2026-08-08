@@ -3,7 +3,8 @@ section:
   name: Applied AI / ML
   color: "#06b6d4"
 cards:
-  - topic: Embeddings
+  - labels: [ai-agents]
+    topic: Embeddings
     desc: An embedding is a list of numbers (a vector, e.g. 1536-dimensional) that captures the MEANING of text, so semantically similar items sit close together. You compare them with cosine similarity. Powers semantic search, RAG retrieval, clustering, and similarity scoring.
     extras:
       - label: e.g.
@@ -25,7 +26,8 @@ cards:
       - A logit
       - A one-hot vector
       answerIndex: 0
-  - topic: Model evaluation
+  - labels: [ai-agents]
+    topic: Model evaluation
     desc: Systematically measuring LLM output quality — accuracy, LLM-as-judge, and benchmark suites.
     extras:
       - label: e.g.
@@ -44,7 +46,8 @@ cards:
       - ROUGE
       - Perplexity
       answerIndex: 0
-  - topic: Fine-tuning vs. prompting vs. RAG
+  - labels: [ai-agents]
+    topic: Fine-tuning vs. prompting vs. RAG
     desc: The three levers for adapting model behavior, and their cost/benefit tradeoffs.
     extras:
       - label: e.g.
@@ -68,7 +71,8 @@ cards:
       - RAG
       - Pretraining
       answerIndex: 0
-  - topic: Risk scoring for agent actions
+  - labels: [ai-agents]
+    topic: Risk scoring for agent actions
     desc: Quantifying how dangerous an agent's proposed action is — the heart of the governance product.
     extras:
       - label: e.g.
@@ -91,7 +95,8 @@ cards:
       - Confidence scoring
       - Toxicity scoring
       answerIndex: 0
-  - topic: PyTorch
+  - labels: [ai-agents]
+    topic: PyTorch
     desc: The dominant open-source deep-learning framework (from Meta AI). GPU-accelerated tensors (NumPy-like arrays) + autograd (automatic differentiation) + nn.Module layers — the substrate under Hugging Face transformers, the models vLLM serves, and most fine-tuning.
     extras:
       - label: e.g.
@@ -112,7 +117,8 @@ cards:
       - TorchScript
       - cuDNN
       answerIndex: 0
-  - topic: Hugging Face transformers
+  - labels: [ai-agents]
+    topic: Hugging Face transformers
     desc: The de-facto Python library for downloading and running pretrained transformer models (LLMs, embeddings, vision, audio) behind a uniform API. Runs on top of PyTorch (or TF/JAX), and pulls weights from the Hugging Face Hub — the 'GitHub for models'.
     extras:
       - label: e.g.
@@ -133,7 +139,8 @@ cards:
       - diffusers
       - tokenizers
       answerIndex: 0
-  - topic: Alignment (RLHF / preference tuning)
+  - labels: [ai-agents]
+    topic: Alignment (RLHF / preference tuning)
     desc: Making a model behave the way humans INTEND — helpful, honest, harmless — as opposed to just predicting the next token. Distinct from evaluation (which MEASURES quality); alignment SHAPES behavior.
     extras:
       - label: How
@@ -159,7 +166,8 @@ cards:
       - SFT
       - Distillation
       answerIndex: 0
-  - topic: Train/serve skew
+  - labels: [ai-agents]
+    topic: Train/serve skew
     desc: A model that scores well offline but poorly in production often suffers train/serve skew — features computed differently at inference than in training.
     cloze:
       text: A model that scores well offline but poorly in production often suffers train/serve {} — features computed differently at inference than in training.
@@ -172,7 +180,8 @@ cards:
       - Class imbalance
       - Overfitting
       answerIndex: 0
-  - topic: Approximate nearest-neighbor tradeoff
+  - labels: [ai-agents]
+    topic: Approximate nearest-neighbor tradeoff
     desc: A vector database trades exact nearest-neighbor accuracy for speed with an approximate index, so tuning it balances latency against recall.
     cloze:
       text: A vector database trades exact nearest-neighbor accuracy for speed with an approximate index, so tuning it balances latency against {}.

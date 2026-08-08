@@ -7,7 +7,8 @@ section:
   color: "#0891b2"
 
 cards:
-  - topic: "Vendor a binary and put it on PATH"
+  - labels: [coding]
+    topic: "Vendor a binary and put it on PATH"
     desc: "Copies a prebuilt binary into a directory, makes it executable, and adds that directory to PATH so it can be run by name."
     mc:
       - "Compile the application from source"
@@ -26,7 +27,8 @@ cards:
       prompt: "Select the lines that put the vendored binary on PATH"
       answer: [2, 3, 4]
 
-  - topic: "Build in one stage, ship a slim runtime from another"
+  - labels: [coding]
+    topic: "Build in one stage, ship a slim runtime from another"
     desc: "A multi-stage Dockerfile: the builder installs dev deps and compiles; the final image copies only the built artifact, so build tooling never ships."
     mc:
       - "Run the app as root for speed"
@@ -48,7 +50,8 @@ cards:
       prompt: "Select the RUN steps that execute only in the builder stage"
       answer: [3, 5]
 
-  - topic: "Bake the build's version into the image"
+  - labels: [coding]
+    topic: "Bake the build's version into the image"
     desc: "A build arg is written to a VERSION file inside the image, so the running app can report exactly which build it is — the basis of content-addressed deploys."
     mc:
       - "Pass a runtime secret into the container"
@@ -68,7 +71,8 @@ cards:
       prompt: "Select the lines that record the build's version inside the image"
       answer: [1, 5]
 
-  - topic: "Declare a Helm chart's tunable values"
+  - labels: [coding]
+    topic: "Declare a Helm chart's tunable values"
     desc: "A values.yaml: the defaults a chart's templates interpolate. Overriding these at install time changes the rendered manifests without editing templates."
     mc:
       - "A rendered Kubernetes Deployment"
@@ -90,7 +94,8 @@ cards:
       prompt: "Select the lines that control the rolling-update surge behaviour"
       answer: [7, 8]
 
-  - topic: "A Deployment template filled in from values"
+  - labels: [coding]
+    topic: "A Deployment template filled in from values"
     desc: "A Helm template: the {{ }} expressions are interpolated at render time from values.yaml and release metadata, producing a concrete manifest."
     mc:
       - "A static, non-templated manifest"
@@ -114,7 +119,8 @@ cards:
       prompt: "Select the lines that are filled in from values at render time"
       answer: [3, 5, 10]
 
-  - topic: "Define a reusable Helm named template"
+  - labels: [coding]
+    topic: "Define a reusable Helm named template"
     desc: "A _helpers.tpl entry: define wraps a snippet that templates call with include. Here it builds a DNS-safe fullname, truncated to 63 chars."
     mc:
       - "Call (include) a named template"
@@ -130,7 +136,8 @@ cards:
       prompt: "Select the lines that open and close the named-template definition"
       answer: [0, 2]
 
-  - topic: "Harden a container: drop root and privileges"
+  - labels: [coding]
+    topic: "Harden a container: drop root and privileges"
     desc: "A pod/container securityContext that runs unprivileged, on a read-only root filesystem, unable to escalate, with all Linux capabilities dropped."
     mc:
       - "Set the container's CPU and memory limits"
@@ -150,7 +157,8 @@ cards:
       prompt: "Select the lines that drop root and its privileges"
       answer: [1, 4, 6]
 
-  - topic: "Verify a bearer token, else 401"
+  - labels: [coding]
+    topic: "Verify a bearer token, else 401"
     desc: "Auth middleware: extract the Bearer token, verify it against the JWKS, attach the identity to req.user and continue — otherwise reject with 401."
     mc:
       - "Issue (mint) a new signed token"
@@ -174,7 +182,8 @@ cards:
       prompt: "Select the lines that reject the request (the 401 paths)"
       answer: [2, 8]
 
-  - topic: "Hash a password with a slow, salted KDF"
+  - labels: [coding]
+    topic: "Hash a password with a slow, salted KDF"
     desc: "Generates a random per-user salt and runs scrypt with a work factor, so an offline attacker gets only a few thousand guesses per second instead of billions."
     mc:
       - "Encrypt the password with AES-GCM"
@@ -190,7 +199,8 @@ cards:
       prompt: "Select the lines that make the hash slow and per-user unique"
       answer: [0, 1]
 
-  - topic: "Add a pepper held outside the database"
+  - labels: [coding]
+    topic: "Add a pepper held outside the database"
     desc: "A secret pepper read from the environment is folded into the hash input, so a stolen database dump (salts and all) is useless without a secret the dump doesn't contain."
     mc:
       - "Store the password in plaintext"
@@ -207,7 +217,8 @@ cards:
       prompt: "Select the line that reads the secret kept OUTSIDE the database"
       answer: [1]
 
-  - topic: "Verify without leaking whether the user exists"
+  - labels: [coding]
+    topic: "Verify without leaking whether the user exists"
     desc: "On a missing user it still runs the hash against a dummy value and uses a constant-time compare, so 'no such user' and 'wrong password' take the same time and return the same error."
     mc:
       - "Return a distinct error for each failure"
@@ -224,7 +235,8 @@ cards:
       prompt: "Select the lines that make a missing user cost the same as a wrong password"
       answer: [1, 2]
 
-  - topic: "Verify a JWT against a remote public key set"
+  - labels: [coding]
+    topic: "Verify a JWT against a remote public key set"
     desc: "Fetches the issuer's public keys (JWKS) and verifies the token's RS256 signature, issuer, and audience — checking identity without holding the power to mint tokens."
     mc:
       - "Mint a new signed token"
@@ -243,7 +255,8 @@ cards:
       prompt: "Select the lines that pin the algorithm and validate issuer + audience"
       answer: [2, 3, 4]
 
-  - topic: "Rate-limit that stays correct across replicas"
+  - labels: [coding]
+    topic: "Rate-limit that stays correct across replicas"
     desc: "An express-rate-limit on the login route backed by a shared Redis store, so the limit is enforced globally instead of per-process (which multiplies the real ceiling by the replica count)."
     mc:
       - "An in-memory counter per process"
@@ -262,7 +275,8 @@ cards:
       prompt: "Select the line that keeps the limit correct across multiple replicas"
       answer: [4]
 
-  - topic: "Ship an encrypted secret that is safe to commit"
+  - labels: [coding]
+    topic: "Ship an encrypted secret that is safe to commit"
     desc: "A SealedSecret: encryptedData is ciphertext only the cluster's controller can decrypt into a real Secret, so it can live in git unlike a plain Secret (which is only base64)."
     mc:
       - "A plaintext Kubernetes Secret"
@@ -283,7 +297,8 @@ cards:
       prompt: "Select the line that is safe to commit to git (the ciphertext)"
       answer: [7]
 
-  - topic: "Scan every pull request before merge"
+  - labels: [coding]
+    topic: "Scan every pull request before merge"
     desc: "A CI workflow running three complementary security scans on each PR: SAST on your source, secret scanning on the diff, and a dependency audit for known CVEs."
     mc:
       - "Deploy the app on merge to main"
@@ -304,7 +319,8 @@ cards:
       prompt: "Select the line that scans YOUR source for vulnerabilities (SAST)"
       answer: [3]
 
-  - topic: "Serialize deploys and least-privilege the token"
+  - labels: [coding]
+    topic: "Serialize deploys and least-privilege the token"
     desc: "A workflow header that fires on push to main, restricts the GITHUB_TOKEN to read-only, and uses a concurrency group so a newer deploy cancels an in-flight one."
     mc:
       - "Trigger the workflow on a schedule"
@@ -325,7 +341,8 @@ cards:
       prompt: "Select the lines that ensure only one deploy runs at a time"
       answer: [5, 6, 7]
 
-  - topic: "Trigger a workflow in another repository"
+  - labels: [coding]
+    topic: "Trigger a workflow in another repository"
     desc: "A repository_dispatch POST: an authenticated call that fires an event in a DIFFERENT repo, carrying a payload — how one repo hands a deploy off to the repo that owns the runner."
     mc:
       - "Push a git tag to trigger a build"
@@ -343,7 +360,8 @@ cards:
       prompt: "Select the line that carries the version across to the other repo"
       answer: [4]
 
-  - topic: "Reject a conflicting write instead of clobbering"
+  - labels: [coding]
+    topic: "Reject a conflicting write instead of clobbering"
     desc: "Optimistic concurrency: the update only lands if the row's version still matches the one the client read. Zero rows updated means someone wrote first — return 409, don't overwrite."
     mc:
       - "Lock the row for the whole transaction"
@@ -361,7 +379,8 @@ cards:
       prompt: "Select the line that detects a conflicting concurrent write"
       answer: [3]
 
-  - topic: "Retry with exponential backoff and jitter"
+  - labels: [coding]
+    topic: "Retry with exponential backoff and jitter"
     desc: "Retries a flaky call a bounded number of times, doubling the wait each attempt and adding random jitter so many clients don't retry in lockstep (a thundering herd)."
     mc:
       - "Retry instantly with no limit"
@@ -383,7 +402,8 @@ cards:
       prompt: "Select the lines that implement exponential backoff with jitter"
       answer: [4, 5, 6]
 
-  - topic: "Keep a service running and start it at boot"
+  - labels: [coding]
+    topic: "Keep a service running and start it at boot"
     desc: "A systemd unit: Restart=always brings the process back if it crashes, and WantedBy=multi-user.target enables it to start on boot — how a self-hosted runner survives reboots."
     mc:
       - "Run the service once and exit"

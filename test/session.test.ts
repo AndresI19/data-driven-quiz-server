@@ -16,6 +16,7 @@ import type { GameCard } from '../src/shared/card-schema.js';
 const card = (over: Partial<GameCard> = {}): GameCard => ({
   id: 'A1',
   cat: 'A',
+  labels: [],
   topic: 'Topic',
   back: '',
   printBack: '',

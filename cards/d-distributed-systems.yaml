@@ -3,7 +3,8 @@ section:
   name: Distributed Systems
   color: "#f59e0b"
 cards:
-  - topic: Event-driven architecture
+  - labels: [system-design]
+    topic: Event-driven architecture
     desc: Components communicating via asynchronous events/messages instead of direct synchronous calls.
     extras:
       - label: e.g.
@@ -20,7 +21,8 @@ cards:
       - Layered monolith
       - Client-server
       answerIndex: 1
-  - topic: Message queues & streams
+  - labels: [system-design]
+    topic: Message queues & streams
     desc: Async messaging between services. A queue delivers a message to one worker then deletes it; a log/stream is append-only and retained, so many consumers can replay it independently.
     extras:
       - label: e.g.
@@ -47,7 +49,8 @@ cards:
       - Redis
       - Kafka
       answerIndex: 3
-  - topic: Consensus & coordination
+  - labels: [system-design]
+    topic: Consensus & coordination
     desc: How independent servers agree on a single value, leader, or ordered log despite failures and network delays. Consensus algorithms (Raft, Paxos) require a MAJORITY (quorum) of members to commit each decision — so the cluster stays correct and avoids split-brain (two leaders acting at once) as long as more than half the members are reachable.
     extras:
       - label: e.g.
@@ -74,7 +77,8 @@ cards:
       - Gossip
       - ZAB
       answerIndex: 1
-  - topic: etcd
+  - labels: [system-design]
+    topic: etcd
     desc: A distributed, strongly-consistent key-value store — Kubernetes's single source of truth. EVERY cluster object (pods, services, secrets, configmaps) is persisted in etcd, and the API server is the only component that talks to it. It uses the Raft consensus algorithm to replicate data across its members, so a quorum must agree on every write.
     extras:
       - label: e.g.
@@ -95,7 +99,8 @@ cards:
       - kubelet
       - etcd
       answerIndex: 3
-  - topic: Eventual consistency & sagas
+  - labels: [system-design]
+    topic: Eventual consistency & sagas
     desc: Handling multi-step operations across services without a single distributed transaction.
     extras:
       - label: e.g.
@@ -127,7 +132,8 @@ cards:
       - Retry with backoff
       - Optimistic lock
       answerIndex: 1
-  - topic: Retries, timeouts, circuit breakers
+  - labels: [system-design]
+    topic: Retries, timeouts, circuit breakers
     desc: The resilience patterns that stop one slow dependency from cascading into a full outage.
     extras:
       - label: e.g.
@@ -145,7 +151,8 @@ cards:
       - Timeout
       answerIndex: 3
 
-  - topic: "Single-replica assumptions that break when you scale out"
+  - labels: [system-design]
+    topic: "Single-replica assumptions that break when you scale out"
     desc: "State kept IN-PROCESS (a rate-limiter counter, a cache, a session) works on one replica and silently breaks on several: each replica has its own copy. An in-memory rate limit of 10/min across 3 replicas becomes an effective 30/min; an in-process cache gives inconsistent reads."
     cloze:
       text: "State kept {} — a counter, cache, or session — works on one replica but silently breaks across several, since each replica has its own copy."
@@ -168,7 +175,8 @@ cards:
       - 3.3 / min
       answerIndex: 1
 
-  - topic: "Idempotency and delivery semantics"
+  - labels: [system-design]
+    topic: "Idempotency and delivery semantics"
     desc: "An IDEMPOTENT operation can be applied many times with the same result as once. It's what makes retries safe in a distributed system, where you usually get AT-LEAST-once delivery (messages can arrive twice) rather than exactly-once. Idempotency keys or version checks turn 'at-least-once + idempotent' into effectively exactly-once."
     extras:
       - label: "e.g."
@@ -187,7 +195,8 @@ cards:
       - At-least-once
       answerIndex: 3
 
-  - topic: "Outbound-only architecture (caller vs callee)"
+  - labels: [system-design]
+    topic: "Outbound-only architecture (caller vs callee)"
     desc: "A security posture where NOTHING on the internet can open a connection INTO your machine — every connection is dialled OUT from your side. A tunnel client (e.g. cloudflared) dials out to the edge; a CI runner long-POLLS its queue; the node PULLS images. With no inbound port, there's no listening surface to attack."
     cloze:
       text: "In an outbound-only posture, nothing on the internet can open a connection into your machine — every connection is dialled {}, so there is no listening surface to attack."
@@ -208,7 +217,8 @@ cards:
       - Port forwarding
       - A firewall exception
       answerIndex: 1
-  - topic: Two-phase commit blocking
+  - labels: [system-design]
+    topic: Two-phase commit blocking
     desc: Two-phase commit gives cross-service atomicity but blocks every participant if the coordinator crashes after the prepare phase, which is why sagas are preferred at scale.
     cloze:
       text: Two-phase commit gives cross-service atomicity but blocks every participant if the {} crashes after the prepare phase, which is why sagas are preferred at scale.
@@ -221,7 +231,8 @@ cards:
       - Vector clocks
       - Leader election
       answerIndex: 0
-  - topic: Idempotent consumer for effective exactly-once
+  - labels: [system-design]
+    topic: Idempotent consumer for effective exactly-once
     desc: True exactly-once delivery is impossible over an unreliable network, so systems approximate it by pairing at-least-once delivery with an idempotent consumer.
     cloze:
       text: True exactly-once delivery is impossible over an unreliable network, so systems approximate it by pairing at-least-once delivery with an idempotent {}.
@@ -234,7 +245,8 @@ cards:
       - A shorter retention window
       - Synchronous acknowledgements
       answerIndex: 0
-  - topic: Logical clocks vs wall-clock ordering
+  - labels: [system-design]
+    topic: Logical clocks vs wall-clock ordering
     desc: Ordering events across machines by wall-clock time is unsafe because clocks drift; distributed systems order causally-related events with logical clocks instead.
     cloze:
       text: Ordering events across machines by wall-clock time is unsafe because clocks drift; distributed systems order causally-related events with {} clocks instead.
@@ -247,7 +259,8 @@ cards:
       - GPS receivers
       - Sequence gaps
       answerIndex: 0
-  - topic: Kafka consumer-group parallelism
+  - labels: [system-design]
+    topic: Kafka consumer-group parallelism
     desc: In Kafka, the unit of consumer parallelism is the partition, so adding more consumers than partitions in a group leaves the extras idle.
     cloze:
       text: In Kafka, consumer parallelism is capped by how many {} a topic has, so adding more consumers than that in a group leaves the extras idle.
@@ -260,7 +273,8 @@ cards:
       - Offsets are shared
       - Topics limit threads
       answerIndex: 0
-  - topic: Partition key and ordering
+  - labels: [system-design]
+    topic: Partition key and ordering
     desc: Kafka guarantees order only within a single partition, so events that must stay ordered — one account's transactions — must share a partition key.
     cloze:
       text: Kafka guarantees order only within a single partition, so events that must stay ordered — one account's transactions — must share a partition {}.

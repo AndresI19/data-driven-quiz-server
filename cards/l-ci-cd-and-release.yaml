@@ -6,7 +6,8 @@ section:
   color: "#7c3aed"
 
 cards:
-  - topic: "Pipeline security scans (shift-left)"
+  - labels: [operations]
+    topic: "Pipeline security scans (shift-left)"
     desc: "Run automated security checks on every pull request, before merge, so problems are caught in review rather than in production. Three complementary kinds cover different attack surfaces."
     extras:
       - label: SAST
@@ -20,7 +21,8 @@ cards:
       - ["secret scanning (gitleaks)", "catches committed keys/tokens in the diff"]
       - ["dependency scan", "flags known CVEs in third-party packages"]
 
-  - topic: "The GITHUB_TOKEN recursion guard"
+  - labels: [operations]
+    topic: "The GITHUB_TOKEN recursion guard"
     desc: "A workflow authenticated with the default GITHUB_TOKEN cannot trigger ANOTHER workflow. So if a CI job pushes a git tag, an `on: push: tags` workflow will NOT fire — the tag appears and nothing happens, with no error. It's a deliberate guard against infinite workflow loops."
     extras:
       - label: Work-arounds
@@ -44,7 +46,8 @@ cards:
       - PAT
       answerIndex: 3
 
-  - topic: "repository_dispatch"
+  - labels: [operations]
+    topic: "repository_dispatch"
     desc: "A GitHub Actions event that lets one repository (or an external system) trigger a workflow in ANOTHER repo via an authenticated API POST. Used for cross-repo pipelines — e.g. an app repo tells a central deploy repo 'build and ship version X'."
     extras:
       - label: Why
@@ -63,7 +66,8 @@ cards:
       - deployment
       answerIndex: 2
 
-  - topic: "The 'read the value, don't recompute it' race"
+  - labels: [operations]
+    topic: "The 'read the value, don't recompute it' race"
     desc: "When two independent jobs each compute 'latest + 1' for the same commit, they RACE and disagree — one sees the other's new value and lands one higher. The fix: one job is the source of truth (it creates the value); everyone else READS what it created, never recomputes it."
     cloze:
       text: "When two jobs each compute 'latest + 1' they race and disagree; the fix is to make one job the single {} of truth that everyone else reads from, never recomputes."
@@ -74,7 +78,8 @@ cards:
       - label: Principle
         text: "Idempotency + single source of truth. Two computations of 'the next number' cannot be made to agree; only reading the one that exists can."
 
-  - topic: "Mutable :latest + IfNotPresent = a silent no-op deploy"
+  - labels: [operations]
+    topic: "Mutable :latest + IfNotPresent = a silent no-op deploy"
     desc: "With a mutable tag like `:latest` and `imagePullPolicy: IfNotPresent`, the kubelet sees the tag already present on the node and never pulls the new image. Every step — build, load, rollout — reports success, and the cluster keeps running the OLD code."
     extras:
       - label: Fix
@@ -88,7 +93,8 @@ cards:
         - content address
         - the commit sha
 
-  - topic: "Concurrency groups (and dropped runs)"
+  - labels: [operations]
+    topic: "Concurrency groups (and dropped runs)"
     desc: "A `concurrency:` group serialises or cancels overlapping workflow runs that share a key — e.g. only one deploy to an environment at a time. The side effect: a run can be CANCELLED or dropped when a newer one supersedes it, so a merge's deploy may silently not happen."
     cloze:
       text: "A {} group serialises or cancels overlapping workflow runs that share a key, so a newer run can drop an in-flight one."
@@ -107,7 +113,8 @@ cards:
       - concurrency
       answerIndex: 3
 
-  - topic: "Self-hosted runner scoping"
+  - labels: [operations]
+    topic: "Self-hosted runner scoping"
     desc: "A self-hosted CI runner executes jobs on YOUR hardware. On a personal account a runner is registered to ONE repository, so no other repo — including a stranger's fork opening a PR — can reach it. Its labels (e.g. self-hosted) decide which jobs it accepts."
     cloze:
       text: "A self-hosted runner registered to a single repository means a stranger's {} opening a PR cannot reach your hardware."
@@ -118,7 +125,8 @@ cards:
       - label: Contrast
         text: "GitHub-HOSTED runners are fresh per job and destroyed after — a fork's PR gets no secrets and no persistence."
 
-  - topic: "Branch protection & required status checks"
+  - labels: [operations]
+    topic: "Branch protection & required status checks"
     desc: "Rules on a protected branch (main) that block direct pushes and require a pull request whose CI checks are GREEN — and often an approving review — before merge. It makes 'tests pass' a precondition of landing code, not an afterthought."
     cloze:
       text: "A protected branch blocks direct pushes and requires a pull request whose CI checks are green — and often an approving {} — before merge."
@@ -129,7 +137,8 @@ cards:
       - label: Say
         text: "\"Required checks turn the pipeline into a gate: main only ever contains code that passed.\""
 
-  - topic: "Deploy on merge: version-tag then release"
+  - labels: [operations]
+    topic: "Deploy on merge: version-tag then release"
     desc: "A common continuous-deployment shape: merging to main fires TWO workflows on the same push event. One (version-tag) cuts the release tag; the other (release) reads that tag and dispatches the actual build-and-deploy to a runner. Merge → tag → deploy, with no manual step."
     cloze:
       text: On merge to main, one workflow cuts the release {} and a second reads it to dispatch the build-and-deploy — no manual step.
@@ -145,7 +154,8 @@ cards:
       - label: The version IS the image identity
         text: "The version is baked into the image (a VERSION file) and is half the image tag, so cutting a tag actually changes what gets built and shipped."
 
-  - topic: "Rolling update vs blue-green vs canary"
+  - labels: [operations]
+    topic: "Rolling update vs blue-green vs canary"
     desc: "Strategies for shipping a new version with minimal disruption."
     extras:
       - label: Rolling
@@ -158,7 +168,8 @@ cards:
       - ["rolling", "swap pods a few at a time — old and new overlap briefly"]
       - ["blue-green", "full new stack beside the old, flip traffic at once"]
       - ["canary", "a small traffic slice first, ramp on good metrics"]
-  - topic: SAST (static source scanning)
+  - labels: [operations]
+    topic: SAST (static source scanning)
     desc: SAST statically analyzes your own source code for vulnerability patterns like injection and unsafe deserialization, before the app ever runs.
     cloze:
       text: '{} statically analyzes your own source code for vulnerability patterns like injection and unsafe deserialization, before the app ever runs.'
@@ -171,7 +182,8 @@ cards:
       - SAST
       - IAST
       answerIndex: 2
-  - topic: Content-addressed image tags
+  - labels: [operations]
+    topic: Content-addressed image tags
     desc: Because :latest is a mutable pointer that IfNotPresent won't re-pull, give every build a content-addressed tag — like the commit SHA — so each is a distinct, immutable identity.
     cloze:
       text: Because :latest is a mutable pointer that IfNotPresent won't re-pull, give every build a {} tag — like the commit SHA — so each is a distinct, immutable identity.
@@ -184,7 +196,8 @@ cards:
       - Content-addressed tags
       - :stable aliases
       answerIndex: 2
-  - topic: Required review (branch protection)
+  - labels: [operations]
+    topic: Required review (branch protection)
     desc: A protected branch blocks direct pushes to main and can require, before merge, a passing pipeline plus an approving review from another person.
     cloze:
       text: A protected branch blocks direct pushes to main and can require, before merge, a passing pipeline plus an approving {} from another person.
@@ -197,7 +210,8 @@ cards:
       - Required review
       - Signed commits
       answerIndex: 2
-  - topic: Deployment strategies (canary / blue-green)
+  - labels: [operations]
+    topic: Deployment strategies (canary / blue-green)
     desc: Routing a small slice of traffic to the new version, watching its metrics, then ramping up is a canary deployment.
     cloze:
       text: Routing a small slice of traffic to the new version, watching its metrics, then ramping up is a {} deployment.
@@ -210,7 +224,8 @@ cards:
       - blue-green
       - recreate
       answerIndex: 2
-  - topic: Flaky tests erode trust
+  - labels: [operations]
+    topic: Flaky tests erode trust
     desc: A test that passes and fails on identical code trains developers to re-run until green, hiding real regressions; such a test is flaky.
     cloze:
       text: A test that passes and fails on identical code trains developers to re-run until green, hiding real regressions; such a test is {}.
@@ -223,7 +238,8 @@ cards:
       - Slow builds
       - Missing fixtures
       answerIndex: 0
-  - topic: Masking secrets in CI logs
+  - labels: [operations]
+    topic: Masking secrets in CI logs
     desc: A pipeline that echoes an environment variable can print an API key into readable build logs unless the runner treats the value as a masked secret.
     cloze:
       text: A pipeline that echoes an environment variable can print an API key into readable build logs unless the runner treats the value as a {} secret.
@@ -236,7 +252,8 @@ cards:
       - Putting it in a comment
       - Using a longer value
       answerIndex: 0
-  - topic: Rollback vs roll-forward
+  - labels: [operations]
+    topic: Rollback vs roll-forward
     desc: When a release breaks production, reverting to the last known-good version immediately, rather than debugging live, is a rollback.
     cloze:
       text: When a release breaks production, reverting to the last known-good version immediately, rather than debugging live, is a {}.
@@ -249,7 +266,8 @@ cards:
       - Add more logging
       - Scale up replicas
       answerIndex: 0
-  - topic: Build once, deploy everywhere
+  - labels: [operations]
+    topic: Build once, deploy everywhere
     desc: Rebuilding a separate image per environment risks staging and prod differing; the safer pipeline builds one artifact and promotes it through environments.
     cloze:
       text: Rebuilding a separate image per environment risks staging and prod differing; the safer pipeline builds one artifact and {} it through environments.
@@ -262,7 +280,8 @@ cards:
       - Pin to the latest tag
       - Compile on the node
       answerIndex: 0
-  - topic: 'GitOps: pull-based delivery'
+  - labels: [operations]
+    topic: 'GitOps: pull-based delivery'
     desc: Unlike a CI job that pushes kubectl apply, GitOps runs an in-cluster agent that pulls the desired state from Git and reconciles the live cluster to it.
     cloze:
       text: Unlike a CI job that pushes kubectl apply, GitOps runs an in-cluster agent that {} the desired state from Git and reconciles the live cluster to it.
@@ -275,7 +294,8 @@ cards:
       - Blue-green
       - Immutable infra
       answerIndex: 0
-  - topic: Git as single source of truth
+  - labels: [operations]
+    topic: Git as single source of truth
     desc: In a GitOps setup, the way to roll back a bad release is to revert the Git commit, after which the agent reconciles the cluster back automatically.
     cloze:
       text: In a GitOps setup, the way to roll back a bad release is to revert the {}, after which the agent reconciles the cluster back automatically.
@@ -288,7 +308,8 @@ cards:
       - Manual Helm upgrades
       - SSH runbooks
       answerIndex: 0
-  - topic: Image signing / provenance
+  - labels: [operations]
+    topic: Image signing / provenance
     desc: To stop a tampered or unknown container image from running, you cryptographically sign images at build and check them at the admission gate.
     cloze:
       text: To stop a tampered or unknown container image from running, you cryptographically {} images at build and check them at the admission gate.
@@ -301,7 +322,8 @@ cards:
       - Image tag pinning
       - A vulnerability scan
       answerIndex: 0
-  - topic: SBOM / dependency provenance
+  - labels: [operations]
+    topic: SBOM / dependency provenance
     desc: A machine-readable inventory of every library and version inside a build — used to answer 'are we affected?' the day a CVE drops — is an SBOM.
     cloze:
       text: A machine-readable inventory of every library and version inside a build — used to answer 'are we affected?' the day a CVE drops — is an {}.

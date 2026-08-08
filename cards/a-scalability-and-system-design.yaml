@@ -3,7 +3,8 @@ section:
   name: Scalability & System Design
   color: "#6366f1"
 cards:
-  - topic: Stateless vs. stateful applications
+  - labels: [system-design]
+    topic: Stateless vs. stateful applications
     desc: Whether a request's correct handling depends on data the server retains between requests — this decides whether you can add identical replicas freely.
     extras:
       - label: e.g.
@@ -20,7 +21,8 @@ cards:
       - Stateful
       - Ephemeral
       answerIndex: 1
-  - topic: Horizontal vs. vertical scaling
+  - labels: [system-design]
+    topic: Horizontal vs. vertical scaling
     desc: Adding more machines (scale out) versus making one machine bigger (scale up), and why stateless design favors the former.
     extras:
       - label: e.g.
@@ -42,7 +44,8 @@ cards:
       - Diagonal
       - Elastic
       answerIndex: 0
-  - topic: Externalizing state (session, files, identity)
+  - labels: [system-design]
+    topic: Externalizing state (session, files, identity)
     desc: Pushing session/state out of app servers into a datastore, cache, or client-held token so the app tier stays stateless.
     cloze:
       text: "Pushing session and state out of app servers into a datastore, cache, or client-held token keeps the app tier {}."
@@ -59,7 +62,8 @@ cards:
       - Idempotent
       - Ephemeral
       answerIndex: 1
-  - topic: Sticky sessions & session affinity
+  - labels: [system-design]
+    topic: Sticky sessions & session affinity
     desc: A load-balancer trick to route a user back to the same instance — and why relying on it is a scaling smell.
     extras:
       - label: e.g.
@@ -79,7 +83,8 @@ cards:
       - Least-connections
       - Failover
       answerIndex: 1
-  - topic: Load balancing (L4 vs L7)
+  - labels: [system-design, fundamentals]
+    topic: Load balancing (L4 vs L7)
     desc: Spreading traffic across replicas. L4 works at the transport layer — it forwards raw TCP/UDP by IP:port without seeing the request, so it's fast but 'dumb.' L7 works at the HTTP layer — it reads the request, so it can route by URL/host, terminate TLS, and do cookie logic.
     extras:
       - label: e.g.
@@ -99,7 +104,8 @@ cards:
       - '3'
       - '5'
       answerIndex: 0
-  - topic: Data partitioning / sharding
+  - labels: [system-design]
+    topic: Data partitioning / sharding
     desc: Splitting load across multiple data stores when one node can't hold or serve it all.
     extras:
       - label: e.g.
@@ -118,7 +124,8 @@ cards:
       - Federation
       - Denormalization
       answerIndex: 0
-  - topic: Caching layers & invalidation
+  - labels: [system-design]
+    topic: Caching layers & invalidation
     desc: Storing computed or fetched results to cut latency and load — the hard part being knowing when they're stale.
     cloze:
       text: "Caching stores computed or fetched results to cut latency and load; the hard part is cache {} — knowing when a stored result has gone stale."
@@ -137,7 +144,8 @@ cards:
       - Expiration
       - Warming
       answerIndex: 0
-  - topic: Idempotency
+  - labels: [system-design]
+    topic: Idempotency
     desc: Designing operations so that retrying them produces the same result, essential when requests can be replayed.
     extras:
       - label: e.g.
@@ -162,7 +170,8 @@ cards:
       - Consistency
       - Durability
       answerIndex: 1
-  - topic: Backpressure & rate limiting
+  - labels: [system-design]
+    topic: Backpressure & rate limiting
     desc: Protecting a system from being overwhelmed by shedding, queuing, or slowing incoming load.
     extras:
       - label: e.g.
@@ -179,7 +188,8 @@ cards:
       - '403'
       - '408'
       answerIndex: 0
-  - topic: CAP theorem & consistency models
+  - labels: [system-design]
+    topic: CAP theorem & consistency models
     desc: During a network partition you can keep only two of Consistency, Availability, Partition-tolerance — and since partitions are inevitable, you're really choosing C or A.
     extras:
       - label: e.g.
@@ -201,7 +211,8 @@ cards:
       - Partition tolerance
       - Durability
       answerIndex: 0
-  - topic: SQL vs. NoSQL & ACID vs. BASE
+  - labels: [system-design]
+    topic: SQL vs. NoSQL & ACID vs. BASE
     desc: The first data-tier fork. SQL (relational) = fixed schema, JOINs, strong ACID guarantees, scales UP; NoSQL = flexible schema, denormalized, scales OUT, usually BASE (eventually consistent). Pick by access pattern, not hype.
     extras:
       - label: Say
@@ -239,7 +250,8 @@ cards:
       - CRUD
       - CAP
       answerIndex: 0
-  - topic: Indexes, replication & isolation levels
+  - labels: [system-design, fundamentals]
+    topic: Indexes, replication & isolation levels
     desc: "Three database mechanics interviewers dig into once you've picked a store:"
     extras:
       - label: Trap
@@ -267,7 +279,8 @@ cards:
       - Cache stampede
       - Full table scan
       answerIndex: 0
-  - topic: TCP vs. UDP (transport layer / L4)
+  - labels: [fundamentals]
+    topic: TCP vs. UDP (transport layer / L4)
     desc: Both are Layer-4 transport protocols moving bytes between host:port. TCP trades speed for reliability; UDP trades reliability for speed.
     extras:
       - label: e.g.
@@ -317,7 +330,8 @@ cards:
       - QUIC
       - SCTP
       answerIndex: 0
-  - topic: HTTP (application layer / L7)
+  - labels: [fundamentals]
+    topic: HTTP (application layer / L7)
     desc: The web's request/response protocol at Layer 7, built on top of TCP. Stateless — each request is independent; cookies/JWTs add state.
     extras:
       - label: e.g.
@@ -339,7 +353,8 @@ cards:
       - SPDY
       - WebSocket
       answerIndex: 0
-  - topic: DNS resolution (how a name resolves)
+  - labels: [fundamentals]
+    topic: DNS resolution (how a name resolves)
     desc: "Turning a hostname into an IP by walking a hierarchy: your stub resolver asks a recursive resolver, which queries a root server → the TLD server (.com) → the domain's authoritative server; answers are cached along the way by TTL. Runs on port 53 (UDP)."
     extras:
       - label: Trap
@@ -365,7 +380,8 @@ cards:
       - '443'
       - '5353'
       answerIndex: 0
-  - topic: A lookup from your laptop, end to end
+  - labels: [fundamentals]
+    topic: A lookup from your laptop, end to end
     desc: The app never speaks DNS. It calls getaddrinfo(); libc reads /etc/nsswitch.conf and works left to right — /etc/hosts, then a nameserver. Only after an IP comes back does a TCP connection open.
     cloze:
       text: "An app never speaks DNS directly — it calls {}(), and libc then reads /etc/nsswitch.conf to decide where to look first."
@@ -389,7 +405,8 @@ cards:
       - getnameinfo
       - getservbyname
       answerIndex: 0
-  - topic: "DNS & networking: Docker vs. Kubernetes"
+  - labels: [fundamentals]
+    topic: "DNS & networking: Docker vs. Kubernetes"
     desc: Docker's DNS returns a container's REAL address. Kubernetes' DNS returns a ClusterIP — a virtual IP nothing listens on, made real by kube-proxy. One translation versus two.
     extras:
       - label: Trap
@@ -434,7 +451,8 @@ cards:
       - Pod IP
       - Endpoint
       answerIndex: 0
-  - topic: Anatomy of an IP address (and ports)
+  - labels: [fundamentals]
+    topic: Anatomy of an IP address (and ports)
     desc: IPv4 is 32 bits shown as four bytes. A CIDR suffix says how many LEADING bits are the network; the rest identify the host. /24 → 256 addresses, 254 usable (network + broadcast reserved). IPv6 is 128 bits, so it needs no NAT.
     extras:
       - label: e.g.
@@ -463,7 +481,8 @@ cards:
       - '253'
       - '510'
       answerIndex: 0
-  - topic: TLS handshake (how HTTPS is set up)
+  - labels: [fundamentals, security]
+    topic: TLS handshake (how HTTPS is set up)
     desc: ClientHello (cipher list + SNI) → ServerHello + certificate → key exchange → both derive a shared SYMMETRIC session key → encrypted traffic. Asymmetric crypto only authenticates + agrees the key; fast symmetric crypto encrypts the data. TLS 1.3 = one round-trip.
     extras:
       - label: Say
@@ -490,7 +509,8 @@ cards:
       - Private-key
       - Ephemeral
       answerIndex: 0
-  - topic: TLS / cert file types (.key .crt .pem .csr)
+  - labels: [fundamentals, security]
+    topic: TLS / cert file types (.key .crt .pem .csr)
     desc: "The confusion: .pem/.der are ENCODINGS, while .key/.crt/.csr describe CONTENT — a .pem file can hold a cert, a key, or both. Mental model:"
     extras:
       - label: How
@@ -521,7 +541,8 @@ cards:
       - .csr
       - .pem
       answerIndex: 0
-  - topic: Reading a certificate (the five things that must match)
+  - labels: [fundamentals, security]
+    topic: Reading a certificate (the five things that must match)
     desc: "A cert is ONE signed claim: this public key belongs to these names, until this date. It holds no secret — the server hands it to anyone. Verifying it means five independent matches."
     extras:
       - label: Trap
@@ -549,7 +570,8 @@ cards:
       - SNI
       - DN
       answerIndex: 0
-  - topic: SNI & where TLS terminates
+  - labels: [fundamentals, security]
+    topic: SNI & where TLS terminates
     desc: SNI (Server Name Indication) — the client puts the target hostname in the ClientHello so one IP / load balancer can serve the correct cert for many domains. TLS usually TERMINATES at the ingress / load balancer (decrypted there), not the app.
     extras:
       - label: e.g.
@@ -570,7 +592,8 @@ cards:
       - SAN
       - OCSP
       answerIndex: 0
-  - topic: DNSSEC
+  - labels: [fundamentals, security]
+    topic: DNSSEC
     desc: DNS Security Extensions — cryptographically SIGNS DNS records so resolvers can verify they weren't forged (defends cache poisoning / spoofing). It adds authenticity, NOT encryption — DNS answers are still public.
     extras:
       - label: e.g.
@@ -592,7 +615,8 @@ cards:
       - Origin authentication
       - Authenticated denial of existence
       answerIndex: 0
-  - topic: Anycast
+  - labels: [fundamentals]
+    topic: Anycast
     desc: One IP address announced from MANY locations at once; the network routes each client to the NEAREST instance. How CDNs, Cloudflare, and the DNS root servers serve the whole world from a single IP with low latency and built-in DDoS spread.
     extras:
       - label: e.g.
@@ -612,7 +636,8 @@ cards:
       - Multicast
       - Broadcast
       answerIndex: 0
-  - topic: What TLS 1.3 improves (the modern default)
+  - labels: [fundamentals, security]
+    topic: What TLS 1.3 improves (the modern default)
     desc: "TLS 1.3 (2018) is the modern default. Four concrete things it changed over 1.2:"
     extras:
       - label: Say
@@ -642,7 +667,8 @@ cards:
       - '1.1'
       - '1.0'
       answerIndex: 0
-  - topic: Certificate chain of trust
+  - labels: [fundamentals, security]
+    topic: Certificate chain of trust
     desc: "A server cert is trusted by CHAINING up: leaf (your server cert) → one or more intermediate CAs → a root CA preinstalled in the client's trust store. Validation walks the chain to a trusted root."
     extras:
       - label: e.g.
@@ -661,7 +687,8 @@ cards:
       - Cross-signed
       - Wildcard
       answerIndex: 0
-  - topic: The resolver path, step by step
+  - labels: [fundamentals]
+    topic: The resolver path, step by step
     desc: A simpler breakdown of what happens when your app resolves a name — the ordered stages, so you can recite them without the full end-to-end card.
     cloze:
       text: "In the resolver path, the stub resolver at 127.0.0.53 is {}, which checks its own cache before asking the upstream recursive resolver."
@@ -691,7 +718,8 @@ cards:
       - bind9
       answerIndex: 0
 
-  - topic: "Optimistic concurrency control"
+  - labels: [system-design]
+    topic: "Optimistic concurrency control"
     desc: "Let concurrent writers proceed WITHOUT locks, and detect conflicts at write time. Each row carries a VERSION; a client reads version N, and its update says 'set … WHERE version = N'. If someone else wrote first (version is now N+1), the update matches zero rows and you reject with a 409 instead of silently clobbering their change."
     extras:
       - label: vs last-write-wins
@@ -710,7 +738,8 @@ cards:
       - Sequence
       answerIndex: 0
 
-  - topic: "Derived columns: never trust a client-supplied aggregate"
+  - labels: [system-design]
+    topic: "Derived columns: never trust a client-supplied aggregate"
     desc: "When a value can be COMPUTED from data the server already holds (a score, a total, a count), compute it SERVER-SIDE on write — don't accept it from the client. If the client could send both a document and its 'score', it could send a document worth 10 and a score of 10,000, and any leaderboard reading that column would be forgeable."
     cloze:
       text: A value that can be computed from data the system already holds should be computed {}-side on write, never trusted from the client.
@@ -731,7 +760,8 @@ cards:
       - At the CDN edge
       answerIndex: 0
 
-  - topic: "Database-per-service vs shared schema"
+  - labels: [system-design]
+    topic: "Database-per-service vs shared schema"
     desc: "Each microservice OWNS its own database (schema); no other service reads or writes those tables directly — they talk through the service's API. Sharing a schema across services is the DISTRIBUTED-MONOLITH trap: a migration in one silently breaks another, and neither can deploy independently."
     cloze:
       text: "Sharing one database schema across microservices is the {} trap — a migration in one service silently breaks another."
@@ -752,7 +782,8 @@ cards:
       - Shared-nothing
       answerIndex: 0
 
-  - topic: "Establishing an HTTPS connection, in order"
+  - labels: [fundamentals, security]
+    topic: "Establishing an HTTPS connection, in order"
     desc: "How a browser goes from a URL to encrypted HTTP — resolve, connect, negotiate TLS, then send the request."
     order:
       - "DNS resolves the hostname to an IP address"
@@ -769,7 +800,8 @@ cards:
         text: "The TCP handshake and the TLS handshake are DISTINCT round-trips — don't conflate them. The DNS lookup and the SNI hostname travel in the clear."
     hint: "Four layers in sequence: name → transport → TLS → HTTP."
 
-  - topic: "DNS resolution: the resolver path, in order"
+  - labels: [fundamentals]
+    topic: "DNS resolution: the resolver path, in order"
     desc: "How a name becomes an IP when nothing is cached — the recursive resolver walks the hierarchy from the root down."
     order:
       - "Check the browser / OS cache (and the hosts file) for the name"
@@ -785,7 +817,8 @@ cards:
         text: "A long or stale TTL is why a DNS change 'hasn't propagated' — you're being served a cached answer, not the new record."
     hint: "Cache → recursive resolver → root → TLD → authoritative."
 
-  - topic: "HSTS (HTTP Strict Transport Security)"
+  - labels: [fundamentals, security]
+    topic: "HSTS (HTTP Strict Transport Security)"
     desc: "A response header — Strict-Transport-Security — that tells the browser to only ever reach this domain over HTTPS for a set max-age. It defeats SSL-stripping / downgrade attacks by removing plain HTTP as something the browser will even attempt."
     extras:
       - label: Trap
@@ -800,7 +833,8 @@ cards:
         - "Strict Transport Security"
     hint: "The header that makes a browser refuse plain HTTP for your domain."
 
-  - topic: "Mixed content"
+  - labels: [fundamentals, security]
+    topic: "Mixed content"
     desc: "An HTTPS page that loads a sub-resource — a script, stylesheet, image, or iframe — over plain http://. Because one insecure resource can undermine the whole page, browsers BLOCK active mixed content (scripts, iframes, XHR) and warn on passive (images)."
     extras:
       - label: Fix
@@ -811,7 +845,8 @@ cards:
       text: "An HTTPS page pulling a script over plain http is called {} content, and browsers block the active kind."
       answer: "mixed"
     hint: "What you call an https page loading an http resource."
-  - topic: Read replicas & replication lag
+  - labels: [system-design]
+    topic: Read replicas & replication lag
     desc: Spreading reads across copies of a primary can serve a read that predates the newest write, an artifact called replication lag.
     cloze:
       text: Spreading reads across copies of a primary can serve a read that predates the newest write, an artifact called replication {}.
@@ -824,7 +859,8 @@ cards:
       - Write-through cache
       - Connection pinning
       answerIndex: 0
-  - topic: Latency vs throughput
+  - labels: [system-design, fundamentals]
+    topic: Latency vs throughput
     desc: Batching and parallelism can raise total requests handled per second even as each individual request gets slower — improving throughput at the cost of latency.
     cloze:
       text: Batching and parallelism can raise total requests handled per second even as each individual request gets slower — improving {} at the cost of latency.
@@ -837,7 +873,8 @@ cards:
       - Both down together
       - Both up equally
       answerIndex: 0
-  - topic: Cache-Control for shared vs private responses
+  - labels: [fundamentals]
+    topic: Cache-Control for shared vs private responses
     desc: 'A response a shared cache must never reuse for another user — a per-account page — is sent with Cache-Control: private.'
     cloze:
       text: 'A response a shared cache must never reuse for another user — a per-account page — is sent with Cache-Control: {}.'
@@ -849,4 +886,148 @@ cards:
       - no-cache
       - must-revalidate
       - private
+      answerIndex: 0
+  - labels: [fundamentals]
+    topic: What actually makes a database "relational"
+    desc: A relation IS a table — a set of rows sharing one fixed, typed set of columns. The name comes
+      from relational algebra (E.F. Codd, 1970), where every operation takes tables and returns a table.
+      The database enforces the structure rather than merely storing what you hand it, so invalid data
+      is REJECTED at write time instead of discovered later.
+    items:
+      - "Fixed schema — columns and types are declared up front, and every row has the same shape. A write
+        that does not fit is an error."
+      - "Primary key — one column (or set) that uniquely identifies a row. Duplicates are impossible because
+        the engine refuses them."
+      - "Foreign key — a column that must match some other table's primary key, and the DATABASE enforces
+        it: you cannot insert an order for a customer who does not exist, or delete a customer who still
+        has orders."
+      - "JOIN — related data is stored separately and combined at query time, so the relationship is expressed
+        in the query rather than baked into the storage."
+      - "Normalization — each fact is stored exactly once. Change a customer's address in one row and
+        every order referencing it is instantly correct."
+      - "Transactions (ACID) — a group of writes is all-or-nothing, so money never leaves one account
+        without arriving in the other."
+    extras:
+      - label: Trap
+        text: '"Relational" does NOT mean "the tables have relationships with each other" — that is the
+          near-universal misreading. It means the data is stored as mathematical RELATIONS, i.e. tables.
+          Foreign keys are a consequence of the model, not the source of the name.'
+      - label: e.g.
+        text: 'Postgres, MySQL, SQL Server, Oracle, SQLite; managed as AWS RDS/Aurora, Google Cloud SQL,
+          Azure SQL. Almost all speak SQL (Structured Query Language) — which is why "SQL database" and
+          "relational database" are used interchangeably.'
+      - label: Contrast
+        text: 'a document store (MongoDB) nests the related data INSIDE one document — no JOIN, and nothing
+          stops a document from referencing a customer that was deleted. You trade enforced integrity for
+          schema flexibility and easier horizontal sharding.'
+      - label: Say
+        text: “The relational model puts the integrity rules in the database, so every application that
+          touches it inherits them. In a schemaless store those rules live in application code — which
+          means they hold only as long as every writer remembers them.”
+    cloze:
+      text: A relational database stores data as relations — which in practice means {} of rows with a
+        fixed, typed set of columns.
+      answer: tables
+      alts:
+        - a table
+        - table
+    hint: The word describes the SHAPE of the data, not the links between tables.
+    inverse: true
+    mcq:
+      prompt: An application inserts an order row whose customer_id refers to a customer that was deleted
+        last week, and the database rejects the write outright. Which relational feature did that?
+      options:
+        - A foreign key constraint
+        - A primary key constraint
+        - A unique index
+        - A check constraint
+      answerIndex: 0
+  - labels: [fundamentals, security]
+    topic: "How a WebSocket connection works"
+    desc: "A WebSocket does not replace HTTP so much as ESCAPE it. The client sends an ordinary HTTP GET
+      carrying `Connection: Upgrade`, `Upgrade: websocket` and a random `Sec-WebSocket-Key`; the server
+      answers `101 Switching Protocols`; and from that instant the SAME TCP connection stops speaking HTTP
+      and starts speaking the WebSocket frame protocol."
+    order:
+      - "Client sends GET with Connection: Upgrade and Sec-WebSocket-Key"
+      - Server answers 101 Switching Protocols
+      - The same TCP connection switches to the frame protocol
+      - Either side sends frames at any time, full duplex
+      - Ping/pong control frames keep the connection proven alive
+    extras:
+      - label: Say
+        text: “Starting as ordinary HTTP on port 80 or 443 is what gets it through firewalls and proxies
+          that would block an exotic protocol. It is also why wss:// is effectively mandatory — plaintext
+          ws:// is frequently mangled by intermediaries trying to help.”
+      - label: e.g.
+        text: "a frame is roughly 2–14 bytes of header plus payload, against several hundred bytes of
+          headers on every HTTP request. At a few messages per second per user that overhead difference is
+          the entire efficiency argument."
+      - label: Trap
+        text: "half-open sockets. A connection through a NAT or load balancer can be silently dropped by an
+          idle timeout, and without ping/pong both ends still believe they are connected — writes go
+          nowhere and nothing errors."
+      - label: Security
+        text: "the same-origin policy does NOT apply to WebSockets. The browser will happily open one to
+          another origin and send the cookies with it, so the server must check the `Origin` header itself
+          — otherwise you have Cross-Site WebSocket Hijacking, where an attacker's page opens an
+          authenticated socket to your service."
+    cloze:
+      text: A WebSocket begins as an HTTP request and becomes a socket when the server replies with status
+        {} Switching Protocols.
+      answer: "101"
+    hint: It starts as an HTTP request and then stops being one.
+    mcq:
+      prompt: Why must a WebSocket server validate the Origin header itself, unlike a normal fetch endpoint?
+      options:
+        - The same-origin policy does not apply to WebSockets, so any page can open an authenticated one
+        - CORS preflight is skipped for upgrade requests only on HTTP/2
+        - The Sec-WebSocket-Key cannot be verified server-side
+        - Frames are unencrypted unless wss is used
+      answerIndex: 0
+  - labels: [fundamentals]
+    topic: "How a gRPC connection works"
+    desc: "A schema-first RPC framework running over HTTP/2. You define messages and services in a .proto
+      file, generate typed client and server stubs, and calls travel as compact binary Protobuf rather than
+      JSON. Each RPC is one HTTP/2 STREAM, so many concurrent calls share a single TCP connection with no
+      head-of-line blocking at the HTTP layer."
+    table:
+      - - Call type
+        - Shape
+      - - Unary
+        - one request, one response
+      - - Server streaming
+        - one request, a stream of responses
+      - - Client streaming
+        - a stream of requests, one response
+      - - Bidirectional
+        - both sides stream independently
+    extras:
+      - label: Say
+        text: “The wins are the schema and the transport together — Protobuf gives a strongly-typed
+          contract and a small binary payload, and HTTP/2 multiplexing means one connection carries many
+          in-flight calls instead of one per request.”
+      - label: Trap
+        text: "the operational gotcha, and the one that bites in Kubernetes: gRPC holds a LONG-LIVED
+          connection, so an L4 load balancer balances CONNECTIONS, not requests. Every call from one client
+          pins to whichever backend it first connected to, and a scale-up receives no traffic at all. You
+          need an L7 gRPC-aware proxy or client-side load balancing."
+      - label: Trap
+        text: browsers cannot speak gRPC directly — they cannot control HTTP/2 frames — so a browser client
+          needs grpc-web plus a translating proxy, which drops client-streaming support.
+      - label: e.g.
+        text: deadlines propagate across hops, so a caller's remaining time budget travels with the call and
+          downstream services can stop work that nobody is waiting for any more.
+    cloze:
+      text: gRPC carries each call as its own HTTP/2 {}, so many concurrent RPCs share one TCP connection.
+      answer: stream
+    hint: Schema-first, binary, and multiplexed over one connection.
+    mcq:
+      prompt: A gRPC service is scaled from 3 to 10 pods behind a standard Kubernetes Service, but the new
+        pods receive almost no traffic. Why?
+      options:
+        - L4 load balancing distributes connections, and gRPC reuses one long-lived connection per client
+        - Protobuf schemas must be redeployed to every pod before they receive traffic
+        - HTTP/2 requires sticky sessions by specification
+        - The readiness probe does not support gRPC health checks
       answerIndex: 0

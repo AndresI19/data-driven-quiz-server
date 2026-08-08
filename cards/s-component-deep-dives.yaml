@@ -1,0 +1,434 @@
+section:
+  key: S
+  name: "Component Deep-Dives"
+  color: "#0891b2"
+cards:
+  # ── Label the diagram (fill + code) ───────────────────────────────────────
+  - labels: [system-design]
+    topic: "Metrics pipeline — label the stages"
+    desc: "Scraper, head block, compressed blocks, query engine. The split that matters is between the
+      HEAD BLOCK (recent samples held in memory, protected by a write-ahead log) and the compressed
+      time-bounded blocks on disk. Writes land in memory; the disk format is optimised for sequential
+      range scans; the query engine reads both and stitches the answer together."
+    fill:
+      code: true
+      text: |
+        pulls targets every 15s:        {0}
+        recent samples, memory + WAL:   {1}
+        rotated, compressed, on disk:   {2}
+        reads memory and disk to serve: {3}
+      blanks:
+        - scraper
+        - head block
+        - compressed blocks
+        - query engine
+      distractors:
+        - alert evaluator
+        - push gateway
+        - downsampler
+    extras:
+      - label: Say
+        text: “Writes go to memory and reads of recent data are served from memory. Rotation compresses a
+          finished time window to disk, which is also why expiring old data is deleting a file rather than
+          scanning rows.”
+      - label: Trap
+        text: the head block is what cardinality destroys — it holds state per ACTIVE SERIES, so a spike is
+          an out-of-memory kill rather than a slow query.
+    hint: Two of these hold samples; the difference between them is memory versus disk.
+
+  - labels: [system-design]
+    topic: "Chat delivery path — label the components"
+    desc: "Chat service, message store, registry, message bus. The connection nodes at each end hold the
+      sockets and nothing else; everything behind them is ordinary request/response. The registry exists
+      because the recipient's socket is on a different machine, and the bus is how you reach it."
+    fill:
+      code: true
+      text: |
+        Alice <=WS=> conn node A, into: {0}
+        durable copy written first to:  {1}
+        which node holds Bob's socket:  {2}
+        crosses to conn node B over:    {3}
+      blanks:
+        - chat service
+        - message store
+        - registry
+        - message bus
+      distractors:
+        - load balancer
+        - push gateway
+        - presence cache
+    extras:
+      - label: Say
+        text: “Persist before acknowledging — the sender's first tick has to mean durable, not merely
+          received.”
+      - label: Trap
+        text: the registry is allowed to be WRONG. A stale entry means the target node finds no socket and
+          delivery falls through to the offline path, so it is a fast hint rather than a source of truth.
+    hint: One of these is a lookup, one is a transport, one is durable, one has the logic.
+
+  - labels: [system-design]
+    topic: "Shortener read path — label the components"
+    desc: "Cache, link store, event queue, aggregator. The redirect is 100 times more frequent than the
+      write, so it must be a cache read that never touches the database on a hit — and the click count must
+      never be written on the request path."
+    fill:
+      code: true
+      text: |
+        redirect svc reads first from:  {0}
+        on a miss, reads through to:    {1}
+        click fired async onto:         {2}
+        batches counts and writes them: {3}
+      blanks:
+        - cache
+        - link store
+        - event queue
+        - aggregator
+      distractors:
+        - CDN
+        - key generator
+        - read replica
+    extras:
+      - label: Say
+        text: “Cache invalidation is nearly free here because entries are immutable — the only events are
+          deletion and expiry. Recognising that a hard problem is ABSENT is worth saying out loud.”
+      - label: Trap
+        text: at a 90% hit rate a cold cache turns 3,500 reads/sec into 35,000 in one step. Size the store
+          above the cached steady state.
+    hint: One component absorbs the reads, one absorbs the writes you do not want on the hot path.
+
+  - labels: [system-design]
+    topic: "Upload path — label the components"
+    desc: "API, presigned URL, object store, CDN. The defining property is that no component your code runs
+      on ever touches the payload: the API grants permission and records metadata, and the bytes travel on a
+      path it is not on."
+    fill:
+      code: true
+      text: |
+        client asks permission from:    {0}
+        which hands back a short-lived: {1}
+        bytes go straight to:           {2}
+        reads are served at the edge by:{3}
+      blanks:
+        - API
+        - presigned URL
+        - object store
+        - CDN
+      distractors:
+        - load balancer
+        - block volume
+        - transcoder
+    extras:
+      - label: Trap
+        text: enforce the size limit inside the signed policy, not from the size the client declared —
+          otherwise a client asks permission for 1 MB and uploads 10 GB.
+      - label: Say
+        text: “Authorisation happens when the URL is issued, not per byte served, so revocation is not
+          instant. A short expiry is what bounds that window.”
+    hint: Follow the arrow the bytes take and notice which box it skips.
+
+  - labels: [system-design]
+    topic: "Job lifecycle — label the mechanism"
+    desc: "Queue, visibility timeout, dead-letter queue, oldest-message age. A worker does not take a job,
+      it leases one — and an expiring timer, not a failure detector, is what makes a dead worker survivable."
+    fill:
+      code: true
+      text: |
+        producer enqueues onto:         {0}
+        job hidden from others for the: {1}
+        after N attempts it lands in:   {2}
+        autoscale on depth and on:      {3}
+      blanks:
+        - queue
+        - visibility timeout
+        - dead-letter queue
+        - oldest-message age
+      distractors:
+        - circuit breaker
+        - consumer group
+        - worker CPU
+    extras:
+      - label: Trap
+        text: never autoscale on worker CPU. A worker blocked on a slow downstream call is idle on CPU
+          while the backlog grows, so CPU scaling scales DOWN exactly when you need to scale up.
+      - label: Say
+        text: “Set the timeout near the p99 job duration and let workers heartbeat to extend it, so a
+          six-hour job does not force a six-hour lease.”
+    hint: One of these is a duration, one is a destination, one is an alerting signal.
+
+  - labels: [system-design]
+    topic: "Control plane loop — label the parts"
+    desc: "Desired state, reconciler, observed state, local config cache. Declarative rather than
+      imperative: you record what you want, a loop drives towards it, and both states are reported
+      separately so you can see whether they match."
+    fill:
+      code: true
+      text: |
+        operator writes the versioned:  {0}
+        a loop drives towards it:       {1}
+        it reports what is really true: {2}
+        data plane keeps serving from:  {3}
+      blanks:
+        - desired state
+        - reconciler
+        - observed state
+        - local config cache
+      distractors:
+        - audit log
+        - admission controller
+        - scheduler
+    extras:
+      - label: Say
+        text: “Imperative commands fail halfway and leave you unsure what state you are in. A reconciliation
+          loop is idempotent and retryable, so it is self-healing by construction.”
+      - label: Trap
+        text: the last box is what makes a control-plane outage survivable. Without it, losing the control
+          plane stops customer traffic instead of merely blocking changes.
+    hint: Two of these are states, one is the loop between them, one keeps the data plane alive.
+
+  # ── Interrogate one component (mcq) ───────────────────────────────────────
+  - labels: [system-design]
+    topic: "Connection node — capacity"
+    desc: "Roughly 100,000 concurrent sockets per node, at about 10 KB of state each — so around 1 GB of
+      connection memory. Ten million concurrent users therefore needs about 100 nodes. Sizing is by MEMORY
+      and file descriptors, not CPU, because an idle connected user costs both and consumes almost no CPU."
+    extras:
+      - label: Threshold
+        text: "the 10 KB figure is achieved AFTER tuning. Untuned kernel socket buffers can be 64–256 KB
+          each, which would make 100,000 connections cost 10–30 GB. Shrinking those buffers is the single
+          biggest lever."
+      - label: Trap
+        text: "the 65,535 port limit does not apply to an accepting server. A connection is identified by
+          the four-tuple, so one listening port serves millions of clients — the limit binds outbound
+          connections from one host to one destination."
+      - label: Say
+        text: “I would deliberately run fewer than the maximum. The failure unit is the node, and I would
+          rather re-establish 100,000 sockets than a million.”
+    hint: Sized by memory and descriptors, not by request rate.
+    mcq:
+      prompt: "In `clients ⇄ conn tier → bus → logic → store`, roughly how many concurrent WebSocket
+        connections should one tuned connection node be sized for?"
+      options:
+        - "~100,000, costing roughly 1 GB of connection state"
+        - "~65,535, limited by the TCP port range"
+        - "~5,000, limited by CPU"
+        - "~10 million, since idle sockets are free"
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Registry — why staleness is fine"
+    desc: "The registry maps user to the node holding their socket. It is written on connect, deleted on
+      disconnect, and read on every single delivery — so it is read far more than written and must be fast
+      and in memory. Critically it is allowed to be WRONG: if it names a node that no longer holds the
+      socket, that node finds nothing and delivery falls through to the offline path."
+    extras:
+      - label: Say
+        text: “I want it to be a fast self-healing cache with an expiring entry, not a strongly-consistent
+          store I have to keep perfectly accurate. Identifying which state must be correct and which merely
+          needs to be usually-right is the actual skill.”
+      - label: Trap
+        text: if the registry is down entirely, treat everyone as offline — messages still persist and
+          clients sync on reconnect. The offline path doubles as the failure path, which is why it is worth
+          building first.
+    hint: What happens when it names the wrong node?
+    mcq:
+      prompt: "In `Alice → conn node A → chat service → registry → conn node B → Bob`, why can the registry
+        tolerate stale entries?"
+      options:
+        - The target node finds no socket and delivery falls through to the offline path
+        - Entries are refreshed synchronously before every send
+        - The bus retries against every node until one succeeds
+        - Stale entries are impossible because disconnects are always clean
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Head block — what actually limits it"
+    desc: "The in-memory window of recent samples, protected by a write-ahead log. Its ceiling is set by the
+      number of ACTIVE SERIES, not by sample volume, because it holds per-series state. A cardinality spike
+      is therefore an out-of-memory kill — and on restart the node replays its write-ahead log and hits the
+      same ceiling again, turning one crash into a loop."
+    extras:
+      - label: Trap
+        text: a crash loop that survives restarts is far worse than a single crash, and it is the signature
+          failure of a metrics ingester. The fix is a per-tenant series limit enforced at ingestion —
+          rejecting a metric is a bug report, accepting it is an outage.
+      - label: Say
+        text: "“Monitoring load correlates with outages: error rates rise, new label values appear, and
+          series count grows exactly when you need the system most. It needs headroom, not steady-state
+          sizing.”"
+    hint: It holds state per series, not per sample.
+    mcq:
+      prompt: "In `targets → scraper → head block → compressed blocks`, what sets the head block's memory
+        ceiling?"
+      options:
+        - The number of active series, since it holds per-series state
+        - The total sample volume per second
+        - The scrape interval
+        - The retention period of the on-disk blocks
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Scraper — why pull beats push here"
+    desc: "With pull, the monitoring system owns the target list and the schedule, so it knows who SHOULD be
+      reporting — which lets it alert on absence. With push, silence is ambiguous: you cannot distinguish a
+      dead target from one that was never configured."
+    extras:
+      - label: Say
+        text: “Absence is one of the most important signals in monitoring, and only pull gives it to you for
+          free. That is why I would pull for long-lived services and add a push gateway only for short-lived
+          jobs that finish before anyone could scrape them.”
+      - label: Trap
+        text: push also lets a misbehaving client flood you, so ingestion-side rate limiting and series caps
+          become mandatory rather than optional.
+    hint: What can you detect only if you know who is supposed to be there?
+    mcq:
+      prompt: "In `targets → scraper → head block`, what does a pull model give you that push does not?"
+      options:
+        - The ability to alert on absence, because the expected target list is known
+        - Lower network overhead per sample
+        - Support for short-lived batch jobs
+        - Guaranteed delivery of every sample
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Cache — the cold-restart multiplier"
+    desc: "At a 90% hit rate the store sees a tenth of the read traffic. Lose the cache and it sees ALL of
+      it, instantly — 3,500 reads/sec becoming 35,000 against a database provisioned for a tenth of that.
+      Origin load is the reciprocal of the miss rate, so hit rate does not degrade gracefully."
+    extras:
+      - label: Say
+        text: “I would coalesce concurrent misses so a thousand simultaneous requests for one key become
+          one read, warm a node before it takes traffic, and provision the store above the cached steady
+          state so partial cache loss is survivable rather than fatal.”
+      - label: e.g.
+        text: this is the single most likely real outage in a read-heavy design — and note that a cache
+          restart is a routine operational event, not a rare disaster.
+    hint: Work out what fraction of reads the store sees before and after.
+    mcq:
+      prompt: "In `visitor → redirect → cache → store`, the cache runs at a 90% hit rate and restarts cold.
+        What does the store experience?"
+      options:
+        - Roughly ten times its steady-state load, arriving in one step
+        - About 10% more load until the cache refills
+        - No change, because misses refill gradually
+        - Double its steady-state load
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Click queue — why counting leaves the hot path"
+    desc: "The redirect must not wait on an analytics write. Emit an event and return immediately; a
+      consumer aggregates and writes counts in batches. The durability bar is deliberately low — losing a
+      handful of click events is acceptable — and saying so is a senior move, because it calibrates rigour
+      to stakes rather than applying maximum rigour everywhere."
+    extras:
+      - label: Say
+        text: “Contrast this directly with a payments ledger, where the identical shortcut would be
+          unacceptable. Same pattern, opposite decision, and the difference is what the data is worth.”
+      - label: Trap
+        text: if analytics later becomes the product, 302 redirects become mandatory (a 301 is browser-cached
+          and you stop seeing the clicks) and referrer cardinality becomes a real problem.
+    hint: What is this data worth compared with the request it rides on?
+    mcq:
+      prompt: "In `redirect svc → event queue → aggregator`, why is click counting pushed off the redirect
+        path?"
+      options:
+        - The redirect must not wait on an analytics write, and losing a few events is acceptable
+        - Counting requires a transaction the redirect cannot provide
+        - The aggregator needs exactly-once delivery
+        - Queues are faster than direct database writes
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Metadata store — the real bottleneck"
+    desc: "In a storage service the object tier scales close to linearly by adding machines, while the
+      metadata is transactional, has cross-entity constraints, and needs indexed listing. The small data is
+      the hard part — which is the counter-intuitive observation worth volunteering."
+    extras:
+      - label: Trap
+        text: "there is no transaction across the two stores, so pick an order that fails safely: write the
+          OBJECT first, then the metadata. An orphaned object costs storage and gets swept up; a metadata
+          row pointing at a missing object is a user-visible broken file."
+      - label: Say
+        text: “Listing a folder must be an indexed query against metadata, never a scan of the object store
+          — object stores are deliberately bad at listing.”
+    hint: Which of the two stores has constraints, queries and transactions?
+    mcq:
+      prompt: "In `client → API → metadata store` alongside `client ⇒ object store`, which component
+        becomes the scaling bottleneck first?"
+      options:
+        - The metadata store, because it is transactional and richly queried
+        - The object store, because it holds the most bytes
+        - The CDN, because egress dominates
+        - The API, because it authorises every request
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Visibility timeout — how to tune it"
+    desc: "Set it near the 99th-percentile job duration and let workers heartbeat to extend it. Too short and
+      a still-running job is redelivered, so the work happens twice and possibly forever. Too long and a
+      crashed worker's job sits invisible for the whole duration before anyone retries."
+    extras:
+      - label: Say
+        text: “The heartbeat is what makes a wide spread of job durations survivable — a slow job proves it
+          is alive rather than being assumed dead, so a six-hour job does not force a six-hour lease.”
+      - label: Trap
+        text: a six-hour unit of work is itself a design smell. Checkpoint it into stages so a failure at
+          hour five does not redo five hours — which is the boundary where a job queue becomes a workflow
+          engine.
+    hint: Two failure modes, one on each side of the number.
+    mcq:
+      prompt: "In `queue → worker (leased, hidden for T)`, how should T be chosen?"
+      options:
+        - Near the p99 job duration, with workers heartbeating to extend it
+        - At the maximum possible job duration, so nothing is redelivered early
+        - As short as possible, to detect failures quickly
+        - At the average job duration
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Reconciler — desired versus observed"
+    desc: "The loop that makes provisioning idempotent. You record the state you want; the reconciler
+      compares it against what is actually true and acts to close the gap, repeatedly, until they match.
+      Because every step is retryable and safe to repeat, a crash halfway through resumes rather than
+      leaving you in an unknown state."
+    extras:
+      - label: Say
+        text: “Report desired and observed separately. An imperative command that fails at step seven of ten
+          leaves you unsure what happened; a loop reporting both states makes the gap visible and closes it
+          on the next pass.”
+      - label: e.g.
+        text: it is why Kubernetes is declarative, and why deprovisioning is the same loop run in reverse —
+          which matters, because leftover resources from a departed tenant are both a cost leak and a
+          compliance problem.
+    hint: What makes a half-finished provisioning run recoverable?
+    mcq:
+      prompt: "In `desired state → reconciler → observed state`, what property does the loop provide that a
+        sequential provisioning script does not?"
+      options:
+        - Idempotent, retryable convergence, so a crash resumes instead of leaving unknown state
+        - Faster provisioning through parallelism
+        - Stronger consistency guarantees on the config store
+        - Automatic rollback of failed steps
+      answerIndex: 0
+
+  - labels: [system-design]
+    topic: "Message bus — what survives its failure"
+    desc: "The bus carries a message from the node that received it to the node holding the recipient's
+      socket. If it fails, LIVE delivery stops but nothing is lost: the message was already persisted before
+      the sender was acknowledged, so recipients receive it on reconnect or via push notification."
+    extras:
+      - label: Say
+        text: “Both of the hot dependencies here — the registry and the bus — degrade into the offline path
+          rather than into data loss, because persistence happens before acknowledgement. That ordering is
+          what makes the whole design survivable.”
+      - label: Trap
+        text: it also means the offline/sync path is not an edge case to bolt on later. It is the failure
+          path for the entire system, so it should be built and tested first.
+    hint: What was already true before the bus was ever involved?
+    mcq:
+      prompt: "In `chat service → bus → conn node B → Bob`, the bus becomes unavailable. What is the impact?"
+      options:
+        - Live delivery stops, but messages persist and arrive on reconnect
+        - Messages sent during the outage are lost
+        - Senders receive errors and must retry
+        - Recipients are marked offline and their sockets are dropped
+      answerIndex: 0
