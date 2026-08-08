@@ -1,0 +1,661 @@
+section:
+  key: R
+  name: "Architecture Archetypes"
+  color: "#3b82f6"
+cards:
+  # ── Set 1 · problem → archetype ───────────────────────────────────────────
+  - topic: "Pastebin"
+    desc: "Users paste text, get a short URL back, and anyone with that URL can read it. Optional expiry
+      and private links. Reads vastly outnumber writes and each read is a lookup by a single key. Archetype
+      — READ-HEAVY KEY-VALUE LOOKUP: generate a key, store the blob once, serve it from a cache that the
+      origin almost never sees."
+    extras:
+      - label: Say
+        text: “This is the URL shortener with a bigger payload. Same key generation, same 100-to-1 read
+          skew, same cache-fronted read path — the only real difference is that the value is kilobytes of
+          text rather than a URL, so it belongs in object storage with the metadata in the key-value store.”
+      - label: Threshold
+        text: the moment the payload stops being small, the archetype borrows from bulk object storage —
+          store the blob out of the database and keep only the pointer.
+    hint: What is the read path doing, and how does it compare to the write path?
+    mcq:
+      prompt: "Pastebin — users submit text and receive a short URL that anyone can read, with reads
+        outnumbering writes roughly 100 to 1 and every read being a single-key lookup. Which archetype
+        should you follow?"
+      options:
+        - Read-heavy key-value lookup
+        - Fan-out delivery
+        - Async work pipeline
+        - Stateful connection tier
+        - Time-series ingestion and rollup
+        - Transactional ledger
+      answerIndex: 0
+
+  - topic: "Notification service"
+    desc: "One event — a mention, a price drop, a shipping update — must reach every user subscribed to it,
+      across push, email and in-app. Some events have three recipients and some have ten million. Archetype
+      — FAN-OUT DELIVERY: decide per publisher whether to push into precomputed per-user inboxes or leave it
+      for read-time assembly, and do the work asynchronously off a queue."
+    extras:
+      - label: Say
+        text: “The follower distribution decides everything. Push for ordinary publishers, do not fan out
+          for the huge ones, and merge at read time — the same hybrid as a social timeline, because it is
+          the same problem wearing different clothes.”
+      - label: Trap
+        text: delivery channels are third-party and best-effort, so a push notification is a nudge, never
+          the delivery guarantee. The durable record is your own inbox store.
+    hint: One producer, an unbounded and very uneven number of consumers.
+    mcq:
+      prompt: "Notification service — a single event must reach every subscribed user, where some events
+        have three recipients and others have ten million. Which archetype should you follow?"
+      options:
+        - Fan-out delivery
+        - Read-heavy key-value lookup
+        - Precomputed low-latency lookup
+        - Bulk object storage
+        - Multi-tenant control plane
+        - Stateful connection tier
+      answerIndex: 0
+
+  - topic: "Web crawler"
+    desc: "Fetch billions of pages, follow their links, respect robots.txt and politeness delays, and do it
+      again on a refresh schedule. Individual fetches are slow, failure-prone and independent. Archetype —
+      ASYNC WORK PIPELINE: a durable frontier queue, a worker pool leasing URLs, retries with backoff, and a
+      dead-letter path for pages that keep failing."
+    extras:
+      - label: Say
+        text: “The URL frontier is a work queue with priority and politeness constraints. Workers lease a
+          URL, the lease expires if the worker dies, and a page that crashes parsers repeatedly goes to a
+          dead-letter queue rather than looping forever.”
+      - label: Trap
+        text: politeness makes this a FAIR-SCHEDULING problem — one domain must not monopolise the fleet,
+          which is the same per-tenant fairness concern as a shared job queue.
+    hint: Slow independent units of work, each of which can fail and be retried.
+    mcq:
+      prompt: "Web crawler — fetch billions of pages on a refresh schedule, where each fetch is slow,
+        independent, and frequently fails. Which archetype should you follow?"
+      options:
+        - Async work pipeline
+        - Precomputed low-latency lookup
+        - Time-series ingestion and rollup
+        - Read-heavy key-value lookup
+        - Transactional ledger
+        - Fan-out delivery
+      answerIndex: 0
+
+  - topic: "Live comments on a stream"
+    desc: "Thousands of viewers watch the same broadcast and post short messages that everyone else sees
+      within a second, with a live viewer count. Archetype — STATEFUL CONNECTION TIER: persistent
+      bidirectional connections held by a thin socket tier, a registry of who is connected where, and a bus
+      so any node can reach any viewer."
+    extras:
+      - label: Say
+        text: “At very high viewer counts this stops being chat and becomes a broadcast channel — write the
+          message once, let clients read from the room's stream, and drop per-recipient receipts entirely
+          because they would outnumber the messages.”
+      - label: Trap
+        text: the viewer count is presence data, which is chattier than the messages themselves. Throttle
+          it, never persist it, and shed it first under load.
+    hint: The connection stays open, and the server pushes without being asked.
+    mcq:
+      prompt: "Live comments on a stream — thousands of concurrent viewers post short messages that all
+        other viewers must see within about a second. Which archetype should you follow?"
+      options:
+        - Stateful connection tier
+        - Fan-out delivery
+        - Async work pipeline
+        - Read-heavy key-value lookup
+        - Bulk object storage
+        - Precomputed low-latency lookup
+      answerIndex: 0
+
+  - topic: "Centralised logging system"
+    desc: "Every service ships structured log lines to one place, engineers search them during incidents,
+      and retention is measured in weeks. Volume is enormous, writes dominate overwhelmingly, and the data is
+      append-only and queried by time range. Archetype — TIME-SERIES INGESTION AND ROLLUP: heavy compressed
+      append, time-partitioned blocks, tiered retention, and an index that is the expensive part."
+    extras:
+      - label: Say
+        text: “It is metrics' bulkier cousin. Same append-heavy, time-ranged, compression-friendly shape —
+          but logs carry high-cardinality text, so the inverted index dominates cost rather than the
+          samples.”
+      - label: Trap
+        text: this is exactly where high-cardinality identifiers BELONG. Metrics answer how much and how
+          often; logs and traces answer which one and why.
+    hint: Append-only, queried by time window, and thrown away on a schedule.
+    mcq:
+      prompt: "Centralised logging — every service ships append-only structured events to one store,
+        queried by time range during incidents and expired after a few weeks. Which archetype should you
+        follow?"
+      options:
+        - Time-series ingestion and rollup
+        - Transactional ledger
+        - Async work pipeline
+        - Multi-tenant control plane
+        - Read-heavy key-value lookup
+        - Stateful connection tier
+      answerIndex: 0
+
+  - topic: "Photo sharing service"
+    desc: "Users upload photos from phones, the service stores them durably forever and serves them fast
+      worldwide, with albums and sharing. Payloads are megabytes and the volume is measured in terabytes per
+      day. Archetype — BULK OBJECT STORAGE with a control/data plane split: the API grants permission, the
+      client transfers bytes directly, and a CDN serves the reads."
+    extras:
+      - label: Say
+        text: “The bytes must never pass through my application tier. The API issues a presigned URL and
+          records metadata; the phone uploads straight to object storage. Thumbnail generation afterwards is
+          a separate async pipeline.”
+      - label: Trap
+        text: it is a HYBRID — storage for the payload, async pipeline for transcoding and thumbnails, and
+          fan-out if followers get a feed entry. Name the primary archetype, then the secondary.
+    hint: The payload is far larger than the metadata describing it.
+    mcq:
+      prompt: "Photo sharing — phones upload megabyte-scale images totalling terabytes per day, stored
+        durably forever and served worldwide. Which archetype should you follow?"
+      options:
+        - Bulk object storage with a control/data plane split
+        - Async work pipeline
+        - Read-heavy key-value lookup
+        - Time-series ingestion and rollup
+        - Fan-out delivery
+        - Transactional ledger
+      answerIndex: 0
+
+  - topic: "Feature-flag service"
+    desc: "Many customer organisations each configure flags, targeting rules and rollout percentages, and
+      every one of their application instances evaluates those rules on the hot path. Archetype —
+      MULTI-TENANT CONTROL PLANE: a low-rate declarative configuration API, versioned rollout, and a data
+      plane that caches the ruleset locally and keeps working when the control plane is unreachable."
+    extras:
+      - label: Say
+        text: “Evaluation has to be local and in-process — a network call per flag check would put my
+          service on the critical path of every customer request. So I distribute the ruleset and evaluate
+          at the edge, which makes static stability the defining requirement.”
+      - label: Trap
+        text: rolling a flag change to every tenant at once is the classic total outage. Configuration
+          deserves the same staged, cell-by-cell rollout discipline as code.
+    hint: Low-rate configuration in, enormous-rate evaluation out, across many customers.
+    mcq:
+      prompt: "Feature-flag service — many customer organisations configure targeting rules, and every one
+        of their app instances evaluates those rules on its own hot path. Which archetype should you follow?"
+      options:
+        - Multi-tenant control plane
+        - Read-heavy key-value lookup
+        - Fan-out delivery
+        - Precomputed low-latency lookup
+        - Async work pipeline
+        - Bulk object storage
+      answerIndex: 0
+
+  - topic: "Global leaderboard"
+    desc: "Millions of players have scores; show the global top 100, a player's own rank, and the slice
+      around them, updating continuously. Reads are constant and must be instant; exact global ranking on
+      demand is prohibitively expensive. Archetype — PRECOMPUTED LOW-LATENCY LOOKUP: maintain the ranking
+      structure incrementally on write so a read is a lookup, never a computation."
+    extras:
+      - label: Say
+        text: “Computing a rank at read time means scanning millions of scores. Instead I maintain a sorted
+          structure — a sorted set, or bucketed approximate ranks for the long tail — so the top-N is a read
+          and an individual rank is a cheap index operation.”
+      - label: Trap
+        text: exact rank for every player is far harder than the top 100. Offer approximate rank outside the
+          top tier and say so — it is a product decision that saves an order of magnitude.
+    hint: The answer must already exist before the request arrives.
+    mcq:
+      prompt: "Global leaderboard — show the top 100 and any individual player's rank instantly, across
+        millions of continuously-updating scores. Which archetype should you follow?"
+      options:
+        - Precomputed low-latency lookup
+        - Time-series ingestion and rollup
+        - Read-heavy key-value lookup
+        - Transactional ledger
+        - Fan-out delivery
+        - Async work pipeline
+      answerIndex: 0
+
+  - topic: "Ticket booking (Ticketmaster)"
+    desc: "A fixed inventory of seats, enormous simultaneous demand at on-sale, and a seat must never be
+      sold twice. Money moves and the booking must be auditable. Archetype — TRANSACTIONAL LEDGER: strong
+      consistency on the inventory decision, idempotency on the purchase, and an append-only record of what
+      happened."
+    extras:
+      - label: Say
+        text: “This is the question where eventual consistency is the wrong answer. Seat allocation needs a
+          real transaction or a conditional write — overselling is unrecoverable in a way slowness is not —
+          and the hold-then-confirm flow is an authorisation and capture in disguise.”
+      - label: Trap
+        text: the on-sale spike is a queueing problem sitting on top of a consistency problem. A virtual
+          waiting room converts a 100x burst into an admission-controlled stream, protecting the part that
+          cannot be made eventually consistent.
+    hint: Two people must never end up owning the same thing.
+    mcq:
+      prompt: "Ticket booking — a fixed seat inventory, a huge simultaneous on-sale rush, money changing
+        hands, and a seat that must never be sold twice. Which archetype should you follow?"
+      options:
+        - Transactional ledger
+        - Read-heavy key-value lookup
+        - Fan-out delivery
+        - Precomputed low-latency lookup
+        - Stateful connection tier
+        - Time-series ingestion and rollup
+      answerIndex: 0
+
+  # ── Set 2 · archetype → which problems fit ────────────────────────────────
+  - topic: "Archetype · Read-heavy key-value lookup"
+    desc: "Small immutable values addressed by one key, with reads dominating writes by orders of magnitude.
+      The design is almost entirely about the read path: a cache the origin rarely sees, immutable entries so
+      invalidation is nearly free, and a key scheme that neither collides nor leaks."
+    multi:
+      - Pastebin
+      - URL shortener
+      - Session token lookup
+      - Short-link redirect analytics
+    extras:
+      - label: Tell
+        text: the giveaway is a read:write ratio past 10:1 combined with access by primary key only — which
+          also means the store does not need to be relational.
+    hint: One key in, one small value out, overwhelmingly more often than it is written.
+    mcq:
+      prompt: Which pair of properties most reliably identifies the read-heavy key-value archetype?
+      options:
+        - Access by a single key, with reads outnumbering writes by orders of magnitude
+        - Large payloads combined with worldwide distribution
+        - Strong consistency combined with auditability
+        - Long-lived connections combined with presence data
+      answerIndex: 0
+
+  - topic: "Archetype · Fan-out delivery"
+    desc: "One write must reach many recipients, and the recipient count is heavy-tailed. The whole design is
+      the push/pull/hybrid decision, driven by computing the write amplification for both the average
+      publisher and the extreme one."
+    multi:
+      - Notification service
+      - Social media timeline
+      - Activity feed
+      - Group chat message delivery
+    extras:
+      - label: Tell
+        text: "the giveaway is a multiplier: one action producing N downstream writes, where N varies by
+          four orders of magnitude across publishers."
+    hint: One producer, many consumers, wildly uneven.
+    mcq:
+      prompt: What single measurement most directly forces a hybrid fan-out design?
+      options:
+        - Recipient counts spanning several orders of magnitude across publishers
+        - A read:write ratio above 100:1
+        - A latency budget under 100 ms
+        - Payload sizes above one megabyte
+      answerIndex: 0
+
+  - topic: "Archetype · Async work pipeline"
+    desc: "Units of work that are slow, independent, failure-prone and not needed synchronously. A durable
+      queue, leases with visibility timeouts, retries with jittered backoff, and a dead-letter path — plus
+      fair scheduling when several tenants share the workers."
+    multi:
+      - Web crawler
+      - Video transcoding
+      - Email and report generation
+      - Thumbnail generation
+    extras:
+      - label: Tell
+        text: the giveaway is that the caller does not need the result in the response — which means you can
+          decouple, and therefore must decide delivery semantics and failure handling.
+    hint: The user does not wait for it, and it might fail.
+    mcq:
+      prompt: A job takes six hours to complete. What does that imply for the async pipeline design?
+      options:
+        - Keep the lease short and heartbeat to extend it, and checkpoint the work into stages
+        - Set the visibility timeout to six hours
+        - Run it synchronously on a dedicated worker
+        - Disable retries for long jobs
+      answerIndex: 0
+
+  - topic: "Archetype · Stateful connection tier"
+    desc: "The server must push to the client unprompted, so connections stay open and the server becomes
+      stateful. That forces a thin socket tier, a user-to-node registry, an inter-node bus, and a plan for
+      reconnection storms."
+    multi:
+      - Live comments on a stream
+      - Chat and messaging
+      - Multiplayer game presence
+      - Collaborative cursors
+    extras:
+      - label: Tell
+        text: the giveaway is that the server needs to initiate. If every interaction is client-initiated,
+          you do not need this archetype and should not pay for it.
+    hint: The server speaks first.
+    mcq:
+      prompt: What is the defining architectural cost of choosing long-lived connections?
+      options:
+        - Servers become stateful, so users pin to a node and you need a registry and a bus
+        - Message payloads become larger
+        - Reads can no longer be cached
+        - Writes must become idempotent
+      answerIndex: 0
+
+  - topic: "Archetype · Time-series ingestion and rollup"
+    desc: "Append-heavy, immutable, timestamped data queried by range and discarded on a schedule. Compresses
+      extraordinarily well, downsamples into retention tiers, and its real failure mode is cardinality rather
+      than volume."
+    multi:
+      - Centralised logging system
+      - Metrics and monitoring
+      - Clickstream analytics
+      - IoT sensor ingestion
+    extras:
+      - label: Tell
+        text: the giveaway is that data arrives on a timestamp, is never updated, and old data is worth less
+          than new data — which licenses both compression and downsampling.
+    hint: Written once, read by time window, expired by policy.
+    mcq:
+      prompt: What most commonly takes a metrics platform down?
+      options:
+        - Cardinality explosion from an unbounded label, exhausting ingestion memory
+        - Raw sample volume exceeding disk capacity
+        - Query load from dashboards
+        - Network saturation from scraping
+      answerIndex: 0
+
+  - topic: "Archetype · Bulk object storage"
+    desc: "Payloads far larger than their metadata. The defining move is separating the control plane from
+      the data plane so bytes never traverse your application tier, plus multipart transfer, durability by
+      replication or erasure coding, and a CDN on the read path."
+    multi:
+      - Photo sharing service
+      - File storage and sync
+      - Video upload and delivery
+      - Backup and archival
+    extras:
+      - label: Tell
+        text: "convert the daily volume to bandwidth: once sustained throughput passes roughly a gigabit,
+          proxying bytes through your own servers is a fleet you are paying for and nothing more."
+    hint: The metadata is tiny and the payload is enormous.
+    mcq:
+      prompt: Why must an upload API never accept the file bytes directly at scale?
+      options:
+        - Sustained multi-gigabit throughput would turn the app tier into a pure byte-copying fleet
+        - Application servers cannot parse large multipart bodies
+        - Object storage requires direct client writes
+        - It would break the metadata transaction
+      answerIndex: 0
+
+  - topic: "Archetype · Multi-tenant control plane"
+    desc: "Many customers share a platform whose configuration is low-rate and whose enforcement is
+      high-rate. Tiered isolation, cells to bound blast radius, staged rollout of code AND configuration, and
+      a data plane that survives the control plane being down."
+    multi:
+      - Feature-flag service
+      - B2B SaaS platform
+      - Policy and authorisation service
+      - Managed infrastructure provisioning
+    extras:
+      - label: Tell
+        text: the giveaway is two wildly different rates in one system — a handful of configuration writes
+          per second against tens of thousands of enforcement decisions.
+    hint: Configuration in slowly, decisions out quickly, for many customers at once.
+    mcq:
+      prompt: What should happen to the data plane when the control plane becomes unreachable?
+      options:
+        - It keeps serving from cached configuration; only changes are blocked
+        - It fails closed and stops serving traffic
+        - It falls back to default configuration
+        - It buffers requests until the control plane returns
+      answerIndex: 0
+
+  - topic: "Archetype · Precomputed low-latency lookup"
+    desc: "A latency budget so tight that computing the answer at request time is impossible, so the answer
+      is built in advance and the request becomes a read. Immutable structures swapped in atomically, sharded
+      so a request touches one shard, with a small real-time layer merged on top."
+    multi:
+      - Global leaderboard
+      - Autocomplete and typeahead
+      - Trending topics
+      - Search suggestions
+    extras:
+      - label: Tell
+        text: "the giveaway is a budget in the tens of milliseconds against a corpus too large to scan —
+          which eliminates every design that searches when asked."
+      - label: Trap
+        text: personalisation fights precomputation, because anything computed per viewer cannot be shared.
+          Re-rank a shared candidate set instead, so personalisation happens after the cache.
+    hint: The answer must exist before the question is asked.
+    mcq:
+      prompt: Why is personalisation in tension with this archetype?
+      options:
+        - Per-viewer results cannot be shared, destroying the cache that makes it affordable
+        - Personalised results are more expensive to compute offline
+        - It requires storing more data per user
+        - Personalisation prevents sharding by prefix
+      answerIndex: 0
+
+  - topic: "Archetype · Transactional ledger"
+    desc: "Correctness under failure matters more than throughput, and a lost or duplicated event is money
+      or inventory. Idempotency keys, an append-only double-entry record, sagas with compensating actions,
+      and reconciliation as a required component rather than an afterthought."
+    multi:
+      - Ticket booking
+      - Payment processing
+      - Wallet and balance management
+      - Inventory reservation
+    extras:
+      - label: Tell
+        text: the giveaway is that the volume is unremarkable but a single duplicate is unacceptable. When
+          throughput is easy and correctness is hard, you are in this archetype.
+      - label: Trap
+        text: every reflex from the other archetypes is wrong here. Eventual consistency, best-effort
+          delivery and approximate counters are all fine elsewhere and all wrong in this one.
+    hint: Being slow is survivable; being wrong is not.
+    mcq:
+      prompt: A charge request times out. What has actually happened?
+      options:
+        - It is unknown — resolve it by querying the provider with the idempotency key, never by guessing
+        - It failed, so it is safe to retry
+        - It succeeded, so no retry is needed
+        - It was rejected by the network
+      answerIndex: 0
+
+  # ── Set 3 · topology → archetype ──────────────────────────────────────────
+  - topic: "Read-heavy key-value lookup"
+    desc: "The tell is the shape: a single-key read path fronted by a cache the origin rarely sees, with the
+      write path a thin trickle beside it and analytics pushed off the hot path onto a queue."
+    code:
+      lang: text
+      text: |
+        writes ~120/s
+          owner -> API -> keygen -> store
+
+        reads ~12,000/s      (100:1)
+          visitor -> redirect -> CACHE -hit-> 302
+                                   |
+                                   +-miss-> store
+          redirect -> queue -> counter (async)
+    mc:
+      - Fan-out delivery
+      - Async work pipeline
+      - Time-series ingestion and rollup
+      - Bulk object storage
+      - Transactional ledger
+      - Stateful connection tier
+    hint: Look at the ratio between the two entry points.
+    mcq:
+      prompt: "A topology shows a 120/s write path into a key generator and store, and a 12,000/s read path
+        served from a cache with a read-through miss, plus an async event queue for counting. Which
+        archetype?"
+      options:
+        - Read-heavy key-value lookup
+        - Time-series ingestion and rollup
+        - Precomputed low-latency lookup
+        - Async work pipeline
+        - Bulk object storage
+        - Fan-out delivery
+      answerIndex: 0
+
+  - topic: "Fan-out delivery"
+    desc: "The tell is one write becoming many, with a deliberate exception path for the publishers whose
+      recipient count would make that impossible — and a merge that reunites the two at read time."
+    code:
+      lang: text
+      text: |
+        ordinary author (~200 followers)
+          post -> QUEUE -> workers -> N inboxes
+
+        celebrity (50M followers)
+          post -> hot store      (no fan-out)
+
+        read:
+          inbox + hot store -> MERGE -> feed
+    mc:
+      - Read-heavy key-value lookup
+      - Precomputed low-latency lookup
+      - Async work pipeline
+      - Multi-tenant control plane
+      - Transactional ledger
+      - Bulk object storage
+    hint: Why would one publisher deliberately skip the path the others use?
+    mcq:
+      prompt: "A topology shows ordinary writes going through a queue into N per-recipient inboxes, while
+        high-follower writes bypass that entirely and are merged in at read time. Which archetype?"
+      options:
+        - Fan-out delivery
+        - Async work pipeline
+        - Precomputed low-latency lookup
+        - Read-heavy key-value lookup
+        - Stateful connection tier
+        - Multi-tenant control plane
+      answerIndex: 0
+
+  - topic: "Async work pipeline"
+    desc: "The tell is the loop: work is leased rather than taken, an expiring lease returns it, and there is
+      a terminal side-path for work that will never succeed."
+    code:
+      lang: text
+      text: |
+        producer -> QUEUE(durable) -> workers
+
+          ack           -> job deleted
+          lease expired -> back to QUEUE
+          attempts > N  -> DEAD LETTER
+
+        scale on: queue depth + oldest age
+    mc:
+      - Fan-out delivery
+      - Stateful connection tier
+      - Transactional ledger
+      - Read-heavy key-value lookup
+      - Time-series ingestion and rollup
+      - Precomputed low-latency lookup
+    hint: What happens to a unit of work whose worker dies?
+    mcq:
+      prompt: "A topology shows work leased from a durable queue, redelivered when the lease expires,
+        acknowledged on success, and routed to a dead-letter path after N attempts. Which archetype?"
+      options:
+        - Async work pipeline
+        - Fan-out delivery
+        - Transactional ledger
+        - Time-series ingestion and rollup
+        - Multi-tenant control plane
+        - Bulk object storage
+      answerIndex: 0
+
+  - topic: "Stateful connection tier"
+    desc: "The tell is bidirectional arrows at the edge and a lookup in the middle: because each client is
+      pinned to whichever node holds its socket, something must map user to node and route between them."
+    code:
+      lang: text
+      text: |
+        client A <=WS=> node 1 --+
+        client B <=WS=> node 2 --+-> logic -> store
+
+        REGISTRY: user -> which node
+        BUS:      node -> node delivery
+
+        node loss = 100k reconnects at once
+    mc:
+      - Fan-out delivery
+      - Async work pipeline
+      - Read-heavy key-value lookup
+      - Multi-tenant control plane
+      - Bulk object storage
+      - Precomputed low-latency lookup
+    hint: Why does anything need to look up where a user is?
+    mcq:
+      prompt: "A topology shows clients holding persistent bidirectional connections to thin nodes, with a
+        user-to-node registry and an inter-node bus behind them. Which archetype?"
+      options:
+        - Stateful connection tier
+        - Fan-out delivery
+        - Multi-tenant control plane
+        - Async work pipeline
+        - Read-heavy key-value lookup
+        - Transactional ledger
+      answerIndex: 0
+
+  - topic: "Bulk object storage"
+    desc: "The tell is the payload arrow bypassing the service entirely. The API grants permission and
+      records metadata; the bytes travel on a path your servers are not on."
+    code:
+      lang: text
+      text: |
+        1 client -> API     "may I upload?"
+        2 API    -> client   presigned URL
+        3 client ==BYTES==> OBJECT STORE
+                     (the API never sees them)
+        4 client -> API     "complete"
+
+        read: client -> CDN -> store (on miss)
+    mc:
+      - Async work pipeline
+      - Read-heavy key-value lookup
+      - Transactional ledger
+      - Fan-out delivery
+      - Time-series ingestion and rollup
+      - Stateful connection tier
+    hint: Follow the arrow the bytes take, and notice what it skips.
+    mcq:
+      prompt: "A topology shows the API issuing a short-lived signed URL, the client transferring bytes
+        directly to a store the API never touches, and a separate completion call making metadata visible.
+        Which archetype?"
+      options:
+        - Bulk object storage with a control/data plane split
+        - Async work pipeline
+        - Multi-tenant control plane
+        - Read-heavy key-value lookup
+        - Precomputed low-latency lookup
+        - Fan-out delivery
+      answerIndex: 0
+
+  - topic: "Transactional ledger"
+    desc: "The tell is a uniqueness constraint guarding the entrance, balanced append-only entries instead of
+      a mutable balance, and an out-of-band process that re-derives the truth and compares."
+    code:
+      lang: text
+      text: |
+        request + Idempotency-Key
+          -> INSERT key (unique constraint)
+               ok       -> work -> store resp
+               conflict -> replay stored resp
+
+        effect -> LEDGER (append-only, balanced)
+        daily  -> RECONCILE vs provider report
+        a timeout is UNKNOWN, never failure
+    mc:
+      - Async work pipeline
+      - Time-series ingestion and rollup
+      - Read-heavy key-value lookup
+      - Fan-out delivery
+      - Multi-tenant control plane
+      - Bulk object storage
+    hint: What is the unique constraint protecting against?
+    mcq:
+      prompt: "A topology shows requests guarded by a unique-constraint insert on a client-supplied key,
+        effects written as balanced append-only entries, and a daily job comparing against an external
+        report. Which archetype?"
+      options:
+        - Transactional ledger
+        - Async work pipeline
+        - Time-series ingestion and rollup
+        - Multi-tenant control plane
+        - Read-heavy key-value lookup
+        - Bulk object storage
+      answerIndex: 0
