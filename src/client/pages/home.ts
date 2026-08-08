@@ -369,8 +369,10 @@ export function setup(): void {
   // Default to the whole selection and let the player trim DOWN, rather than starting at an
   // arbitrary 20 they have to drag up every time.
   if (typeof S.cfg.count !== 'number') S.cfg.count = 0;
-  // count 0 = never chosen. A non-zero value carried in from a previous visit counts as chosen.
-  let lenTouched = S.cfg.count > 0;
+  // The player's DESIRED length, or null for "however many are in scope". Kept separate from the
+  // displayed value on purpose: clamping 20 down to a 14-card scope must not be mistaken for
+  // "they chose 14", or widening the scope again would wrongly jump to the new maximum.
+  let desiredLen: number | null = S.cfg.count > 0 ? S.cfg.count : null;
   // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer labels has to
   // shrink the max, or "length" could exceed how many cards the selection actually contains.
   // A UNION over labels: a card carrying two selected labels is still one card.
@@ -384,20 +386,13 @@ export function setup(): void {
     const cnt = scopeCount();
     const max = Math.max(5, cnt);
     len.max = String(max);
-    // Until the player drags it, the slider tracks the selection in BOTH directions — widening the
-    // scope should raise it again, not leave it pinned at whatever the narrowest selection allowed.
-    let v: number;
-    if (!lenTouched) {
-      v = max;
-    } else {
-      v = Number.parseInt(len.value, 10);
-      if (!Number.isFinite(v) || v <= 0) v = S.cfg.count || max;
-      if (v > max) v = max;
-    }
+    // null = pinned to the top, so it tracks the scope. A number is honoured, clamped down only
+    // when the scope cannot supply it — and the desire is remembered, so widening restores it.
+    const v = desiredLen === null ? max : Math.min(desiredLen, max);
     len.value = String(v);
     S.cfg.count = v;
     lennum.textContent = v >= cnt ? `All (${cnt})` : `${v} cards`;
-    // Rolling pool size: how many cards the current section/role selection contains, live as you toggle.
+    // Rolling pool size: how many cards the current selection contains, live as you toggle.
     poolnum.textContent = `${cnt} total cards`;
   };
   // count 0 = not yet chosen, so open at the top of the scope rather than clamping to the minimum.
@@ -406,7 +401,9 @@ export function setup(): void {
   );
   syncLen();
   len.addEventListener('input', () => {
-    lenTouched = true; // from here on the player's number wins, clamped to the scope
+    // Dragging to the top re-arms tracking; anywhere else records a deliberate number.
+    const v = Number.parseInt(len.value, 10);
+    desiredLen = Number.isFinite(v) && v >= Number.parseInt(len.max, 10) ? null : v;
     syncLen();
   });
   const rs = app.querySelector('#resetstats');
