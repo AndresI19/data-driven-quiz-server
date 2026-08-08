@@ -1244,67 +1244,85 @@ select.opt {
   margin-left: 6px;
   vertical-align: middle;
 }
-/* ── Category blocks: each category on its own line, its labels wrapping beneath ───────────── */
+/* ── Category blocks ───────────────────────────────────────────────────────────────────────────
+   One category per line: a heading, a hairline divider UNDER it, then its labels. --cat is set on
+   the block and inherited by all three, so a category reads as one coloured unit. */
 .catrow-top {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-/* .secchips is a wrapping flex row, so a category must claim a full line of it to sit on its own. */
+/* .secchips is a wrapping flex row; a category claims a whole line of it. */
 .catblock {
   flex: 0 0 100%;
-  margin: 0 0 14px;
+  margin: 0 0 9px;
 }
-/* The category header doubles as a select-all for the labels it owns, and carries a rule to the
-   right so the block reads as a titled group rather than a loose stack of chips. */
-.cathead {
-  display: flex;
+/* A heading, not a button — inline-flex so the hit area is the words, not the full width. */
+.cat-title {
+  display: inline-flex;
   align-items: baseline;
-  gap: 10px;
-  width: 100%;
+  gap: 7px;
   background: none;
   border: 0;
-  padding: 0 0 6px;
+  padding: 0 0 3px;
   cursor: pointer;
-  text-align: left;
   color: var(--cat);
-  font-weight: 800;
-  font-size: 13px;
-  letter-spacing: .2px;
-}
-.cathead::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  margin-left: 2px;
-  background: color-mix(in srgb, var(--cat) 35%, transparent);
-}
-.cathead .catnum {
-  color: var(--muted);
-  font-weight: 700;
   font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
 }
-.cathead:hover .catname {
+.cat-title .catnum {
+  font-size: 10.5px;
+  font-weight: 700;
+  opacity: 0.65;
+}
+.cat-title:hover .catname {
   text-decoration: underline;
 }
-.cathead.on .catname::before {
+.cat-title.on .catname::before {
   content: "✓ ";
+}
+/* The divider only formats — a hairline between the heading and the chips, no height of its own. */
+.catdiv {
+  height: 1px;
+  margin: 0 0 7px;
+  background: color-mix(in srgb, var(--cat) 40%, transparent);
 }
 .catlabels {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
 }
+/* Label chips take the CATEGORY colour, same treatment the old section chips had: neutral at rest,
+   coloured on hover, solid with a glow when selected. */
 .secchip.lc {
   text-transform: none;
   letter-spacing: 0;
-  font-size: 12px;
+  font-size: 12.5px;
+  padding: 7px 12px;
 }
 .secchip.lc .lcnum {
-  opacity: 0.6;
+  margin-left: 7px;
   font-weight: 700;
-  margin-left: 5px;
+  opacity: 0.55;
+}
+.secchip.lc:hover {
+  border-color: var(--cat);
+  color: var(--cat);
+}
+.secchip.lc.on {
+  background: var(--cat);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 9px color-mix(in srgb, var(--cat) 40%, transparent);
+}
+.secchip.lc.on .lcnum {
+  opacity: 0.8;
+}
+.secchip.lc.on:hover {
+  color: #fff;
 }
 
 /* ── On/off switch (sound) ─────────────────────────────────────────────────────────────────── */

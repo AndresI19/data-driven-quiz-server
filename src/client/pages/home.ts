@@ -27,7 +27,7 @@ const labelCount = (k: string): number => CARDS.reduce((n, c) => (c.labels.inclu
 
 /** One label chip: its display name and card count, tinted from the label registry. */
 const labelChip = (k: string): string =>
-  `<button class="secchip lc" data-label="${k}" style="--cat:${LABELS[k]?.color ?? '#888'}">${esc(LABELS[k]?.name ?? k)} <span class="lcnum">${labelCount(k)}</span></button>`;
+  `<button class="secchip lc" data-label="${k}">${esc(LABELS[k]?.name ?? k)}<span class="lcnum">${labelCount(k)}</span></button>`;
 
 /**
  * The persistence note. It USED to say, to everyone, "saved in this browser only ... I never
@@ -142,10 +142,13 @@ export function setup(): void {
             // Union, not sum: a card can carry two of a category's labels, so adding the per-label
             // counts would overstate the pool.
             const n = CARDS.filter((c) => g.labels.some((l) => c.labels.includes(l))).length;
+            // --cat is set once on the block and inherited by the heading, the divider and every
+            // chip inside it, so a category reads as one coloured unit.
             return `<div class="catblock" style="--cat:${g.color}">
-              <button class="cathead" data-cat="${g.key}" data-labels="${g.labels.join(',')}">
+              <button class="cat-title" data-cat="${g.key}" data-labels="${g.labels.join(',')}">
                 <span class="catname">${esc(g.name)}</span><span class="catnum">${n}</span>
               </button>
+              <div class="catdiv"></div>
               <div class="catlabels">${g.labels.map(labelChip).join('')}</div>
             </div>`;
           }).join('')}
@@ -211,7 +214,7 @@ export function setup(): void {
 
   const refreshSecs = (): void => {
     const sel = (k: string): boolean => Array.isArray(S.cfg.scope) && S.cfg.scope.includes(k);
-    app.querySelectorAll('.cathead').forEach((b) => {
+    app.querySelectorAll('.cat-title').forEach((b) => {
       const el = b as HTMLElement;
       // A category header lights only when EVERY label it owns is selected.
       b.classList.toggle('on', el.dataset.labels!.split(',').every(sel));
@@ -240,7 +243,7 @@ export function setup(): void {
   };
 
   app
-    .querySelectorAll('.cathead')
+    .querySelectorAll('.cat-title')
     .forEach((b) =>
       b.addEventListener('click', () => applyScope((b as HTMLElement).dataset.labels!.split(','), true)),
     );
@@ -366,6 +369,8 @@ export function setup(): void {
   // Default to the whole selection and let the player trim DOWN, rather than starting at an
   // arbitrary 20 they have to drag up every time.
   if (typeof S.cfg.count !== 'number') S.cfg.count = 0;
+  // count 0 = never chosen. A non-zero value carried in from a previous visit counts as chosen.
+  let lenTouched = S.cfg.count > 0;
   // Cards in the currently-selected scope — the slider's real ceiling. Picking fewer labels has to
   // shrink the max, or "length" could exceed how many cards the selection actually contains.
   // A UNION over labels: a card carrying two selected labels is still one card.
@@ -379,10 +384,16 @@ export function setup(): void {
     const cnt = scopeCount();
     const max = Math.max(5, cnt);
     len.max = String(max);
-    let v = Number.parseInt(len.value, 10);
-    // 0 is the "not yet chosen" sentinel — open at the top of the current scope.
-    if (!Number.isFinite(v) || v <= 0) v = S.cfg.count || max;
-    if (v > max) v = max;
+    // Until the player drags it, the slider tracks the selection in BOTH directions — widening the
+    // scope should raise it again, not leave it pinned at whatever the narrowest selection allowed.
+    let v: number;
+    if (!lenTouched) {
+      v = max;
+    } else {
+      v = Number.parseInt(len.value, 10);
+      if (!Number.isFinite(v) || v <= 0) v = S.cfg.count || max;
+      if (v > max) v = max;
+    }
     len.value = String(v);
     S.cfg.count = v;
     lennum.textContent = v >= cnt ? `All (${cnt})` : `${v} cards`;
@@ -394,7 +405,10 @@ export function setup(): void {
     S.cfg.count ? Math.min(S.cfg.count, Math.max(5, scopeCount())) : Math.max(5, scopeCount()),
   );
   syncLen();
-  len.addEventListener('input', syncLen);
+  len.addEventListener('input', () => {
+    lenTouched = true; // from here on the player's number wins, clamped to the scope
+    syncLen();
+  });
   const rs = app.querySelector('#resetstats');
   if (rs)
     rs.addEventListener('click', () => {
