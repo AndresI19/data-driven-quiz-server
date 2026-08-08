@@ -942,3 +942,92 @@ cards:
         - A unique index
         - A check constraint
       answerIndex: 0
+  - labels: [fundamentals, security]
+    topic: "How a WebSocket connection works"
+    desc: "A WebSocket does not replace HTTP so much as ESCAPE it. The client sends an ordinary HTTP GET
+      carrying `Connection: Upgrade`, `Upgrade: websocket` and a random `Sec-WebSocket-Key`; the server
+      answers `101 Switching Protocols`; and from that instant the SAME TCP connection stops speaking HTTP
+      and starts speaking the WebSocket frame protocol."
+    order:
+      - "Client sends GET with Connection: Upgrade and Sec-WebSocket-Key"
+      - Server answers 101 Switching Protocols
+      - The same TCP connection switches to the frame protocol
+      - Either side sends frames at any time, full duplex
+      - Ping/pong control frames keep the connection proven alive
+    extras:
+      - label: Say
+        text: “Starting as ordinary HTTP on port 80 or 443 is what gets it through firewalls and proxies
+          that would block an exotic protocol. It is also why wss:// is effectively mandatory — plaintext
+          ws:// is frequently mangled by intermediaries trying to help.”
+      - label: e.g.
+        text: "a frame is roughly 2–14 bytes of header plus payload, against several hundred bytes of
+          headers on every HTTP request. At a few messages per second per user that overhead difference is
+          the entire efficiency argument."
+      - label: Trap
+        text: "half-open sockets. A connection through a NAT or load balancer can be silently dropped by an
+          idle timeout, and without ping/pong both ends still believe they are connected — writes go
+          nowhere and nothing errors."
+      - label: Security
+        text: "the same-origin policy does NOT apply to WebSockets. The browser will happily open one to
+          another origin and send the cookies with it, so the server must check the `Origin` header itself
+          — otherwise you have Cross-Site WebSocket Hijacking, where an attacker's page opens an
+          authenticated socket to your service."
+    cloze:
+      text: A WebSocket begins as an HTTP request and becomes a socket when the server replies with status
+        {} Switching Protocols.
+      answer: "101"
+    hint: It starts as an HTTP request and then stops being one.
+    mcq:
+      prompt: Why must a WebSocket server validate the Origin header itself, unlike a normal fetch endpoint?
+      options:
+        - The same-origin policy does not apply to WebSockets, so any page can open an authenticated one
+        - CORS preflight is skipped for upgrade requests only on HTTP/2
+        - The Sec-WebSocket-Key cannot be verified server-side
+        - Frames are unencrypted unless wss is used
+      answerIndex: 0
+  - labels: [fundamentals]
+    topic: "How a gRPC connection works"
+    desc: "A schema-first RPC framework running over HTTP/2. You define messages and services in a .proto
+      file, generate typed client and server stubs, and calls travel as compact binary Protobuf rather than
+      JSON. Each RPC is one HTTP/2 STREAM, so many concurrent calls share a single TCP connection with no
+      head-of-line blocking at the HTTP layer."
+    table:
+      - - Call type
+        - Shape
+      - - Unary
+        - one request, one response
+      - - Server streaming
+        - one request, a stream of responses
+      - - Client streaming
+        - a stream of requests, one response
+      - - Bidirectional
+        - both sides stream independently
+    extras:
+      - label: Say
+        text: “The wins are the schema and the transport together — Protobuf gives a strongly-typed
+          contract and a small binary payload, and HTTP/2 multiplexing means one connection carries many
+          in-flight calls instead of one per request.”
+      - label: Trap
+        text: "the operational gotcha, and the one that bites in Kubernetes: gRPC holds a LONG-LIVED
+          connection, so an L4 load balancer balances CONNECTIONS, not requests. Every call from one client
+          pins to whichever backend it first connected to, and a scale-up receives no traffic at all. You
+          need an L7 gRPC-aware proxy or client-side load balancing."
+      - label: Trap
+        text: browsers cannot speak gRPC directly — they cannot control HTTP/2 frames — so a browser client
+          needs grpc-web plus a translating proxy, which drops client-streaming support.
+      - label: e.g.
+        text: deadlines propagate across hops, so a caller's remaining time budget travels with the call and
+          downstream services can stop work that nobody is waiting for any more.
+    cloze:
+      text: gRPC carries each call as its own HTTP/2 {}, so many concurrent RPCs share one TCP connection.
+      answer: stream
+    hint: Schema-first, binary, and multiplexed over one connection.
+    mcq:
+      prompt: A gRPC service is scaled from 3 to 10 pods behind a standard Kubernetes Service, but the new
+        pods receive almost no traffic. Why?
+      options:
+        - L4 load balancing distributes connections, and gRPC reuses one long-lived connection per client
+        - Protobuf schemas must be redeployed to every pod before they receive traffic
+        - HTTP/2 requires sticky sessions by specification
+        - The readiness probe does not support gRPC health checks
+      answerIndex: 0
