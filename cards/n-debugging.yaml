@@ -12,7 +12,8 @@ section:
 
 cards:
   # ── 1. Scenario → what could be the problem? ──────────────────────────────────────────────────
-  - topic: "Connection-pool exhaustion"
+  - labels: [operations]
+    topic: "Connection-pool exhaustion"
     desc: "A web service is fine at low traffic, but under load requests hang for seconds and then time out — while the database CPU sits near idle the whole time. Every reusable database connection is checked out and new requests block waiting for one to be returned."
     mc:
       - "A slow query plan on the database"
@@ -34,7 +35,8 @@ cards:
       - An N+1 query pattern
       answerIndex: 0
 
-  - topic: "Cache stampede (thundering herd)"
+  - labels: [operations]
+    topic: "Cache stampede (thundering herd)"
     desc: "A single popular cache key expires and thousands of concurrent requests all miss at once, hammering the origin with identical queries until one request repopulates the key. Latency spikes and the database briefly saturates every time that key expires."
     mc:
       - "A cache eviction bug"
@@ -56,7 +58,8 @@ cards:
       - A hot-key collision
       answerIndex: 1
 
-  - topic: "Liveness probe killing a slow-starting pod"
+  - labels: [operations]
+    topic: "Liveness probe killing a slow-starting pod"
     desc: "A Kubernetes pod keeps entering CrashLoopBackOff. The logs show the process was still starting up — loading a large model into memory — when it received SIGTERM. The liveness probe's delay is shorter than the app's real startup time, so the kubelet restarts it before it is ever ready."
     mc:
       - "An OOMKill from too low a memory limit"
@@ -76,7 +79,8 @@ cards:
       - A failing readiness probe
       answerIndex: 1
 
-  - topic: "Retry storm (no exponential backoff)"
+  - labels: [operations]
+    topic: "Retry storm (no exponential backoff)"
     desc: "A downstream service has a two-second blip. Every client immediately retries in a tight loop, and the synchronized wave of retries keeps the recovering service pinned down — turning a brief blip into a ten-minute outage. The retries have neither jitter nor exponential backoff."
     mc:
       - "A circuit breaker stuck open"
@@ -97,7 +101,8 @@ cards:
       - An over-long DNS TTL
       answerIndex: 2
 
-  - topic: "OOMKilled: memory limit set below real usage"
+  - labels: [operations]
+    topic: "OOMKilled: memory limit set below real usage"
     desc: "A pod is repeatedly killed with reason OOMKilled and its restart count climbs, even though the node has plenty of free memory. The container's memory limit is set below the app's steady-state heap, so the cgroup out-of-memory killer terminates it whenever it crosses the cap."
     mc:
       - "The node is under memory pressure and evicting the pod"
@@ -116,7 +121,8 @@ cards:
       - A liveness-probe timeout
       answerIndex: 1
 
-  - topic: "Signs pointing to an in-process memory leak"
+  - labels: [operations]
+    topic: "Signs pointing to an in-process memory leak"
     desc: "Symptoms that distinguish a genuine leak inside the process from external memory pressure on the node."
     multi:
       - "Resident memory grows monotonically and never plateaus"
@@ -125,7 +131,8 @@ cards:
       - "A heap dump shows one retained set growing without bound"
 
   # ── 2. Code / pipeline with a bug → what is wrong? ────────────────────────────────────────────
-  - topic: "Copying source before installing deps busts the layer cache"
+  - labels: [operations]
+    topic: "Copying source before installing deps busts the layer cache"
     desc: "This Dockerfile copies the whole source tree before it installs dependencies, so any source change invalidates the install layer and every build reinstalls from scratch — slow CI on every commit."
     mc:
       - "It runs the application as root"
@@ -145,7 +152,8 @@ cards:
       prompt: "Select the line whose position forces a full dependency reinstall on every source change"
       answer: [2]
 
-  - topic: "N+1 queries: one database round-trip per row"
+  - labels: [operations]
+    topic: "N+1 queries: one database round-trip per row"
     desc: "The code fetches a list and then issues a separate query inside the loop for each row's children. For N rows that is N+1 round-trips; latency grows linearly with the result set and the connection pool drains under load."
     mc:
       - "A SQL injection vulnerability"
@@ -171,7 +179,8 @@ cards:
       - A cartesian-product join
       answerIndex: 2
 
-  - topic: "The deploy job runs before build because it declares no dependency"
+  - labels: [operations]
+    topic: "The deploy job runs before build because it declares no dependency"
     desc: "In this workflow the deploy job has no `needs:` on build, so the two jobs start in parallel. Deploy can try to push an image that build has not produced yet, causing intermittent image-not-found failures that pass on a re-run."
     mc:
       - "It checks out the wrong git ref"
@@ -195,7 +204,8 @@ cards:
       answer: [5]
 
   # ── 3. Diagnosis given → what is the fix? ─────────────────────────────────────────────────────
-  - topic: "Guarantee every borrowed connection is released, and set an acquire timeout"
+  - labels: [operations]
+    topic: "Guarantee every borrowed connection is released, and set an acquire timeout"
     desc: "Diagnosis: requests hang under load because database connections are checked out and never returned — a leak drains the pool. Given that leak, the correct fix is to release every borrowed connection on all code paths (a request-scoped session, or with/finally) and add an acquisition timeout so a leak fails fast instead of hanging."
     mc:
       - "Raise the pool size to a very large number"
@@ -208,7 +218,8 @@ cards:
       alts:
         - "acquire"
 
-  - topic: "Exponential backoff with jitter, capped attempts, and a circuit breaker"
+  - labels: [operations]
+    topic: "Exponential backoff with jitter, capped attempts, and a circuit breaker"
     desc: "Diagnosis: a downstream blip triggers synchronized tight-loop retries that keep it from recovering. The fix is to space retries with exponentially increasing delays plus random jitter, cap the number of attempts, and add a breaker that stops calling a failing dependency so it can heal."
     mc:
       - "Retry immediately, but on a background thread"
@@ -222,7 +233,8 @@ cards:
         - "circuit-breaker"
         - "breaker"
 
-  - topic: "A startupProbe that must pass before liveness begins"
+  - labels: [operations]
+    topic: "A startupProbe that must pass before liveness begins"
     desc: "Diagnosis: the liveness probe kills the pod before its slow startup finishes. The fix is a startupProbe with a generous budget that gates liveness — startup gets a long runway without loosening the steady-state liveness check."
     mc:
       - "Just delete the liveness probe entirely"
@@ -244,7 +256,8 @@ cards:
         - "/metrics"
         - "3"
 
-  - topic: "Copy the lockfile and install before copying the source"
+  - labels: [operations]
+    topic: "Copy the lockfile and install before copying the source"
     desc: "Diagnosis: COPY . . before the install invalidates the dependency layer on every source change. The fix is to copy only the package manifest and lockfile first, install, then copy the rest — so the dependency layer stays cached until dependencies actually change."
     mc:
       - "Add a .dockerignore that excludes only node_modules"
@@ -263,7 +276,8 @@ cards:
       - "COPY the rest of the application source"
       - "RUN the build"
 
-  - topic: "Match the production symptom to its usual root cause"
+  - labels: [operations]
+    topic: "Match the production symptom to its usual root cause"
     desc: "Common failure signatures and what they most often point to — the first guess a good on-call makes."
     match:
       - ["Memory climbs steadily until OOMKilled", "an unbounded cache or a leak, not node pressure"]
@@ -271,7 +285,8 @@ cards:
       - ["A bug that clears on refresh but recurs at random", "stale in-memory state or an orphaned singleton"]
       - ["CrashLoopBackOff during a long startup", "the liveness probe firing before startup finishes"]
 
-  - topic: "Kubernetes triage: where to start (symptom → first check)"
+  - labels: [operations]
+    topic: "Kubernetes triage: where to start (symptom → first check)"
     desc: "The first diagnostic move for each cluster symptom — reach for the command that names the cause instead of guessing."
     table:
       - ["Symptom", "Where to start"]
@@ -287,7 +302,8 @@ cards:
         text: "Always: get → describe (read Events) → logs → then connectivity (endpoints, DNS, NetworkPolicy). Narrate it out loud in an interview."
     hint: "For each symptom, the single command that names the cause."
 
-  - topic: "Kubernetes triage: possible causes (symptom → usual root cause)"
+  - labels: [operations]
+    topic: "Kubernetes triage: possible causes (symptom → usual root cause)"
     desc: "The most common root cause behind each cluster symptom — the second guess, once you've read the Events."
     table:
       - ["Symptom", "Usual root cause"]
@@ -302,7 +318,8 @@ cards:
       - label: Pairs with
         text: "The 'where to start' card is the command to run; this is what that command usually reveals."
     hint: "For each symptom, the usual culprit."
-  - topic: Thread-pool starvation
+  - labels: [operations]
+    topic: Thread-pool starvation
     desc: A handler that blocks on another call served by the SAME fixed thread pool can deadlock when every thread waits on a task that itself needs a thread — pool starvation.
     cloze:
       text: A handler that blocks on another call served by the SAME fixed thread pool can deadlock when every thread waits on a task that itself needs a thread — pool {}.
@@ -315,7 +332,8 @@ cards:
       - Cache stampede
       - Clock skew
       answerIndex: 0
-  - topic: Memory leak vs undersized limit
+  - labels: [operations]
+    topic: Memory leak vs undersized limit
     desc: A process whose memory climbs steadily for hours and never plateaus, then dies, points to a memory leak rather than a too-low limit.
     cloze:
       text: A process whose memory climbs steadily for hours and never plateaus, then dies, points to a memory {} rather than a too-low limit.
@@ -328,7 +346,8 @@ cards:
       - A GC pause
       - A noisy neighbor
       answerIndex: 0
-  - topic: Heisenbug from a race
+  - labels: [operations]
+    topic: Heisenbug from a race
     desc: A bug that vanishes when you add logging or attach a debugger — because the timing changed — is usually a race condition.
     cloze:
       text: A bug that vanishes when you add logging or attach a debugger — because the timing changed — is usually a {} condition.

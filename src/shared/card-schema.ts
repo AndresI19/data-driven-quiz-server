@@ -55,6 +55,11 @@ export interface Mcq {
 
 /** A card exactly as authored in YAML (before transforms). */
 export interface AuthoredCard {
+  /** Cross-cutting tags, validated against cards/_labels.yaml. Unlike `cat` (the lettered
+   *  section, exactly one per card) a card may carry SEVERAL labels, and a label spans sections —
+   *  which is the point: section A holds both "sharding" (system-design) and "TLS handshake"
+   *  (fundamentals). Optional; a card with none simply carries no tags. */
+  labels?: string[];
   topic: string;
   desc?: string;
   extras?: Extra[];
@@ -81,6 +86,7 @@ export interface AuthoredCard {
 export interface GameCard {
   id: string;
   cat: string;
+  labels: string[]; // [] when the card carries none
   topic: string;
   back: string; // rendered answer HTML (game: extras/diagram folded when the card sets fold)
   printBack: string; // rendered answer HTML for the print sheet — always expanded (never folded)
@@ -101,6 +107,15 @@ export interface GameCard {
   codeselect: CodeSelect | null;
 }
 
+/** A cross-cutting tag a card may carry. Sections partition the deck; labels cut across it, so a
+ *  card can hold several and any label can appear in any section. Declared in cards/_labels.yaml. */
+export interface Label {
+  key: string; // stable id used on cards (e.g. "system-design")
+  name: string; // display label
+  color: string; // hex accent
+  desc: string; // what belongs under it — the authoring rule, not marketing copy
+}
+
 /** A job-role bucket folding several sections together — a presentation layer over section keys. */
 export interface Group {
   key: string; // stable group id (e.g. "platform")
@@ -113,6 +128,7 @@ export interface Group {
 export interface CardsPayload {
   cats: Record<string, string>; // key → section name
   catColors: Record<string, string>; // key → hex
+  labels: Label[]; // the label vocabulary; [] when cards/_labels.yaml is absent
   groups: Group[]; // role buckets over the sections; [] when cards/_groups.yaml is absent
   cards: GameCard[];
   diagrams: Record<string, string>; // name → inline SVG

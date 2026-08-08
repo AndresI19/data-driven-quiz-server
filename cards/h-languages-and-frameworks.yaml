@@ -3,7 +3,8 @@ section:
   name: Languages & Frameworks
   color: "#ef4444"
 cards:
-  - topic: Java REST frameworks
+  - labels: [coding]
+    topic: Java REST frameworks
     desc: "Common Java web/REST frameworks:"
     items:
       - Spring Boot — dominant, batteries-included (embedded server, DI, huge ecosystem)
@@ -14,7 +15,8 @@ cards:
       - Dropwizard — opinionated Jetty + Jersey bundle
       - Jersey (JAX-RS) — the reference REST API standard
     hint: Start with the dominant batteries-included one, then the K8s-native fast starters.
-  - topic: Python REST frameworks
+  - labels: [coding]
+    topic: Python REST frameworks
     desc: "Common Python web/REST frameworks:"
     items:
       - FastAPI — async, type-hint based, auto OpenAPI docs (modern default)
@@ -23,7 +25,8 @@ cards:
       - Starlette — the async toolkit under FastAPI
       - Falcon / Tornado — high-performance / async options
     hint: The modern async type-hint one first, then the minimal and the batteries-included.
-  - topic: Node.js REST frameworks
+  - labels: [coding]
+    topic: Node.js REST frameworks
     desc: "Common Node.js web/REST frameworks:"
     items:
       - Express — minimal, ubiquitous standard
@@ -32,7 +35,8 @@ cards:
       - Koa — modern, lightweight (from the Express team)
       - Hapi — configuration-centric
     hint: The ubiquitous minimal one, then the opinionated TypeScript-first one.
-  - topic: Python for backend / ML
+  - labels: [coding]
+    topic: Python for backend / ML
     desc: The lingua franca for LLM/agent tooling and the AI evaluation pipelines.
     extras:
       - label: e.g.
@@ -45,7 +49,8 @@ cards:
       - ["transformers (Hugging Face)", "pretrained models & tokenizers"]
       - ["Pydantic", "validate request / response schemas"]
     hint: Why one language spans both the API and the ML model.
-  - topic: Rust & Go for systems
+  - labels: [coding]
+    topic: Rust & Go for systems
     desc: Why a control plane picks these — performance, memory safety (Rust), and simple concurrency (Go).
     extras:
       - label: e.g.
@@ -62,7 +67,8 @@ cards:
       - Rust
       - C
       answerIndex: 2
-  - topic: "Memory management: GC vs manual vs ownership"
+  - labels: [coding]
+    topic: "Memory management: GC vs manual vs ownership"
     desc: "How a language reclaims memory it no longer uses — a core runtime concept:"
     extras:
       - label: Ownership
@@ -111,7 +117,8 @@ cards:
       - Lifetimes
       - Moves
       answerIndex: 1
-  - topic: REST vs. gRPC vs. GraphQL
+  - labels: [coding]
+    topic: REST vs. gRPC vs. GraphQL
     desc: The three API styles and when each fits a given service boundary. REST = simple public HTTP/JSON; gRPC (Google Remote Procedure Call) = fast binary service-to-service (Protobuf); GraphQL = the client picks exactly the fields it needs.
     match:
       - - REST
@@ -132,7 +139,8 @@ cards:
       - gRPC
       - SOAP
       answerIndex: 2
-  - topic: Protocol Buffers (protobuf)
+  - labels: [coding]
+    topic: Protocol Buffers (protobuf)
     desc: Google's language-neutral BINARY serialization format — the default payload for gRPC. You define a schema in a .proto file (typed, NUMBERED fields), compile it with protoc to generate typed code in many languages; it serializes to a compact binary wire format — much smaller/faster than JSON, but not human-readable and it needs the schema to decode.
     extras:
       - label: e.g.
@@ -147,7 +155,8 @@ cards:
       alts:
         - tag
     hint: Google's binary schema format — the default gRPC payload.
-  - topic: Serialization (& deserialization)
+  - labels: [coding]
+    topic: Serialization (& deserialization)
     desc: Converting an in-memory object into a storable/transmittable form (bytes or text); deserialization is the reverse (bytes → object). Needed any time data crosses a boundary — network, disk, cache, or message queue.
     extras:
       - label: e.g.
@@ -186,7 +195,8 @@ cards:
       - pickle
       - Protobuf
       answerIndex: 2
-  - topic: "Python envs: venv & uv"
+  - labels: [coding]
+    topic: "Python envs: venv & uv"
     desc: A venv (virtual environment) is an isolated, per-project Python install — its own dependencies, so projects don't collide in the global site-packages. uv is a fast Rust-based tool (by Astral) that creates the venv AND manages packages, replacing pip / virtualenv / pyenv / much of poetry.
     extras:
       - label: e.g.
@@ -205,7 +215,8 @@ cards:
       - conda
       - uv
       answerIndex: 3
-  - topic: Pydantic (runtime data validation)
+  - labels: [coding]
+    topic: Pydantic (runtime data validation)
     desc: "A library that turns type-hinted classes into RUNTIME validators: it parses, coerces, and validates incoming data and raises clear errors on bad input. v2's core is in Rust (fast), and it's the validation engine under FastAPI and typed settings (pydantic-settings)."
     extras:
       - label: e.g.
@@ -224,7 +235,8 @@ cards:
       - marshmallow
       - Pydantic
       answerIndex: 3
-  - topic: Protobuf field number (never reuse it)
+  - labels: [coding]
+    topic: Protobuf field number (never reuse it)
     desc: In a .proto file the '= 1' after a field is its field number — renaming the field is safe, but changing this breaks wire compatibility.
     cloze:
       text: In a .proto file the '= 1' after a field is its field {} — renaming the field is safe, but changing this breaks wire compatibility.
@@ -237,7 +249,8 @@ cards:
       - Renumbering a field
       - Adding a new field
       answerIndex: 2
-  - topic: The GIL and Python concurrency
+  - labels: [coding]
+    topic: The GIL and Python concurrency
     desc: CPython's GIL lets only one thread execute bytecode at a time, so CPU-bound work scales with processes, not threads.
     cloze:
       text: CPython's {} lets only one thread execute bytecode at a time, so CPU-bound work scales with processes, not threads.
@@ -250,7 +263,8 @@ cards:
       - The import system
       - The async event loop
       answerIndex: 0
-  - topic: Blocking the event loop
+  - labels: [coding]
+    topic: Blocking the event loop
     desc: Calling a synchronous, CPU-heavy function inside an async handler stalls every other coroutine, because it never yields control back to the event loop.
     cloze:
       text: Calling a synchronous, CPU-heavy function inside an async handler stalls every other coroutine, because it never yields control back to the {}.
@@ -263,7 +277,8 @@ cards:
       - The heap
       - The DNS cache
       answerIndex: 0
-  - topic: Mutable shared state
+  - labels: [coding]
+    topic: Mutable shared state
     desc: Passing a mutable list into a function and seeing the caller's copy change too is a bug caused by sharing a reference rather than a copy.
     cloze:
       text: Passing a mutable list into a function and seeing the caller's copy change too is a bug caused by sharing a {} rather than a copy.
@@ -276,7 +291,8 @@ cards:
       - Pass-by-value
       - Automatic memoization
       answerIndex: 0
-  - topic: Floating-point equality
+  - labels: [coding]
+    topic: Floating-point equality
     desc: Comparing two computed floats with `==` is unreliable because base-2 rounding makes 0.1 plus 0.2 differ from 0.3; compare within an epsilon instead.
     cloze:
       text: Comparing two computed floats with `==` is unreliable because base-2 rounding makes 0.1 plus 0.2 differ from 0.3; compare within an {} instead.

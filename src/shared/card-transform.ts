@@ -201,6 +201,7 @@ export function toGameCard(c: RawCard, diagrams: Record<string, string>): GameCa
   return {
     id: c.id,
     cat: c.cat,
+    labels: c.labels ?? [],
     topic: c.topic,
     back: backBody(c, diagrams, c.fold),
     printBack: backBody(c, diagrams), // never folded — the print sheet always expands extras

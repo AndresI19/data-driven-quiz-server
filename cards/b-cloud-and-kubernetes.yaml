@@ -3,7 +3,8 @@ section:
   name: Cloud & Kubernetes
   color: "#0ea5e9"
 cards:
-  - topic: What Kubernetes actually is
+  - labels: [cloud-native]
+    topic: What Kubernetes actually is
     desc: An open-source container orchestrator exposing one declarative API (YAML manifests) to deploy, scale, and self-heal containers.
     cloze:
       text: "Kubernetes is an open-source container {} exposing one declarative API to deploy, scale, and self-heal containers."
@@ -17,7 +18,8 @@ cards:
       - Hypervisor
       - Load balancer
       answerIndex: 0
-  - topic: kube-apiserver (the hub of Kubernetes)
+  - labels: [cloud-native]
+    topic: kube-apiserver (the hub of Kubernetes)
     desc: The front door and hub of Kubernetes — a REST API that EVERY component (kubectl, each node's kubelet, the scheduler, controllers) talks to, and the ONLY component that reads/writes etcd. It runs authn → authz → admission control → validation on every request. Diagram shows the control plane + nodes around it.
     extras:
       - label: e.g.
@@ -47,7 +49,8 @@ cards:
       - kubelet
       - kube-controller-manager
       answerIndex: 0
-  - topic: "Managed K8s: name the three (EKS / GKE / AKS)"
+  - labels: [cloud-native]
+    topic: "Managed K8s: name the three (EKS / GKE / AKS)"
     desc: "The kubectl/YAML API is IDENTICAL on every cloud, so your manifests port unchanged. What does NOT port: provisioning, IAM, networking/CNI, load balancers, and storage classes — each cloud wires those its own way. Step one is just knowing which service is which cloud."
     extras:
       - label: Say
@@ -70,7 +73,8 @@ cards:
       - EKS
       - AKS
       answerIndex: 0
-  - topic: "Managed K8s: each provider's native edge"
+  - labels: [cloud-native]
+    topic: "Managed K8s: each provider's native edge"
     desc: "All three run and patch the control plane for you — you only manage workloads. They differ in native integrations, which is usually what picks the winner in an interview answer:"
     extras:
       - label: Say
@@ -93,7 +97,8 @@ cards:
       - AKS
       - OpenShift
       answerIndex: 0
-  - topic: Cloud primitives (the infra under K8s)
+  - labels: [cloud-native]
+    topic: Cloud primitives (the infra under K8s)
     desc: The building blocks a cloud gives you BELOW Kubernetes — created with the cloud's own API or Terraform, not kubectl. K8s YAML only manages what runs INSIDE the cluster; these live underneath it.
     extras:
       - label: e.g.
@@ -119,7 +124,8 @@ cards:
       - RBAC
       - VPC
       answerIndex: 0
-  - topic: Core K8s objects
+  - labels: [cloud-native]
+    topic: Core K8s objects
     desc: "The core objects and what each is for:"
     items:
       - Pod — runs containers
@@ -141,7 +147,8 @@ cards:
       - ReplicaSet
       - ConfigMap
       answerIndex: 0
-  - topic: Controllers & the reconciliation loop
+  - labels: [cloud-native]
+    topic: Controllers & the reconciliation loop
     desc: The heart of Kubernetes — and the blueprint for any CONTROL PLANE. A controller watches desired state (your YAML in etcd), compares it to actual cluster state, and acts to close the gap — forever, in a loop. Declarative, level-triggered (reacts to the STATE, not one-off events), self-healing.
     extras:
       - label: Say
@@ -173,7 +180,8 @@ cards:
       - event-sourced
       - eventually consistent
       answerIndex: 0
-  - topic: Pod health probes (liveness / readiness / startup)
+  - labels: [cloud-native]
+    topic: Pod health probes (liveness / readiness / startup)
     desc: "How the kubelet decides a pod is healthy — three probes with distinct jobs:"
     extras:
       - label: e.g.
@@ -203,7 +211,8 @@ cards:
       - startup
       - healthcheck
       answerIndex: 0
-  - topic: kubectl commands (basic → advanced)
+  - labels: [cloud-native]
+    topic: kubectl commands (basic → advanced)
     desc: The verbs you actually reach for, roughly basic → advanced. Almost all take -n <ns> (or -A for every namespace) and -o wide|yaml|json to change the output.
     extras:
       - label: Trap
@@ -222,7 +231,8 @@ cards:
       - debug <pod> -it --image=busybox · debug node/<n> — ephemeral container into a distroless/broken pod
       - explain <res>.spec — the schema of any field, straight from the API server
     hint: "The verbs, basic to advanced: inspect, then interact, then the power tools."
-  - topic: Namespaces & multi-tenancy in K8s
+  - labels: [cloud-native]
+    topic: Namespaces & multi-tenancy in K8s
     desc: Isolating workloads or customers within one cluster — directly relevant to a multi-tenant control plane.
     extras:
       - label: e.g.
@@ -239,7 +249,8 @@ cards:
       - Cluster
       - Deployment
       answerIndex: 0
-  - topic: Helm / Kustomize
+  - labels: [cloud-native]
+    topic: Helm / Kustomize
     desc: Templating and packaging K8s manifests so one deployment adapts to many environments.
     extras:
       - label: e.g.
@@ -260,7 +271,8 @@ cards:
       - Kompose
       - Argo CD
       answerIndex: 0
-  - topic: Helm commands (basic → advanced)
+  - labels: [cloud-native]
+    topic: Helm commands (basic → advanced)
     desc: "Helm is the K8s package manager: a chart (templated manifests + default values) installed as a named release you can upgrade and roll back. Commands roughly basic → advanced."
     extras:
       - label: Trap
@@ -287,7 +299,8 @@ cards:
       - uninstall
       - upgrade
       answerIndex: 0
-  - topic: Infrastructure as Code (Terraform)
+  - labels: [cloud-native]
+    topic: Infrastructure as Code (Terraform)
     desc: The cloud-agnostic tool most teams use to provision the cloud resources that sit under K8s.
     extras:
       - label: e.g.
@@ -304,7 +317,8 @@ cards:
       - Ansible
       - Chef
       answerIndex: 0
-  - topic: Terraform commands (basic → advanced)
+  - labels: [cloud-native]
+    topic: Terraform commands (basic → advanced)
     desc: Terraform provisions cloud infra as declarative code and keeps a STATE file mapping your config to real resources. Commands roughly basic → advanced.
     extras:
       - label: Trap
@@ -331,7 +345,8 @@ cards:
       - apply
       - fmt
       answerIndex: 0
-  - topic: Managed identity across clouds
+  - labels: [cloud-native]
+    topic: Managed identity across clouds
     desc: "How a pod assumes CLOUD permissions with NO long-lived keys. Same idea on all three clouds: the pod's Kubernetes ServiceAccount is exchanged (via OIDC federation) for short-lived, auto-rotated cloud credentials scoped to a role."
     extras:
       - label: e.g.
@@ -358,7 +373,8 @@ cards:
       - mTLS handshake
       - API key rotation
       answerIndex: 0
-  - topic: Kubernetes DNS & service discovery
+  - labels: [cloud-native]
+    topic: Kubernetes DNS & service discovery
     desc: CoreDNS (the kube-dns Service) resolves service names inside the cluster. A service's FQDN (Fully Qualified Domain Name) is <service>.<namespace>.svc.cluster.local; a same-namespace call can use just <service>.
     extras:
       - label: e.g.
@@ -379,7 +395,8 @@ cards:
       - kubelet
       - kube-scheduler
       answerIndex: 0
-  - topic: Kubernetes networking model
+  - labels: [cloud-native]
+    topic: Kubernetes networking model
     desc: Every pod gets its own routable IP and all pods reach each other without NAT (a flat network). A CNI (Container Network Interface) plugin — Calico, Cilium, Flannel — wires it up.
     extras:
       - label: NAT
@@ -410,7 +427,8 @@ cards:
       - CRI runtime
       - kube-proxy
       answerIndex: 0
-  - topic: Debugging connectivity (503 / empty endpoints)
+  - labels: [cloud-native]
+    topic: Debugging connectivity (503 / empty endpoints)
     desc: "When a Service times out or 503s, the fastest tell is `kubectl get endpoints <svc>`: if it's EMPTY, the Service's label selector matches no READY pod, so it has nowhere to send traffic."
     extras:
       - label: e.g.
@@ -433,7 +451,8 @@ cards:
       - kubectl describe service
       - kubectl get events
       answerIndex: 0
-  - topic: Cloudflare (what it is)
+  - labels: [cloud-native]
+    topic: Cloudflare (what it is)
     desc: "A global network that sits in FRONT of your site as a reverse proxy: every request hits Cloudflare's nearest edge PoP first, and it forwards to your ORIGIN (your actual server). You point your domain's nameservers at Cloudflare so it fronts every request. It bundles several jobs into that one hop:"
     extras:
       - label: e.g.
@@ -461,7 +480,8 @@ cards:
       - DDoS protection
       - TLS termination
       answerIndex: 0
-  - topic: Cloudflare SSL modes & Tunnel
+  - labels: [cloud-native]
+    topic: Cloudflare SSL modes & Tunnel
     desc: "Your ORIGIN is your real server behind Cloudflare (the box CF forwards to). There are TWO TLS legs — client↔CF and CF↔origin — and the SSL mode controls only the second leg:"
     extras:
       - label: Origin
@@ -490,7 +510,8 @@ cards:
       - Flexible
       - Tunnel
       answerIndex: 0
-  - topic: Reading an Ingress manifest
+  - labels: [cloud-native]
+    topic: Reading an Ingress manifest
     desc: "An Ingress is L7 host/path routing rules (needs a running ingress controller). To parse one, read these fields in order:"
     extras:
       - label: e.g.
@@ -550,7 +571,8 @@ cards:
       - Service
       - NetworkPolicy
       answerIndex: 0
-  - topic: Which tool owns each command?
+  - labels: [cloud-native]
+    topic: Which tool owns each command?
     desc: A cross-check of the DevOps command families — from memory, name the tool each command belongs to (and what that tool's job is).
     extras:
       - label: Say
@@ -589,7 +611,8 @@ cards:
       - Terraform
       - Docker
       answerIndex: 0
-  - topic: "Pod resources: requests, limits & QoS"
+  - labels: [cloud-native]
+    topic: "Pod resources: requests, limits & QoS"
     desc: "The two knobs that decide placement and what happens under pressure:"
     extras:
       - label: Trap
@@ -616,7 +639,8 @@ cards:
       - '139'
       - '1'
       answerIndex: 0
-  - topic: Subnets (and how a VPC is carved up)
+  - labels: [cloud-native]
+    topic: Subnets (and how a VPC is carved up)
     desc: A VPC is your private network in the cloud with one big IP range (a CIDR block like 10.0.0.0/16). A SUBNET is a slice of that range, and — critically — each subnet lives in exactly ONE availability zone. You split a VPC into subnets to place resources across zones for HA and to separate public from private tiers.
     extras:
       - label: e.g.
@@ -643,7 +667,8 @@ cards:
       - its availability zone
       answerIndex: 0
 
-  - topic: "PersistentVolume (PV) and PersistentVolumeClaim (PVC)"
+  - labels: [cloud-native]
+    topic: "PersistentVolume (PV) and PersistentVolumeClaim (PVC)"
     desc: "Storage that OUTLIVES a pod. A PersistentVolume is a piece of storage in the cluster; a PersistentVolumeClaim is a pod's REQUEST for some (size + access mode). Kubernetes binds a claim to a volume, and the pod mounts the claim — so the data survives the pod being rescheduled, restarted, or replaced."
     extras:
       - label: Why
@@ -663,7 +688,8 @@ cards:
       - VolumeMount
       answerIndex: 0
 
-  - topic: "A mount is not network traffic"
+  - labels: [cloud-native]
+    topic: "A mount is not network traffic"
     desc: "Attaching a volume to a pod is NOT a network call — it's a filesystem mount, local to the node. Nothing flows along it the way a request flows between services. In an architecture diagram a mount is a plain line, not an arrow; a database CONNECTION (SQL over TCP) is the traffic."
     cloze:
       text: "Attaching a volume to a pod is a filesystem {}, local to the node — not a network call, so in a diagram it is a plain line, not an arrow."
@@ -682,7 +708,8 @@ cards:
       - a gRPC call
       answerIndex: 0
 
-  - topic: "CrashLoopBackOff — what it means and how to read it"
+  - labels: [cloud-native]
+    topic: "CrashLoopBackOff — what it means and how to read it"
     desc: "A pod's container keeps starting and immediately dying, so Kubernetes restarts it with an EXPONENTIAL back-off (hence the growing delay). It's a symptom, not a cause — the container is exiting non-zero on startup."
     extras:
       - label: Common causes
@@ -706,7 +733,8 @@ cards:
       - kubectl get events
       answerIndex: 0
 
-  - topic: "Declarative apply vs imperative set-image"
+  - labels: [cloud-native]
+    topic: "Declarative apply vs imperative set-image"
     desc: "`kubectl apply -f` is DECLARATIVE — you describe the desired state in manifests and the cluster reconciles toward it. `kubectl set image` (or edit/patch) is IMPERATIVE — a direct one-off change. The imperative change works, but it DRIFTS from your manifests, so the next `apply` reverts it."
     cloze:
       text: "kubectl apply -f is {}: you describe the desired state and the cluster reconciles toward it, unlike the one-off kubectl set image."
@@ -725,7 +753,8 @@ cards:
       - kubectl diff
       answerIndex: 0
 
-  - topic: "initContainers"
+  - labels: [cloud-native]
+    topic: "initContainers"
     desc: "Containers that run to completion, IN ORDER, BEFORE the pod's main containers start. Used for one-time setup that must finish first: wait for a dependency, run a database migration, seed a volume, or fix permissions."
     cloze:
       text: "{} run to completion, in order, before a pod's main containers start — used for one-time setup like waiting on a dependency or running a migration."
@@ -747,7 +776,8 @@ cards:
       - a liveness probe
       answerIndex: 0
 
-  - topic: "Readiness vs liveness probes"
+  - labels: [cloud-native]
+    topic: "Readiness vs liveness probes"
     desc: "Both are health checks Kubernetes runs against a container, answering different questions. A LIVENESS probe asks 'is it broken?' — failing it RESTARTS the pod. A READINESS probe asks 'can it serve traffic yet?' — failing it removes the pod from the Service's endpoints (no restart) until it recovers."
     extras:
       - label: Trap
@@ -764,7 +794,8 @@ cards:
       - healthcheck
       answerIndex: 0
 
-  - topic: "Pod stuck Pending — reading why it won't schedule"
+  - labels: [cloud-native]
+    topic: "Pod stuck Pending — reading why it won't schedule"
     desc: "Pending means the scheduler accepted the pod but can't place it on any node yet — so before logs (there's no running container to log), run `kubectl describe pod <p>` and READ THE EVENTS at the bottom, which name the exact reason."
     extras:
       - label: How
@@ -780,7 +811,8 @@ cards:
       - ["unbound PersistentVolumeClaim", "no PersistentVolume satisfies the claim, so it can't mount"]
     hint: "There's no container to log yet — which command names the scheduling reason, and where in its output do you read it?"
 
-  - topic: "Where HTTPS terminates in Kubernetes (terminate / re-encrypt / passthrough)"
+  - labels: [cloud-native]
+    topic: "Where HTTPS terminates in Kubernetes (terminate / re-encrypt / passthrough)"
     desc: "The ingress / edge decides WHERE the client's TLS is decrypted, and that decision governs whether traffic inside the cluster is encrypted."
     table:
       - ["Mode", "What happens on the edge → pod hop"]
@@ -793,7 +825,8 @@ cards:
       - label: Tie-in
         text: "cert-manager issues the cert into a kubernetes.io/tls Secret the Ingress references; SNI in the ClientHello is how one ingress IP serves many hostnames' certs."
     hint: "Three answers to 'where does the client's TLS actually get decrypted?'"
-  - topic: kubectl subcommands
+  - labels: [cloud-native]
+    topic: kubectl subcommands
     desc: To stream a running pod's output (and read the previous crash's with --previous) you run kubectl logs.
     cloze:
       text: To stream a running pod's output (and read the previous crash's with --previous) you run kubectl {}.
@@ -806,7 +839,8 @@ cards:
       - get
       - explain
       answerIndex: 0
-  - topic: PodDisruptionBudget
+  - labels: [cloud-native]
+    topic: PodDisruptionBudget
     desc: To stop a node drain from taking every replica of a service down at once, you cap simultaneous voluntary evictions with a PodDisruptionBudget.
     cloze:
       text: To stop a node drain from taking every replica of a service down at once, you cap simultaneous voluntary evictions with a {}.
@@ -819,7 +853,8 @@ cards:
       - PodAntiAffinity
       - ResourceQuota
       answerIndex: 0
-  - topic: Taints and tolerations
+  - labels: [cloud-native]
+    topic: Taints and tolerations
     desc: A GPU node marked so only workloads that explicitly permit it may land there carries a taint; the workload needs a matching toleration.
     cloze:
       text: A GPU node marked so only workloads that explicitly permit it may land there carries a {}; the workload needs a matching toleration.
@@ -832,7 +867,8 @@ cards:
       - A nodeSelector
       - A topology spread
       answerIndex: 0
-  - topic: NetworkPolicy default-allow
+  - labels: [cloud-native]
+    topic: NetworkPolicy default-allow
     desc: In a namespace with no NetworkPolicy, pod-to-pod traffic is default-allow — every pod can reach every other until the first policy is applied.
     cloze:
       text: In a namespace with no NetworkPolicy, pod-to-pod traffic is default-{} — every pod can reach every other until the first policy is applied.
@@ -845,7 +881,8 @@ cards:
       - PodSecurityAdmission
       - ServiceAccount
       answerIndex: 0
-  - topic: Rolling update surge and unavailability
+  - labels: [cloud-native]
+    topic: Rolling update surge and unavailability
     desc: A Deployment that must never drop below full capacity during a rollout sets maxUnavailable to 0.
     cloze:
       text: A Deployment that must never drop below full capacity during a rollout sets maxUnavailable to {}.
@@ -858,7 +895,8 @@ cards:
       - progressDeadlineSeconds
       - revisionHistoryLimit
       answerIndex: 0
-  - topic: Service mesh sidecar mTLS
+  - labels: [cloud-native]
+    topic: Service mesh sidecar mTLS
     desc: A service mesh injects a proxy sidecar beside each pod so it can encrypt service-to-service traffic with mTLS and collect metrics without app code changes.
     cloze:
       text: A service mesh injects a proxy {} beside each pod so it can encrypt service-to-service traffic with mTLS and collect metrics without app code changes.
@@ -871,7 +909,8 @@ cards:
       - A load balancer
       - A CNI plugin
       answerIndex: 0
-  - topic: Mesh traffic splitting
+  - labels: [cloud-native]
+    topic: Mesh traffic splitting
     desc: To send five percent of live traffic to a new version at the request level — richer than a plain replica ratio — a service mesh applies a traffic-split rule.
     cloze:
       text: To send five percent of live requests to a new version at the request level — richer than a plain replica ratio — a service mesh applies a {} rule.
@@ -884,7 +923,8 @@ cards:
       - Horizontal autoscaling
       - DNS round-robin
       answerIndex: 0
-  - topic: Terraform remote state locking
+  - labels: [cloud-native]
+    topic: Terraform remote state locking
     desc: Two engineers running terraform apply at once can corrupt shared state, so a remote backend takes a state lock for the duration of each apply.
     cloze:
       text: Two engineers running terraform apply at once can corrupt shared state, so a remote backend takes a state {} for the duration of each apply.
@@ -897,7 +937,8 @@ cards:
       - Workspaces
       - Provider pinning
       answerIndex: 0
-  - topic: Terraform configuration drift
+  - labels: [cloud-native]
+    topic: Terraform configuration drift
     desc: When someone edits a resource in the cloud console, Terraform's view goes stale; the next terraform plan surfaces that difference as changes to reconcile.
     cloze:
       text: When someone edits a resource in the cloud console, Terraform's view goes stale; the next terraform {} surfaces that difference as changes to reconcile.
@@ -910,7 +951,8 @@ cards:
       - A tainted resource
       - A partial apply
       answerIndex: 0
-  - topic: 'Cloud cost: spot & rightsizing'
+  - labels: [cloud-native]
+    topic: 'Cloud cost: spot & rightsizing'
     desc: The cheapest way to run fault-tolerant, interruptible batch work in the cloud is on deeply discounted spot instances.
     cloze:
       text: The cheapest way to run fault-tolerant, interruptible batch work in the cloud is on deeply discounted {} instances.
@@ -923,7 +965,8 @@ cards:
       - Add more replicas
       - Enable autoscaling logs
       answerIndex: 0
-  - topic: Cost allocation tags / showback
+  - labels: [cloud-native]
+    topic: Cost allocation tags / showback
     desc: To tell which team or product is driving cloud spend, you attach cost-allocation tags to resources and break the bill down by them.
     cloze:
       text: To tell which team or product is driving cloud spend, you attach cost-allocation {} to resources and break the bill down by them.
@@ -936,7 +979,8 @@ cards:
       - A spending cap
       - Single sign-on
       answerIndex: 0
-  - topic: Golden paths / internal developer platform
+  - labels: [cloud-native]
+    topic: Golden paths / internal developer platform
     desc: An internal developer platform gives teams a paved golden path — a supported, opinionated default route to ship — so they don't reinvent CI, infra, and observability each time.
     cloze:
       text: An internal developer platform gives teams a paved {} — a supported, opinionated default route to ship — so they don't reinvent CI, infra, and observability each time.

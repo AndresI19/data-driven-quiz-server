@@ -3,7 +3,8 @@ section:
   name: "Scale & Napkin Math"
   color: "#ec4899"
 cards:
-  - topic: "Per day → per second (the 86,400 rule)"
+  - labels: [system-design]
+    topic: "Per day → per second (the 86,400 rule)"
     desc: "The first conversion in every estimate, because requirements arrive as 'per day' and designs are
       decided by 'per second'. A day is 86,400 seconds — round it to 100,000 and the arithmetic becomes
       mental. The point is not precision, it is finding out which league the problem is in."
@@ -50,7 +51,8 @@ cards:
         - "~12/sec — this barely needs a server"
       answerIndex: 0
 
-  - topic: "Peak vs. average (the multiplier that sizes your fleet)"
+  - labels: [system-design]
+    topic: "Peak vs. average (the multiplier that sizes your fleet)"
     desc: "You divide by 86,400 to get an average, but you provision for the peak. Ordinary consumer traffic
       peaks at roughly 2–3x its daily average, because usage clusters into waking hours. Synchronised events
       — a product launch, a sports final, a breaking news story — go far beyond that."
@@ -88,7 +90,8 @@ cards:
         - The database would scale automatically anyway
       answerIndex: 0
 
-  - topic: "What one machine can actually do"
+  - labels: [system-design]
+    topic: "What one machine can actually do"
     desc: "The single most useful antidote to over-engineering. Modern hardware is far more capable than
       most designs assume, and a candidate who reaches for a distributed system at 300 requests per second
       is signalling that they have never measured anything."
@@ -137,7 +140,8 @@ cards:
         - 2 TB exceeds what one node can store
       answerIndex: 0
 
-  - topic: "The latency ladder"
+  - labels: [system-design]
+    topic: "The latency ladder"
     desc: "Every design decision that involves 'where should this live' is really a question about this
       ladder. The jumps are orders of magnitude, and the one that matters most is the cliff between a local
       operation and a network round trip."
@@ -186,7 +190,8 @@ cards:
         - The client should retry on slow responses
       answerIndex: 0
 
-  - topic: "Storage magnitudes (when data stops fitting)"
+  - labels: [system-design]
+    topic: "Storage magnitudes (when data stops fitting)"
     desc: "Row size times row count, then compare against what one machine holds. The arithmetic is trivial;
       the value is in knowing the ceilings you are comparing against."
     table:
@@ -234,7 +239,8 @@ cards:
         - Add read replicas to spread the storage
       answerIndex: 0
 
-  - topic: "Bytes per day → bandwidth"
+  - labels: [system-design]
+    topic: "Bytes per day → bandwidth"
     desc: "The conversion that decides whether data may pass through your application servers. Divide the
       daily byte volume by 86,400 to get bytes per second, then multiply by 8 for bits — and compare it
       against what one machine's network interface can carry."
@@ -271,7 +277,8 @@ cards:
         - The database needs a larger write buffer
       answerIndex: 0
 
-  - topic: "Read:write ratio (where to spend the design)"
+  - labels: [system-design]
+    topic: "Read:write ratio (where to spend the design)"
     desc: "One ratio tells you which half of the system deserves your attention, and it is the number most
       candidates never compute. Say it out loud early and let every later decision cite it."
     table:
@@ -316,7 +323,8 @@ cards:
         - Read replicas are unnecessary at this ratio
       answerIndex: 0
 
-  - topic: "Cache hit rate arithmetic"
+  - labels: [system-design]
+    topic: "Cache hit rate arithmetic"
     desc: "Hit rate does not reduce origin load linearly — it reduces it by the reciprocal of the miss rate.
       That is why the last few percent are worth so much, and why losing a cache is so violent."
     table:
@@ -363,7 +371,8 @@ cards:
         - It receives double the load
       answerIndex: 0
 
-  - topic: "Availability nines → actual downtime"
+  - labels: [system-design]
+    topic: "Availability nines → actual downtime"
     desc: "An availability target is a budget measured in time, and converting the percentage into minutes
       is what makes it concrete enough to argue about."
     table:
@@ -411,7 +420,8 @@ cards:
         - "~95% — each service compounds tenfold"
       answerIndex: 0
 
-  - topic: "Fan-out amplification"
+  - labels: [system-design]
+    topic: "Fan-out amplification"
     desc: "The multiplication that turns a small write rate into an enormous one, and the reason a nominally
       read-heavy system can become write-bound. Compute it explicitly — it is the single number that decides
       the design in any publish-to-many system."
@@ -447,7 +457,8 @@ cards:
         - "200 writes/sec — one per follower per second"
       answerIndex: 0
 
-  - topic: "Cloud cost intuition (and the egress trap)"
+  - labels: [system-design]
+    topic: "Cloud cost intuition (and the egress trap)"
     desc: "Rough order-of-magnitude monthly prices. You will not be graded on accuracy, but knowing which
       line item dominates changes designs — and it is almost never the one people expect."
     table:
@@ -493,7 +504,8 @@ cards:
         - Block storage IOPS — switch to cheaper volumes
       answerIndex: 0
 
-  - topic: "Human latency thresholds"
+  - labels: [system-design]
+    topic: "Human latency thresholds"
     desc: "The budgets that decide what a system is allowed to do, and they come from human perception rather
       than from hardware. Anchoring a design in these is what turns 'make it fast' into an engineering
       constraint."
@@ -536,7 +548,8 @@ cards:
         - Increase the client timeout
       answerIndex: 0
 
-  - topic: "Field sizes & powers of two"
+  - labels: [system-design]
+    topic: "Field sizes & powers of two"
     desc: "The building blocks of any storage estimate. Knowing what a field actually costs lets you size a
       row in your head instead of guessing, and the powers of two let you move between units without
       arithmetic."

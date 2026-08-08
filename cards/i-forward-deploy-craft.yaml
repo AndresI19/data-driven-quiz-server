@@ -3,7 +3,8 @@ section:
   name: Forward-Deploy Craft
   color: "#f97316"
 cards:
-  - topic: Integration patterns
+  - labels: [field-craft]
+    topic: Integration patterns
     desc: "Ways to hook a control plane into a customer's system — pick the least invasive that still gives you the data:"
     items:
       - Sidecar — a helper container beside the app in the same pod (e.g. a proxy that intercepts traffic)
@@ -22,7 +23,8 @@ cards:
       - Ambassador
       - Adapter
       answerIndex: 1
-  - topic: Field learnings into prototypes
+  - labels: [field-craft]
+    topic: Field learnings into prototypes
     desc: "The forward-deploy → product feedback loop: field insights become product features."
     extras:
       - label: e.g.
@@ -34,7 +36,8 @@ cards:
       - "Feed the gap back to product as a proposed feature"
       - "Product generalizes it into the core"
     hint: The forward-deploy feedback loop — a field insight becomes a product feature.
-  - topic: Enterprise deployment constraints
+  - labels: [field-craft]
+    topic: Enterprise deployment constraints
     desc: VPC / air-gapped / on-prem realities, compliance (SOC2), and change-management friction.
     extras:
       - label: e.g.
@@ -58,7 +61,8 @@ cards:
       - Serverless
       - On-premises
       answerIndex: 3
-  - topic: Git commands (basic → advanced)
+  - labels: [field-craft]
+    topic: Git commands (basic → advanced)
     desc: Git tracks history as commits (snapshots) on branches; work flows working tree → staging (index) → commit → remote. Commands roughly basic → advanced.
     extras:
       - label: Trap
@@ -88,7 +92,8 @@ cards:
       - revert
       - rebase
       answerIndex: 1
-  - topic: Linux / bash commands (basic → advanced)
+  - labels: [field-craft]
+    topic: Linux / bash commands (basic → advanced)
     desc: The shell verbs you reach for on any box — inspecting, finding, filtering, and debugging. Roughly basic → advanced.
     extras:
       - label: Trap
@@ -105,7 +110,8 @@ cards:
       - curl -sS <url> | jq . — fetch and pretty-print JSON
       - awk '{print $1}' · sed 's/a/b/g' — field-extract / stream-edit text
       - xargs · | (pipe) · > / >> (redirect) — compose commands and route output
-  - topic: SQL commands (basic → advanced)
+  - labels: [field-craft]
+    topic: SQL commands (basic → advanced)
     desc: The query verbs, from reading rows to shaping and joining data. Roughly basic → advanced.
     extras:
       - label: Trap
@@ -121,7 +127,8 @@ cards:
       - EXPLAIN ANALYZE <query> — see the planner's actual execution + timing
       - "transactions: BEGIN / COMMIT / ROLLBACK — all-or-nothing writes"
       - "window fn: ROW_NUMBER() OVER (PARTITION BY …) — rank within groups"
-  - topic: curl / HTTP commands (basic → advanced)
+  - labels: [field-craft]
+    topic: curl / HTTP commands (basic → advanced)
     desc: Driving and debugging HTTP from the shell — the fastest way to probe an API. Roughly basic → advanced.
     extras:
       - label: Trap
@@ -137,7 +144,8 @@ cards:
       - "--resolve host:443:1.2.3.4 — force a host to a specific IP (bypass DNS)"
       - "-k — skip TLS verification (debug only — never in production)"
 
-  - topic: "The local-Kubernetes networking gotcha (minikube on a VM)"
+  - labels: [field-craft]
+    topic: "The local-Kubernetes networking gotcha (minikube on a VM)"
     desc: "When Docker isn't a native daemon but lives inside a VM (Colima/QEMU on macOS or Linux), minikube writes the cluster node's UNROUTABLE bridge IP (e.g. 192.168.49.2:8443) into your kubeconfig — so every kubectl call hangs and `minikube start` dies with 'apiserver healthz never reported healthy' while the control plane is perfectly fine, just unreachable."
     cloze:
       text: "With Docker inside a VM, minikube writes the node's {} bridge IP into your kubeconfig, so every kubectl call hangs even though the control plane is fine."
@@ -148,7 +156,8 @@ cards:
       - label: Trap
         text: "`minikube status`, `minikube ip`, `minikube tunnel`, and `docker-env` all assume Docker is local and will mislead you here. Gate health on `kubectl get --raw /healthz` after the repoint, not on `minikube status`."
 
-  - topic: "Read the target before you delete or overwrite it"
+  - labels: [field-craft]
+    topic: "Read the target before you delete or overwrite it"
     desc: "A destructive, irreversible action (wiping a database, dropping a table, force-pushing) deserves a look at what you're about to destroy FIRST — row counts, what depends on it, whether it matches the description you were given. If what you find contradicts the plan, surface that instead of proceeding."
     extras:
       - label: "e.g."
@@ -161,7 +170,8 @@ cards:
       - "If what you find contradicts the plan, surface that instead of proceeding"
       - "Take a backup (e.g. pg_dump) even when you're confident"
       - "Only then perform the irreversible action"
-  - topic: SQL row vs group filtering
+  - labels: [field-craft]
+    topic: SQL row vs group filtering
     desc: To keep only the groups whose aggregate meets a condition — filtering AFTER a GROUP BY rather than filtering individual rows first — you use the HAVING clause.
     cloze:
       text: To keep only the groups whose aggregate meets a condition — filtering AFTER a GROUP BY rather than filtering individual rows first — you use the {} clause.
@@ -174,7 +184,8 @@ cards:
       - FILTER
       - WHERE
       answerIndex: 3
-  - topic: Feature flags decouple deploy from release
+  - labels: [field-craft]
+    topic: Feature flags decouple deploy from release
     desc: Shipping code to production dark and turning it on later for a subset of users decouples deploy from release using a feature flag.
     cloze:
       text: Shipping code to production dark and turning it on later for a subset of users decouples deploy from release using a feature {}.
@@ -187,7 +198,8 @@ cards:
       - A blue-green swap
       - A hotfix branch
       answerIndex: 0
-  - topic: Expand-and-contract migration
+  - labels: [field-craft]
+    topic: Expand-and-contract migration
     desc: To rename a column with zero downtime you add the new one, dual-write, backfill, then drop the old — the expand-and-contract pattern.
     cloze:
       text: To rename a column with zero downtime you add the new one, dual-write, backfill, then drop the old — the expand-and-{} pattern.
@@ -200,7 +212,8 @@ cards:
       - Drop and recreate
       - Lock the table
       answerIndex: 0
-  - topic: Chunked backfills
+  - labels: [field-craft]
+    topic: Chunked backfills
     desc: A migration that updates fifty million rows in one statement locks the table and takes the site down; a safe backfill runs in rate-limited batches.
     cloze:
       text: A migration that updates fifty million rows in one statement locks the table and takes the site down; a safe backfill runs in rate-limited {}.
@@ -213,7 +226,8 @@ cards:
       - A bigger instance
       - A read replica
       answerIndex: 0
-  - topic: Idempotent deploy scripts
+  - labels: [field-craft]
+    topic: Idempotent deploy scripts
     desc: A deploy script you can safely re-run after a mid-way failure — landing the same end state whether run once or three times — is idempotent.
     cloze:
       text: A deploy script you can safely re-run after a mid-way failure — landing the same end state whether run once or three times — is {}.
@@ -226,7 +240,8 @@ cards:
       - Concurrency
       - Durability
       answerIndex: 0
-  - topic: Reproduce before you fix
+  - labels: [field-craft]
+    topic: Reproduce before you fix
     desc: The surest way to fix a hard-to-reproduce production bug is a failing test that pins the exact input from the logs before you change the code.
     cloze:
       text: The surest way to fix a hard-to-reproduce production bug is a failing {} that pins the exact input from the logs before you change the code.

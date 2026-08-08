@@ -3,7 +3,8 @@ section:
   name: "System Design Patterns"
   color: "#14b8a6"
 cards:
-  - topic: "Lease & visibility timeout"
+  - labels: [system-design]
+    topic: "Lease & visibility timeout"
     desc: How a queue survives a worker dying mid-job. The worker does not delete the job when it takes
       it — it takes a LEASE. The job is hidden from every other worker for a visibility timeout; if the
       worker acknowledges before that expires the job is deleted, and if the worker dies the lease expires
@@ -48,7 +49,8 @@ cards:
         - Consumer-group rebalancing
       answerIndex: 0
 
-  - topic: "Poison pill & the dead-letter queue"
+  - labels: [system-design]
+    topic: "Poison pill & the dead-letter queue"
     desc: A poison pill is a message that crashes every worker that touches it. Under at-least-once delivery
       it is redelivered forever, and because it kills the worker it also takes down whatever else that
       worker was processing — one malformed message can put an entire fleet into a crash loop. The fix
@@ -83,7 +85,8 @@ cards:
         - Backpressure, bounded by a rate limiter
       answerIndex: 0
 
-  - topic: "A relational table as a job queue (SKIP LOCKED)"
+  - labels: [system-design]
+    topic: "A relational table as a job queue (SKIP LOCKED)"
     desc: "`SELECT ... FOR UPDATE SKIP LOCKED` turns an ordinary table into a work queue. Each polling
       transaction locks the rows it claims, and SKIP LOCKED makes concurrent pollers step OVER rows another
       transaction already holds instead of blocking behind them. Good to tens of thousands of jobs per
@@ -128,7 +131,8 @@ cards:
         - Connection pooling is serialising the queries
       answerIndex: 0
 
-  - topic: "Fan-out on write vs. fan-out on read"
+  - labels: [system-design]
+    topic: "Fan-out on write vs. fan-out on read"
     desc: The core choice whenever one item must reach many subscribers. Fan-out on WRITE (push) copies
       the item into every recipient's precomputed list at publish time — reads become a single lookup,
       writes become O(recipients). Fan-out on READ (pull) stores it once and assembles per-recipient at
@@ -182,7 +186,8 @@ cards:
         - Fan-out on read; add a write-through cache
       answerIndex: 0
 
-  - topic: "Claim check (payload by reference)"
+  - labels: [system-design]
+    topic: "Claim check (payload by reference)"
     desc: When a message would carry a large payload, store the payload in object storage and put only
       a REFERENCE on the queue. The consumer fetches the bytes itself. This keeps the messaging layer doing
       what it is good at — small, ordered, durable, cheap-to-replicate notifications — instead of becoming
@@ -214,7 +219,8 @@ cards:
         - Raise the broker's max message size and add memory to the brokers
       answerIndex: 0
 
-  - topic: "Control plane vs. data plane"
+  - labels: [system-design]
+    topic: "Control plane vs. data plane"
     desc: Split the system that DECIDES from the system that DOES. The control plane is low-rate, human-driven,
       and handles configuration, provisioning and authorisation; the data plane is high-rate, latency-sensitive,
       and carries the actual traffic or bytes. They differ by orders of magnitude in rate and latency budget,
@@ -249,7 +255,8 @@ cards:
         - Put a CDN in front of the upload endpoint
       answerIndex: 0
 
-  - topic: "Cell-based architecture"
+  - labels: [system-design]
+    topic: "Cell-based architecture"
     desc: Partition tenants into independent CELLS, where a cell is a complete self-sufficient stack —
       its own compute, its own database, its own capacity — serving a bounded set of tenants. Cells share
       no state and never call each other, so a failure inside one is contained to the customers in it.
@@ -285,7 +292,8 @@ cards:
         - Deploy to ten availability zones with a global control plane
       answerIndex: 0
 
-  - topic: "Static stability"
+  - labels: [system-design]
+    topic: "Static stability"
     desc: The data plane must keep working when the control plane is down. Data-plane nodes cache the configuration
       they need locally and keep serving the last known good state indefinitely, so a control-plane outage
       means “you cannot change settings right now”, not “your traffic stops”. The failure mode of the large
@@ -319,7 +327,8 @@ cards:
         - Circuit breaking
       answerIndex: 0
 
-  - topic: "Cursor vs. offset pagination"
+  - labels: [system-design]
+    topic: "Cursor vs. offset pagination"
     desc: Offset pagination (`LIMIT 20 OFFSET 40`) asks for a position in a result set. If rows are inserted
       or deleted between requests everything shifts, so page 2 repeats items the reader already saw and
       silently skips others. A cursor encodes WHERE YOU STOPPED — the sort key of the last row returned
@@ -356,7 +365,8 @@ cards:
         - Duplicate delivery from the fan-out queue
       answerIndex: 0
 
-  - topic: "Append-only ledger vs. mutable balance"
+  - labels: [system-design]
+    topic: "Append-only ledger vs. mutable balance"
     desc: Do not store a balance in a column you overwrite. Store an immutable append-only sequence of
       entries and DERIVE the balance by summing them. In double-entry form every transaction produces balanced
       debits and credits, so the books carry their own invariant — debits must equal credits, and a background
@@ -389,7 +399,8 @@ cards:
         - Nightly snapshots of the balances table
       answerIndex: 0
 
-  - topic: "Fail open vs. fail closed"
+  - labels: [system-design]
+    topic: "Fail open vs. fail closed"
     desc: When the component that makes a decision is unreachable, you must choose what happens by default.
       Fail OPEN allows the request — protecting availability, and removing the protection precisely when
       things are already going wrong. Fail CLOSED denies it — protecting the backend, and converting a
@@ -425,7 +436,8 @@ cards:
         - Queue the actions and apply them once the service recovers
       answerIndex: 0
 
-  - topic: "Precompute at write vs. compute at read"
+  - labels: [system-design]
+    topic: "Precompute at write vs. compute at read"
     desc: The recurring lever behind caching, materialised views, search indexes and fan-out. Doing work
       at WRITE time makes reads a lookup and pays the cost once per write, amortised over every subsequent
       read — which wins hard when reads vastly outnumber writes. Doing it at READ time keeps writes cheap
@@ -464,7 +476,8 @@ cards:
         - Cache the most popular queries and compute the rest on demand
       answerIndex: 0
 
-  - topic: "Replication vs. erasure coding"
+  - labels: [system-design]
+    topic: "Replication vs. erasure coding"
     desc: Two ways to survive losing a disk. REPLICATION keeps N whole copies — simple, any copy serves
       a read, and a 200% storage overhead for three copies. ERASURE CODING splits an object into k data
       fragments plus m parity fragments spread across failure domains; any k of the k+m reconstruct it.
@@ -513,7 +526,8 @@ cards:
         - Single copy plus checksums and a scrubber
       answerIndex: 0
 
-  - topic: "Little's law for capacity"
+  - labels: [system-design]
+    topic: "Little's law for capacity"
     desc: "Concurrency = arrival rate × time in system (L = λW). It converts a throughput requirement into
       a machine count with one multiplication: 10,000 jobs per second at 200 ms each needs 10,000 × 0.2
       = 2,000 concurrent workers. It also runs backwards — measure your concurrency and latency, and you
@@ -547,7 +561,8 @@ cards:
         - "400"
       answerIndex: 0
 
-  - topic: "Real-time transports: polling → WebSocket"
+  - labels: [system-design]
+    topic: "Real-time transports: polling → WebSocket"
     desc: Four ways to get server data to a client, separated by one axis — who may start a message,
       and what one message costs. The progression runs from asking repeatedly on a timer, through holding
       a request open until there is news, to a one-way stream, to a single connection either side can
@@ -614,7 +629,8 @@ cards:
         - Polling on a one-second timer
       answerIndex: 0
 
-  - topic: "Publish/subscribe (and how it differs from a queue)"
+  - labels: [system-design]
+    topic: "Publish/subscribe (and how it differs from a queue)"
     desc: "Publishers send to a named TOPIC rather than to recipients; subscribers register interest in
       that topic. Neither side knows the other exists — that decoupling is the entire point, and every
       benefit and every cost follows from it. The distinction people blur is what the message is FOR: a

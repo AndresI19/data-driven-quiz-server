@@ -4,7 +4,8 @@ section:
   color: "#3b82f6"
 cards:
   # ── Set 1 · problem → archetype ───────────────────────────────────────────
-  - topic: "Pastebin"
+  - labels: [system-design]
+    topic: "Pastebin"
     desc: "Users paste text, get a short URL back, and anyone with that URL can read it. Optional expiry
       and private links. Reads vastly outnumber writes and each read is a lookup by a single key. Archetype
       — READ-HEAVY KEY-VALUE LOOKUP: generate a key, store the blob once, serve it from a cache that the
@@ -31,7 +32,8 @@ cards:
         - Transactional ledger
       answerIndex: 0
 
-  - topic: "Notification service"
+  - labels: [system-design]
+    topic: "Notification service"
     desc: "One event — a mention, a price drop, a shipping update — must reach every user subscribed to it,
       across push, email and in-app. Some events have three recipients and some have ten million. Archetype
       — FAN-OUT DELIVERY: decide per publisher whether to push into precomputed per-user inboxes or leave it
@@ -57,7 +59,8 @@ cards:
         - Stateful connection tier
       answerIndex: 0
 
-  - topic: "Web crawler"
+  - labels: [system-design]
+    topic: "Web crawler"
     desc: "Fetch billions of pages, follow their links, respect robots.txt and politeness delays, and do it
       again on a refresh schedule. Individual fetches are slow, failure-prone and independent. Archetype —
       ASYNC WORK PIPELINE: a durable frontier queue, a worker pool leasing URLs, retries with backoff, and a
@@ -83,7 +86,8 @@ cards:
         - Fan-out delivery
       answerIndex: 0
 
-  - topic: "Live comments on a stream"
+  - labels: [system-design]
+    topic: "Live comments on a stream"
     desc: "Thousands of viewers watch the same broadcast and post short messages that everyone else sees
       within a second, with a live viewer count. Archetype — STATEFUL CONNECTION TIER: persistent
       bidirectional connections held by a thin socket tier, a registry of who is connected where, and a bus
@@ -109,7 +113,8 @@ cards:
         - Precomputed low-latency lookup
       answerIndex: 0
 
-  - topic: "Centralised logging system"
+  - labels: [system-design]
+    topic: "Centralised logging system"
     desc: "Every service ships structured log lines to one place, engineers search them during incidents,
       and retention is measured in weeks. Volume is enormous, writes dominate overwhelmingly, and the data is
       append-only and queried by time range. Archetype — TIME-SERIES INGESTION AND ROLLUP: heavy compressed
@@ -136,7 +141,8 @@ cards:
         - Stateful connection tier
       answerIndex: 0
 
-  - topic: "Photo sharing service"
+  - labels: [system-design]
+    topic: "Photo sharing service"
     desc: "Users upload photos from phones, the service stores them durably forever and serves them fast
       worldwide, with albums and sharing. Payloads are megabytes and the volume is measured in terabytes per
       day. Archetype — BULK OBJECT STORAGE with a control/data plane split: the API grants permission, the
@@ -162,7 +168,8 @@ cards:
         - Transactional ledger
       answerIndex: 0
 
-  - topic: "Feature-flag service"
+  - labels: [system-design]
+    topic: "Feature-flag service"
     desc: "Many customer organisations each configure flags, targeting rules and rollout percentages, and
       every one of their application instances evaluates those rules on the hot path. Archetype —
       MULTI-TENANT CONTROL PLANE: a low-rate declarative configuration API, versioned rollout, and a data
@@ -188,7 +195,8 @@ cards:
         - Bulk object storage
       answerIndex: 0
 
-  - topic: "Global leaderboard"
+  - labels: [system-design]
+    topic: "Global leaderboard"
     desc: "Millions of players have scores; show the global top 100, a player's own rank, and the slice
       around them, updating continuously. Reads are constant and must be instant; exact global ranking on
       demand is prohibitively expensive. Archetype — PRECOMPUTED LOW-LATENCY LOOKUP: maintain the ranking
@@ -214,7 +222,8 @@ cards:
         - Async work pipeline
       answerIndex: 0
 
-  - topic: "Ticket booking (Ticketmaster)"
+  - labels: [system-design]
+    topic: "Ticket booking (Ticketmaster)"
     desc: "A fixed inventory of seats, enormous simultaneous demand at on-sale, and a seat must never be
       sold twice. Money moves and the booking must be auditable. Archetype — TRANSACTIONAL LEDGER: strong
       consistency on the inventory decision, idempotency on the purchase, and an append-only record of what
@@ -242,7 +251,8 @@ cards:
       answerIndex: 0
 
   # ── Set 2 · archetype → which problems fit ────────────────────────────────
-  - topic: "Archetype · Read-heavy key-value lookup"
+  - labels: [system-design]
+    topic: "Archetype · Read-heavy key-value lookup"
     desc: "Small immutable values addressed by one key, with reads dominating writes by orders of magnitude.
       The design is almost entirely about the read path: a cache the origin rarely sees, immutable entries so
       invalidation is nearly free, and a key scheme that neither collides nor leaks."
@@ -265,7 +275,8 @@ cards:
         - Long-lived connections combined with presence data
       answerIndex: 0
 
-  - topic: "Archetype · Fan-out delivery"
+  - labels: [system-design]
+    topic: "Archetype · Fan-out delivery"
     desc: "One write must reach many recipients, and the recipient count is heavy-tailed. The whole design is
       the push/pull/hybrid decision, driven by computing the write amplification for both the average
       publisher and the extreme one."
@@ -288,7 +299,8 @@ cards:
         - Payload sizes above one megabyte
       answerIndex: 0
 
-  - topic: "Archetype · Async work pipeline"
+  - labels: [system-design]
+    topic: "Archetype · Async work pipeline"
     desc: "Units of work that are slow, independent, failure-prone and not needed synchronously. A durable
       queue, leases with visibility timeouts, retries with jittered backoff, and a dead-letter path — plus
       fair scheduling when several tenants share the workers."
@@ -311,7 +323,8 @@ cards:
         - Disable retries for long jobs
       answerIndex: 0
 
-  - topic: "Archetype · Stateful connection tier"
+  - labels: [system-design]
+    topic: "Archetype · Stateful connection tier"
     desc: "The server must push to the client unprompted, so connections stay open and the server becomes
       stateful. That forces a thin socket tier, a user-to-node registry, an inter-node bus, and a plan for
       reconnection storms."
@@ -334,7 +347,8 @@ cards:
         - Writes must become idempotent
       answerIndex: 0
 
-  - topic: "Archetype · Time-series ingestion and rollup"
+  - labels: [system-design]
+    topic: "Archetype · Time-series ingestion and rollup"
     desc: "Append-heavy, immutable, timestamped data queried by range and discarded on a schedule. Compresses
       extraordinarily well, downsamples into retention tiers, and its real failure mode is cardinality rather
       than volume."
@@ -357,7 +371,8 @@ cards:
         - Network saturation from scraping
       answerIndex: 0
 
-  - topic: "Archetype · Bulk object storage"
+  - labels: [system-design]
+    topic: "Archetype · Bulk object storage"
     desc: "Payloads far larger than their metadata. The defining move is separating the control plane from
       the data plane so bytes never traverse your application tier, plus multipart transfer, durability by
       replication or erasure coding, and a CDN on the read path."
@@ -380,7 +395,8 @@ cards:
         - It would break the metadata transaction
       answerIndex: 0
 
-  - topic: "Archetype · Multi-tenant control plane"
+  - labels: [system-design]
+    topic: "Archetype · Multi-tenant control plane"
     desc: "Many customers share a platform whose configuration is low-rate and whose enforcement is
       high-rate. Tiered isolation, cells to bound blast radius, staged rollout of code AND configuration, and
       a data plane that survives the control plane being down."
@@ -403,7 +419,8 @@ cards:
         - It buffers requests until the control plane returns
       answerIndex: 0
 
-  - topic: "Archetype · Precomputed low-latency lookup"
+  - labels: [system-design]
+    topic: "Archetype · Precomputed low-latency lookup"
     desc: "A latency budget so tight that computing the answer at request time is impossible, so the answer
       is built in advance and the request becomes a read. Immutable structures swapped in atomically, sharded
       so a request touches one shard, with a small real-time layer merged on top."
@@ -429,7 +446,8 @@ cards:
         - Personalisation prevents sharding by prefix
       answerIndex: 0
 
-  - topic: "Archetype · Transactional ledger"
+  - labels: [system-design]
+    topic: "Archetype · Transactional ledger"
     desc: "Correctness under failure matters more than throughput, and a lost or duplicated event is money
       or inventory. Idempotency keys, an append-only double-entry record, sagas with compensating actions,
       and reconciliation as a required component rather than an afterthought."
@@ -456,7 +474,8 @@ cards:
       answerIndex: 0
 
   # ── Set 3 · topology → archetype ──────────────────────────────────────────
-  - topic: "Read-heavy key-value lookup"
+  - labels: [system-design]
+    topic: "Read-heavy key-value lookup"
     desc: "The tell is the shape: a single-key read path fronted by a cache the origin rarely sees, with the
       write path a thin trickle beside it and analytics pushed off the hot path onto a queue."
     code:
@@ -491,7 +510,8 @@ cards:
         - Fan-out delivery
       answerIndex: 0
 
-  - topic: "Fan-out delivery"
+  - labels: [system-design]
+    topic: "Fan-out delivery"
     desc: "The tell is one write becoming many, with a deliberate exception path for the publishers whose
       recipient count would make that impossible — and a merge that reunites the two at read time."
     code:
@@ -525,7 +545,8 @@ cards:
         - Multi-tenant control plane
       answerIndex: 0
 
-  - topic: "Async work pipeline"
+  - labels: [system-design]
+    topic: "Async work pipeline"
     desc: "The tell is the loop: work is leased rather than taken, an expiring lease returns it, and there is
       a terminal side-path for work that will never succeed."
     code:
@@ -558,7 +579,8 @@ cards:
         - Bulk object storage
       answerIndex: 0
 
-  - topic: "Stateful connection tier"
+  - labels: [system-design]
+    topic: "Stateful connection tier"
     desc: "The tell is bidirectional arrows at the edge and a lookup in the middle: because each client is
       pinned to whichever node holds its socket, something must map user to node and route between them."
     code:
@@ -591,7 +613,8 @@ cards:
         - Transactional ledger
       answerIndex: 0
 
-  - topic: "Bulk object storage"
+  - labels: [system-design]
+    topic: "Bulk object storage"
     desc: "The tell is the payload arrow bypassing the service entirely. The API grants permission and
       records metadata; the bytes travel on a path your servers are not on."
     code:
@@ -625,7 +648,8 @@ cards:
         - Fan-out delivery
       answerIndex: 0
 
-  - topic: "Transactional ledger"
+  - labels: [system-design]
+    topic: "Transactional ledger"
     desc: "The tell is a uniqueness constraint guarding the entrance, balanced append-only entries instead of
       a mutable balance, and an out-of-band process that re-derives the truth and compares."
     code:

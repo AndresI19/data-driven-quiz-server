@@ -1,0 +1,67 @@
+# Cross-cutting labels. Sections PARTITION the deck (one letter per card); labels CUT ACROSS it —
+# a card may carry several, and the same label appears in many sections. That is the point: section A
+# holds both "Data partitioning / sharding" (system-design) and "TLS handshake" (fundamentals), and
+# no single lettered deck could separate them.
+#
+# Read by load-cards.ts. A label used on a card but missing here is a hard ERROR, not a warning —
+# a silently-dropped tag would exclude the card from every filter that should have found it.
+#
+# `desc` is the authoring rule: it must be specific enough to settle an argument about where a new
+# card belongs. Keep the vocabulary small; a label that applies to almost everything sorts nothing.
+labels:
+  - key: system-design
+    name: System Design
+    color: "#3b82f6"
+    desc: >-
+      Choosing and justifying an architecture. Trade-offs, capacity arithmetic, failure modes,
+      and "what should this system look like" — the reasoning you would do at a whiteboard.
+
+  - key: fundamentals
+    name: Fundamentals
+    color: "#8b5cf6"
+    desc: >-
+      How an underlying technology actually works, independent of any design you might build with
+      it. Protocols, handshakes, resolution paths, data models. "How does HTTPS work", not
+      "should we use HTTPS here".
+
+  - key: cloud-native
+    name: Cloud & Containers
+    color: "#0ea5e9"
+    desc: >-
+      Kubernetes, containers, and the cloud primitives beneath them — objects, images, scheduling,
+      networking, and what a managed offering does or does not give you.
+
+  - key: operations
+    name: Operations
+    color: "#f59e0b"
+    desc: >-
+      Running the thing once it exists. Observability, release and rollback, incident response,
+      debugging, and the practices that keep a system healthy in production.
+
+  - key: security
+    name: Security
+    color: "#ef4444"
+    desc: >-
+      Authentication, authorisation, policy, cryptography, secrets, and isolation as a security
+      property rather than a scaling one.
+
+  - key: ai-agents
+    name: AI & Agents
+    color: "#22c55e"
+    desc: >-
+      Large language models, agent frameworks and orchestration, retrieval, evaluation, and the
+      infrastructure specific to running models and agents.
+
+  - key: coding
+    name: Code & Languages
+    color: "#ec4899"
+    desc: >-
+      Language and framework specifics, API style, and reading or writing actual code — as opposed
+      to reasoning about systems at the architectural level.
+
+  - key: field-craft
+    name: Field Craft
+    color: "#14b8a6"
+    desc: >-
+      The customer-facing half of forward-deployed work: reading an unfamiliar stack, integration
+      patterns, enterprise deployment constraints, and turning field learnings into product.

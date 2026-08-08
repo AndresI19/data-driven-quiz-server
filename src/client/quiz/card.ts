@@ -10,7 +10,7 @@ import { breakCombo, grantReward } from '../garden/economy.js';
 // That shell used to be hand-written per mode, which is how the modes drifted apart: `iv` quietly
 // stopped paying out, and `dm` borrowed `ma`'s payout key. Stating the frame once means a new mode
 // gets it right by construction rather than by careful copy-paste.
-import { CATS, app } from '../runtime/data.js';
+import { CATS, LABELS, app } from '../runtime/data.js';
 import { S, type Session } from '../runtime/state.js';
 import { esc, setKey } from '../runtime/util.js';
 import { hud, navKey } from './engine.js';
@@ -28,9 +28,20 @@ export function drawCard(c: GameCard, dir: string, body: string): Session {
     <div class="qcard">
       <span class="dir">${esc(dir)}</span>
       <span class="catchip">${esc(CATS[c.cat])}</span>
+      ${labelChips(c)}
       ${body}
     </div></div>`;
   return ses;
+}
+
+/** The card's cross-cutting labels, tinted from the vocabulary. A label absent from the registry
+ *  cannot reach here — load-cards.ts rejects the deck outright — so an unknown key is not rendered. */
+function labelChips(c: GameCard): string {
+  return c.labels
+    .map((k) => LABELS[k])
+    .filter(Boolean)
+    .map((l) => `<span class="lblchip" style="--lbl:${esc(l.color)}">${esc(l.name)}</span>`)
+    .join('');
 }
 
 /**

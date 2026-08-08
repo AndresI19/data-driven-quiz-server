@@ -1,6 +1,6 @@
 // Boot-time card data, filled in place from /api/cards.json so every reference stays a bare
 // name (CARDS, CATS, …) exactly as in the original single-file game.
-import type { CardsPayload, GameCard, Group } from '../../shared/card-schema.js';
+import type { CardsPayload, GameCard, Group, Label } from '../../shared/card-schema.js';
 
 export const app = document.getElementById('app') as HTMLElement;
 
@@ -20,6 +20,8 @@ export const CARDS: GameCard[] = [];
 export const CATS: Record<string, string> = {};
 export const CATCOL: Record<string, string> = {};
 export const GROUPS: Group[] = [];
+/** The cross-cutting label vocabulary, keyed for O(1) lookup when drawing chips. */
+export const LABELS: Record<string, Label> = {};
 /** Category accent used when a card's category has no colour of its own. */
 export const ACCENT_FALLBACK = '#5a67f2';
 /** A card's category accent, falling back to ACCENT_FALLBACK — the single source of that rule. */
@@ -36,6 +38,7 @@ export function initData(p: CardsPayload): void {
   Object.assign(CATCOL, p.catColors);
   GROUPS.length = 0;
   GROUPS.push(...p.groups);
+  for (const l of p.labels ?? []) LABELS[l.key] = l;
   Object.assign(MULTIPOOL, p.multiPool);
   Object.assign(DIAGRAMS, p.diagrams);
   for (const c of p.cards) byId[c.id] = c;
