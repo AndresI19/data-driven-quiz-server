@@ -1,0 +1,41 @@
+# Categories own LABELS. This replaces the old group→section structure as the selection axis.
+#
+# Sections (the lettered files) still exist — they are the physical organisation, they assign card
+# IDs, and each card still wears its section chip. What they are no longer is how you PICK cards.
+# Selection moved to labels because labels cut across sections: "TLS handshake" and "sharding" live
+# in the same lettered deck and belong to different categories, which no section-based picker could
+# express.
+#
+# Read by load-cards.ts. Every label named here must exist in _labels.yaml, and a label may belong to
+# at most one category — both are hard errors, because a typo would silently drop a label out of the
+# picker entirely.
+categories:
+  - key: platform
+    name: Platform & SRE
+    color: "#0ea5e9"
+    labels: [cloud-native, operations]
+
+  - key: backend
+    name: Backend & Distributed
+    color: "#6366f1"
+    labels: [system-design, fundamentals]
+
+  - key: ai
+    name: AI / ML Engineering
+    color: "#22c55e"
+    labels: [ai-agents]
+
+  - key: craft
+    name: Product & Craft
+    color: "#f59e0b"
+    labels: [coding, field-craft]
+
+  - key: internals
+    name: Systems & Internals
+    color: "#a855f7"
+    labels: [industry-systems]
+
+  - key: security
+    name: Security
+    color: "#ef4444"
+    labels: [security]

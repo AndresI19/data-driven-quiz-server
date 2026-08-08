@@ -1,6 +1,6 @@
 // Boot-time card data, filled in place from /api/cards.json so every reference stays a bare
 // name (CARDS, CATS, …) exactly as in the original single-file game.
-import type { CardsPayload, GameCard, Group, Label } from '../../shared/card-schema.js';
+import type { CardsPayload, Category, GameCard, Label } from '../../shared/card-schema.js';
 
 export const app = document.getElementById('app') as HTMLElement;
 
@@ -19,7 +19,7 @@ export const K = 'flashcards_v2';
 export const CARDS: GameCard[] = [];
 export const CATS: Record<string, string> = {};
 export const CATCOL: Record<string, string> = {};
-export const GROUPS: Group[] = [];
+export const CATEGORIES: Category[] = [];
 /** The cross-cutting label vocabulary, keyed for O(1) lookup when drawing chips. */
 export const LABELS: Record<string, Label> = {};
 /** Category accent used when a card's category has no colour of its own. */
@@ -36,8 +36,8 @@ export function initData(p: CardsPayload): void {
   CARDS.push(...p.cards);
   Object.assign(CATS, p.cats);
   Object.assign(CATCOL, p.catColors);
-  GROUPS.length = 0;
-  GROUPS.push(...p.groups);
+  CATEGORIES.length = 0;
+  CATEGORIES.push(...(p.categories ?? []));
   for (const l of p.labels ?? []) LABELS[l.key] = l;
   Object.assign(MULTIPOOL, p.multiPool);
   Object.assign(DIAGRAMS, p.diagrams);

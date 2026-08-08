@@ -16,7 +16,7 @@ const payloadOf = (ids: string[]): CardsPayload => ({
   cats: { A: 'CatA' },
   catColors: { A: '#000' },
   labels: [],
-  groups: [],
+  categories: [],
   cards: ids.map(pc),
   diagrams: {},
   multiPool: {},

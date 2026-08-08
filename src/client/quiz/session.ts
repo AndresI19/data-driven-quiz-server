@@ -153,16 +153,18 @@ const DIRECTION_LABELS: Record<string, string> = {
   mixed: 'mixed',
 };
 
-/** The cards a scope selects, before mode-filtering: favourites, a set of sections, or everything. */
+/** The cards a scope selects, before mode-filtering: favourites, a set of LABELS, or everything.
+ *  A card carries several labels, so this is a UNION — selecting two categories yields the set of
+ *  cards matching either, not the sum of their counts. */
 export function scopedCards(scope: Scope): GameCard[] {
   if (scope === 'fav') return CARDS.filter((c) => DB.favorites[c.id]);
-  if (Array.isArray(scope)) return CARDS.filter((c) => scope.includes(c.cat));
+  if (Array.isArray(scope)) return CARDS.filter((c) => scope.some((l) => c.labels.includes(l)));
   return CARDS.slice();
 }
 
 /** Human-readable name for the chosen scope, used in the session label. */
 function scopeLabel(scope: Scope): string {
-  if (scope === 'all') return 'All sections';
+  if (scope === 'all') return 'All cards';
   if (scope === 'fav') return '★ Favorites';
   return `§ ${scope.join(' ')}`;
 }
@@ -172,7 +174,7 @@ export function start(): void {
   cards = S.cfg.weak ? cards.slice().sort((a, b) => rate(b) - rate(a)) : shuffle(cards);
   if (S.cfg.count) cards = cards.slice(0, S.cfg.count);
   if (!cards.length) {
-    app.innerHTML = `<div class="wrap"><div class="panel"><div class="scoreline" style="margin:0 0 16px">No cards match that mode + section. Try Mixed or All sections.</div><div class="actions center"><button class="btn primary" id="back">Back</button></div></div></div>`;
+    app.innerHTML = `<div class="wrap"><div class="panel"><div class="scoreline" style="margin:0 0 16px">No cards match that mode + selection. Try Mixed or All.</div><div class="actions center"><button class="btn primary" id="back">Back</button></div></div></div>`;
     app.querySelector('#back')!.addEventListener('click', setup);
     return;
   }

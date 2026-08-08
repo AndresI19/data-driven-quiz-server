@@ -116,12 +116,14 @@ export interface Label {
   desc: string; // what belongs under it — the authoring rule, not marketing copy
 }
 
-/** A job-role bucket folding several sections together — a presentation layer over section keys. */
-export interface Group {
-  key: string; // stable group id (e.g. "platform")
+/** A job-role bucket owning several LABELS — the selection axis of the picker.
+ *  Replaced the old section-based group: sections still organise the files and assign card ids,
+ *  but a category groups labels, because labels are what cut across sections. */
+export interface Category {
+  key: string; // stable id (e.g. "platform")
   name: string; // display label
   color: string; // hex accent
-  sections: string[]; // section keys it contains, in display order
+  labels: string[]; // label keys it owns, in display order
 }
 
 /** Everything the client needs at boot. */
@@ -129,7 +131,7 @@ export interface CardsPayload {
   cats: Record<string, string>; // key → section name
   catColors: Record<string, string>; // key → hex
   labels: Label[]; // the label vocabulary; [] when cards/_labels.yaml is absent
-  groups: Group[]; // role buckets over the sections; [] when cards/_groups.yaml is absent
+  categories: Category[]; // role buckets over the labels; [] when cards/_categories.yaml is absent
   cards: GameCard[];
   diagrams: Record<string, string>; // name → inline SVG
   multiPool: Record<string, string[]>; // card id → multi member names (distractor pool)
